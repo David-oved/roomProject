@@ -140,6 +140,32 @@
     transform: translateX(-260%);
   }
 }
+#boot-error {
+  margin-top: 1.25rem;
+  max-width: 18rem;
+  text-align: center;
+}
+#boot-error .boot-error-title {
+  margin: 0;
+  font-weight: 700;
+  color: #0f172a;
+}
+#boot-error .boot-error-body {
+  margin: 0.25rem 0 0.85rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+#boot-error button {
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
 
 /* ═══════════════════════════════════════════════════════════
    העדפת תנועה מופחתת

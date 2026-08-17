@@ -36,8 +36,22 @@
         <div class="boot-logo">🏠</div>
         <div class="boot-name">RoomMate</div>
         <div class="boot-bar"><span></span></div>
+        <div id="boot-error" hidden>
+          <p class="boot-error-title">לא הצלחנו לטעון את האפליקציה</p>
+          <p class="boot-error-body">בדקו את החיבור לאינטרנט ונסו שוב.</p>
+          <button type="button" onclick="location.reload()">רענון</button>
+        </div>
       </div>
     </div>
+
+    <script>
+      // רשת ביטחון: אם React לא הספיק להסיר את מסך הפתיחה תוך 10 שניות,
+      // משהו נשבר בטעינה. עדיף הודעה ברורה מאשר ספינר אינסופי.
+      window.setTimeout(function () {
+        var err = document.getElementById('boot-error');
+        if (err && document.getElementById('boot-splash')) err.hidden = false;
+      }, 10000);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

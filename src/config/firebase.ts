@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getDatabase, connectDatabaseEmulator } from 'firebase/database';
+import { getAuth, connectAuthEmulator, type Auth } from 'firebase/auth';
+import { getDatabase, connectDatabaseEmulator, type Database } from 'firebase/database';
 
 /**
  * שימו לב: apiKey של Firebase אינו סוד. הוא מזהה פרויקט ציבורי שנועד
@@ -22,27 +22,38 @@ export const missingConfigKeys = REQUIRED.filter((k) => !env[k]);
 /** האם הוגדרו כל משתני הסביבה הנדרשים. */
 export const isFirebaseConfigured = missingConfigKeys.length === 0;
 
-/**
- * ערכי מציין מקום כשאין קונפיגורציה. הם מאפשרים ל-SDK לאתחל בלי לזרוק,
- * כך שהאפליקציה מציגה מסך הסבר ידידותי במקום מסך לבן.
- * שום קריאת רשת לא יוצאת אליהם — הראוטר כלל לא נטען במצב הזה.
- */
 const firebaseConfig = {
-  apiKey: env.VITE_FB_API_KEY ?? 'not-configured',
-  authDomain: env.VITE_FB_AUTH_DOMAIN ?? 'not-configured.firebaseapp.com',
-  databaseURL: env.VITE_FB_DATABASE_URL ?? 'https://not-configured-default-rtdb.firebaseio.com',
-  projectId: env.VITE_FB_PROJECT_ID ?? 'not-configured',
-  storageBucket: env.VITE_FB_STORAGE_BUCKET ?? 'not-configured.appspot.com',
-  messagingSenderId: env.VITE_FB_MSG_SENDER_ID ?? '000000000000',
-  appId: env.VITE_FB_APP_ID ?? '1:000000000000:web:0000000000000000000000',
+  apiKey: env.VITE_FB_API_KEY!,
+  authDomain: env.VITE_FB_AUTH_DOMAIN!,
+  databaseURL: env.VITE_FB_DATABASE_URL!,
+  projectId: env.VITE_FB_PROJECT_ID!,
+  storageBucket: env.VITE_FB_STORAGE_BUCKET,
+  messagingSenderId: env.VITE_FB_MSG_SENDER_ID,
+  appId: env.VITE_FB_APP_ID!,
 };
 
-const app = initializeApp(firebaseConfig);
+/**
+ * ‼️ אתחול מותנה — ולא אתחול עם ערכי מציין מקום.
+ *
+ * הניסיון הראשון כאן היה לאתחל תמיד, עם ערכי דמה כשאין קונפיגורציה.
+ * זה נכשל בייצור: getAuth() מאמת את מבנה ה-apiKey וזורק
+ * `auth/invalid-api-key` **סינכרונית**, בזמן טעינת המודול — כלומר לפני
+ * ש-React בכלל עולה. התוצאה הייתה מסך פתיחה תקוע במקום מסך ההסבר.
+ *
+ * לכן: בלי קונפיגורציה תקינה פשוט לא מאתחלים כלום.
+ * App.tsx בודק את isFirebaseConfigured ומציג את SetupRequiredPage
+ * לפני שנטען מודול כלשהו שנוגע ב-auth או ב-db.
+ */
+const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
 
-export const auth = getAuth(app);
-export const db = getDatabase(app);
+/**
+ * מוגדרים רק כשיש קונפיגורציה. ההמרה מכוונת: כשהיא null, האפליקציה
+ * מציגה את SetupRequiredPage ואף קוד שנוגע בהם אינו נטען כלל.
+ */
+export const auth = (app ? getAuth(app) : null) as Auth;
+export const db = (app ? getDatabase(app) : null) as Database;
 
-if (isFirebaseConfigured && env.VITE_USE_EMULATORS === 'true') {
+if (app && env.VITE_USE_EMULATORS === 'true') {
   // 127.0.0.1 ולא localhost — localhost נפתר ל-IPv6 בחלק מהסביבות
   // בעוד האמולטור מאזין ל-IPv4 בלבד.
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
