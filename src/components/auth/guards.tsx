@@ -1,0 +1,58 @@
+import { Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
+import { useAuth } from '../../store/AuthContext';
+import { useRoom } from '../../store/RoomContext';
+import { FullPageSpinner } from '../ui/Spinner';
+
+/**
+ * ⚠️ שומרי הסף הם **חוויית משתמש בלבד**, לא אבטחה.
+ * מי שיערוך את ה-JS בדפדפן יעקוף אותם — ויגלה שהשרת פשוט לא נותן לו
+ * נתונים, כי האכיפה האמיתית היא ב-Security Rules.
+ */
+
+/** דורש התחברות */
+export function RequireAuth() {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) return <FullPageSpinner />;
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
+  return <Outlet />;
+}
+
+/** דורש שהמשתמש *לא* מחובר (מסכי התחברות) */
+export function RequireGuest() {
+  const { user, profile, loading } = useAuth();
+
+  if (loading) return <FullPageSpinner />;
+  if (user) {
+    const rooms = Object.keys(profile?.rooms ?? {});
+    return <Navigate to={rooms.length > 0 ? `/r/${rooms[0]}` : '/onboarding'} replace />;
+  }
+  return <Outlet />;
+}
+
+/** דורש חברות פעילה בחדר שב-URL */
+export function RequireRoomMember() {
+  const { code } = useParams<{ code: string }>();
+  const { myMembership, loading, metadata } = useRoom();
+
+  if (loading) return <FullPageSpinner label="טוען את החדר…" />;
+
+  if (!metadata) return <Navigate to="/onboarding" replace />;
+
+  if (!myMembership || myMembership.status !== 'active') {
+    return <Navigate to={`/rooms/${code}/pending`} replace />;
+  }
+
+  return <Outlet />;
+}
+
+/** דורש הרשאת מנהל */
+export function RequireAdmin() {
+  const { code } = useParams<{ code: string }>();
+  const { isAdmin, loading } = useRoom();
+
+  if (loading) return <FullPageSpinner />;
+  if (!isAdmin) return <Navigate to={`/r/${code}`} replace />;
+  return <Outlet />;
+}

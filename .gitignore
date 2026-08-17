@@ -1,0 +1,35 @@
+# תלויות
+node_modules/
+
+# בנייה
+dist/
+dev-dist/
+
+# סביבה — 🚫 לעולם לא ב-git
+.env.local
+.env.*.local
+
+# Firebase
+.firebase/
+.emulator-data/
+firebase-debug.log
+database-debug.log
+ui-debug.log
+firestore-debug.log
+*-firebase-adminsdk-*.json
+serviceAccountKey.json
+
+# עורכים ומערכת
+.vscode/*
+!.vscode/settings.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# לוגים
+npm-debug.log*
+yarn-error.log*
+*.local
+
+# TypeScript build info
+tsconfig.tsbuildinfo

@@ -1,0 +1,277 @@
+{
+  // ============================================================
+  //  RoomMate — Firebase Realtime Database Security Rules
+  //  הסבר מלא לכל כלל: docs/03-security-rules.md
+  //  פריסה: firebase deploy --only database
+  // ============================================================
+  "rules": {
+    // ברירת מחדל: הכל חסום. הרשאות ניתנות רק במפורש למטה.
+    ".read": false,
+    ".write": false,
+
+    // ---------- פרופילי משתמשים ----------
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['email', 'displayName', 'createdAt'])",
+
+        "email": {
+          ".validate": "newData.isString() && newData.val().length <= 254 && newData.val().matches(/^[^@\\s]+@[^@\\s]+\\.[^@\\s]{2,}$/)"
+        },
+        "displayName": {
+          ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 40"
+        },
+        "avatar": {
+          ".validate": "newData.isString() && newData.val().matches(/^https:\\/\\/.+/) && newData.val().length <= 1000"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber() && (!data.exists() || data.val() === newData.val())"
+        },
+        "lastActiveAt": { ".validate": "newData.isNumber()" },
+
+        // מנהל חדר רשאי לכתוב כאן כדי לרשום משתמש שאושר לחדר.
+        "rooms": {
+          "$roomCode": {
+            ".write": "auth != null && (auth.uid === $uid || root.child('rooms/' + $roomCode + '/metadata/adminId').val() === auth.uid)",
+            ".validate": "newData.isBoolean() && newData.val() === true"
+          }
+        },
+        "$other": { ".validate": false }
+      }
+    },
+
+    // ---------- אינדקס קודי חדרים (ציבורי למשתמשים מחוברים) ----------
+    // מאפשר לבדוק "האם קוד החדר קיים?" בלי לחשוף את תוכן החדר.
+    "roomCodes": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && ((!data.exists() && newData.child('adminId').val() === auth.uid) || (data.exists() && data.child('adminId').val() === auth.uid))",
+        ".validate": "newData.hasChildren(['name', 'adminId', 'createdAt']) && $code.matches(/^[A-Z0-9]{6}$/)",
+
+        "name":      { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 50" },
+        "adminId":   { ".validate": "newData.isString() && newData.val().length > 0" },
+        "createdAt": { ".validate": "newData.isNumber() && (!data.exists() || data.val() === newData.val())" },
+        "$other":    { ".validate": false }
+      }
+    },
+
+    // ---------- אינדקס ייחודיות שמות חדרים ----------
+    // נכתב ב-runTransaction. כתיבה מותרת רק אם השם פנוי, או שאתה מנהל החדר שמחזיק בו.
+    "roomNames": {
+      "$slug": {
+        ".read": "auth != null",
+        ".write": "auth != null && ((!data.exists() && (!root.child('roomCodes/' + newData.val()).exists() || root.child('roomCodes/' + newData.val() + '/adminId').val() === auth.uid)) || (data.exists() && root.child('rooms/' + data.val() + '/metadata/adminId').val() === auth.uid))",
+        ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{6}$/) && $slug.length >= 2 && $slug.length <= 60"
+      }
+    },
+
+    // ---------- מראה אישית של בקשות הצטרפות ----------
+    // מאפשרת למשתמש לדעת שאושר, למרות שהוא עדיין לא חבר בחדר.
+    "joinRequests": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$roomCode": {
+          ".write": "auth != null && (auth.uid === $uid || root.child('rooms/' + $roomCode + '/metadata/adminId').val() === auth.uid)",
+          ".validate": "newData.hasChildren(['status', 'requestedAt'])",
+
+          // המשתמש עצמו יכול לכתוב רק 'pending'. רק המנהל מאשר או דוחה.
+          "status":      { ".validate": "newData.val().matches(/^(pending|approved|rejected)$/) && (auth.uid === $uid ? newData.val() === 'pending' : true)" },
+          "requestedAt": { ".validate": "newData.isNumber()" },
+          "respondedAt": { ".validate": "newData.isNumber()" },
+          "roomName":    { ".validate": "newData.isString() && newData.val().length <= 50" },
+          "$other":      { ".validate": false }
+        }
+      }
+    },
+
+    // ================= חדרים =================
+    "rooms": {
+      "$code": {
+        // קריאה לכל תת-העץ: חבר פעיל בלבד. חריגים מוגדרים בצמתים למטה.
+        ".read": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active'",
+
+        // כתיבה ברמת החדר מותרת אך ורק כמחיקה מלאה על ידי המנהל.
+        ".write": "auth != null && data.exists() && !newData.exists() && data.child('metadata/adminId').val() === auth.uid",
+
+        // ---------- מטא-דאטה ----------
+        "metadata": {
+          // יצירה: היוצר חייב לרשום את עצמו כמנהל.  עדכון: המנהל בלבד.
+          ".write": "auth != null && ((!data.exists() && newData.child('adminId').val() === auth.uid && newData.child('createdBy').val() === auth.uid) || (data.exists() && data.child('adminId').val() === auth.uid))",
+          ".validate": "newData.hasChildren(['name', 'createdAt', 'createdBy', 'adminId'])",
+
+          "name":        { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 50" },
+          "description": { ".validate": "newData.isString() && newData.val().length <= 300" },
+          "photo":       { ".validate": "newData.isString() && newData.val().matches(/^https:\\/\\/.+/)" },
+          "currency":    { ".validate": "newData.val() === 'ILS'" },
+          "categories": {
+            "$cat": { ".validate": "newData.isBoolean() && $cat.matches(/^(kitchen|bathroom|cleaning|other)$/)" }
+          },
+          "createdAt": { ".validate": "newData.isNumber() && (!data.exists() || data.val() === newData.val())" },
+          "createdBy": { ".validate": "newData.isString() && (!data.exists() || data.val() === newData.val())" },
+          "adminId":   { ".validate": "newData.isString() && newData.val().length > 0" },
+          "$other":    { ".validate": false }
+        },
+
+        // ---------- חברים ----------
+        "members": {
+          ".indexOn": ["status"],
+          "$uid": {
+            // 1) המנהל מנהל את כל החברים.
+            // 2) יוצר החדר מוסיף את עצמו כמנהל בזמן היצירה (עדיין אין metadata).
+            // 3) חבר רגיל יכול רק לעזוב: מחיקה, או שינוי status ל-removed בלי לגעת ב-role.
+            ".write": "auth != null && (root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid || (!root.child('rooms/' + $code + '/metadata').exists() && $uid === auth.uid && newData.child('role').val() === 'admin') || ($uid === auth.uid && data.exists() && root.child('rooms/' + $code + '/metadata/adminId').val() !== auth.uid && (!newData.exists() || (newData.child('status').val() === 'removed' && newData.child('role').val() === data.child('role').val()))))",
+
+            ".validate": "newData.hasChildren(['name', 'email', 'joinedAt', 'status', 'role'])",
+            "name":     { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 40" },
+            "email":    { ".validate": "newData.isString() && newData.val().length <= 254" },
+            "avatar":   { ".validate": "newData.isString() && newData.val().length <= 1000" },
+            "joinedAt": { ".validate": "newData.isNumber()" },
+            "status":   { ".validate": "newData.val().matches(/^(active|removed)$/)" },
+            "role":     { ".validate": "newData.val().matches(/^(admin|member)$/)" },
+            "$other":   { ".validate": false }
+          }
+        },
+
+        // ---------- בקשות הצטרפות ----------
+        "pendingRequests": {
+          ".read": "auth != null && root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid",
+          "$uid": {
+            // המבקש קורא וכותב רק את הבקשה של עצמו, ורק אם אינו כבר חבר.
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && ((auth.uid === $uid && (!data.exists() || data.child('status').val() !== 'approved') && root.child('rooms/' + $code + '/metadata').exists() && !root.child('rooms/' + $code + '/members/' + auth.uid).exists()) || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid)",
+
+            ".validate": "newData.hasChildren(['userId', 'displayName', 'requestedAt', 'status'])",
+            "userId":      { ".validate": "newData.val() === $uid" },
+            "displayName": { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 40" },
+            "email":       { ".validate": "newData.isString() && newData.val().length <= 254" },
+            "avatar":      { ".validate": "newData.isString() && newData.val().length <= 1000" },
+            "requestedAt": { ".validate": "newData.isNumber()" },
+            "respondedAt": { ".validate": "newData.isNumber()" },
+            "status":      { ".validate": "newData.val().matches(/^(pending|approved|rejected)$/) && (auth.uid === $uid ? newData.val() === 'pending' : true)" },
+            "$other":      { ".validate": false }
+          }
+        },
+
+        // ---------- מוצרים חסרים ----------
+        "items": {
+          ".indexOn": ["status", "category", "reportedAt", "priority"],
+          "$itemId": {
+            // יצירה : חבר פעיל בלבד, reportedBy = הוא עצמו, status מתחיל ב-needed.
+            // עדכון : המדווח או המנהל — הכל.  חבר אחר — רק "תפיסת" הפריט,
+            //         כלומר name/category/priority/reportedBy/reportedAt חייבים להישאר זהים.
+            // מחיקה : מנהל בלבד.
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && newData.child('reportedBy').val() === auth.uid && newData.child('status').val() === 'needed') || (data.exists() && newData.exists() && (data.child('reportedBy').val() === auth.uid || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid || (newData.child('name').val() === data.child('name').val() && newData.child('category').val() === data.child('category').val() && newData.child('priority').val() === data.child('priority').val() && newData.child('reportedBy').val() === data.child('reportedBy').val() && newData.child('reportedAt').val() === data.child('reportedAt').val()))) || (data.exists() && !newData.exists() && root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid))",
+
+            ".validate": "newData.hasChildren(['name', 'category', 'reportedBy', 'reportedAt', 'priority', 'status'])",
+            "name":       { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 60" },
+            "nameLower":  { ".validate": "newData.isString() && newData.val().length <= 60" },
+            "category":   { ".validate": "newData.val().matches(/^(kitchen|bathroom|cleaning|other)$/)" },
+            "reportedBy": { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val()).exists()" },
+            "reportedAt": { ".validate": "newData.isNumber()" },
+            "priority":   { ".validate": "newData.val().matches(/^(high|normal|low)$/)" },
+            "status":     { ".validate": "newData.val().matches(/^(needed|buying|bought|done)$/)" },
+            "assignedTo": { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val() + '/status').val() === 'active'" },
+            "notes":      { ".validate": "newData.isString() && newData.val().length <= 500" },
+            "purchaseId": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "$other":     { ".validate": false }
+          }
+        },
+
+        // ---------- קניות (היומן הכספי) ----------
+        "purchases": {
+          ".indexOn": ["status", "createdAt", "boughtBy"],
+          "$purchaseId": {
+            // יצירה : חבר פעיל, boughtBy = הוא עצמו, status = pending בלבד.
+            // עדכון : המנהל משנה סטטוס — אך amount ו-boughtBy קפואים לנצח.
+            //         הקונה עורך רק כל עוד pending/rejected, ומחזיר ל-pending.
+            // מחיקה : רק כשעדיין pending.
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && newData.child('boughtBy').val() === auth.uid && newData.child('status').val() === 'pending') || (data.exists() && newData.exists() && ((root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid && newData.child('amount').val() === data.child('amount').val() && newData.child('boughtBy').val() === data.child('boughtBy').val()) || (data.child('boughtBy').val() === auth.uid && (data.child('status').val() === 'pending' || data.child('status').val() === 'rejected') && newData.child('status').val() === 'pending'))) || (data.exists() && !newData.exists() && data.child('status').val() === 'pending' && (data.child('boughtBy').val() === auth.uid || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid)))",
+
+            ".validate": "newData.hasChildren(['boughtBy', 'amount', 'date', 'splitMethod', 'status', 'splitBetween', 'shares'])",
+            "itemId":   { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "title":    { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 60" },
+            "boughtBy": { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val()).exists()" },
+
+            // amount באגורות: מספר שלם חיובי בלבד, עד ₪100,000.
+            // זה הכלל שחוסם "סכום שלילי" ו"סכום שברי" ברמת השרת.
+            "amount": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 10000000 && newData.val() % 1 === 0" },
+
+            "date":        { ".validate": "newData.isNumber()" },
+            "createdAt":   { ".validate": "newData.isNumber() && (!data.exists() || data.val() === newData.val())" },
+            "splitMethod": { ".validate": "newData.val().matches(/^(equal|percentage|custom)$/)" },
+
+            "splitBetween": {
+              ".validate": "newData.hasChildren()",
+              "$uid": { ".validate": "newData.isBoolean() && newData.val() === true && root.child('rooms/' + $code + '/members/' + $uid).exists()" }
+            },
+            "shares": {
+              ".validate": "newData.hasChildren()",
+              "$uid": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0 && newData.parent().parent().child('splitBetween/' + $uid).val() === true" }
+            },
+
+            "receipt":    { ".validate": "newData.isString() && newData.val().matches(/^https:\\/\\/.+/)" },
+            "status":     { ".validate": "newData.val().matches(/^(pending|approved|rejected|settled)$/)" },
+            "approvedBy": { ".validate": "root.child('rooms/' + $code + '/metadata/adminId').val() === newData.val()" },
+            "note":       { ".validate": "newData.isString() && newData.val().length <= 300" },
+            "$other":     { ".validate": false }
+          }
+        },
+
+        // ---------- מאזנים (מטמון תצוגה בלבד) ----------
+        // מקור האמת הוא purchases. נכתב רק ע"י המנהל בעת אישור קנייה,
+        // וניתן למחיקה ובנייה מחדש בכל רגע מתוך היומן.
+        "balances": {
+          ".write": "auth != null && root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid",
+          "$uid": {
+            "amount":      { ".validate": "newData.isNumber() && newData.val() % 1 === 0" },
+            "lastUpdated": { ".validate": "newData.isNumber()" },
+            "$other":      { ".validate": false }
+          }
+        },
+
+        // ---------- סגירות חשבון ----------
+        // יוצר: המשלם או המקבל. אישור: רק המקבל, ובלי לשנות את הסכום.
+        "settlements": {
+          ".indexOn": ["date", "from", "to"],
+          "$settlementId": {
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && (newData.child('from').val() === auth.uid || newData.child('to').val() === auth.uid)) || (data.exists() && newData.exists() && data.child('to').val() === auth.uid && newData.child('amount').val() === data.child('amount').val() && newData.child('from').val() === data.child('from').val()))",
+            ".validate": "newData.hasChildren(['from', 'to', 'amount', 'date'])",
+            "from":        { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val()).exists()" },
+            "to":          { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val()).exists() && newData.val() !== newData.parent().child('from').val()" },
+            "amount":      { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() % 1 === 0" },
+            "date":        { ".validate": "newData.isNumber()" },
+            "confirmedBy": { ".validate": "newData.val() === newData.parent().child('to').val()" },
+            "$other":      { ".validate": false }
+          }
+        },
+
+        // ---------- התראות ----------
+        // נשמרות בתוך החדר ולא בתיבה אישית, כדי שלא ניאלץ לתת לחבר אחד
+        // הרשאת כתיבה לתיבה של חבר אחר. כל אחד מסמן "נקרא" רק לעצמו.
+        "notifications": {
+          ".indexOn": ["createdAt"],
+          "$notificationId": {
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && (!data.exists() || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['type', 'actorId', 'text', 'createdAt'])",
+            "type":      { ".validate": "newData.val().matches(/^(item_added|item_claimed|item_bought|purchase_made|purchase_approved|purchase_rejected|member_joined|member_removed|settlement)$/)" },
+            "actorId":   { ".validate": "newData.val() === auth.uid || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid" },
+            "actorName": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "text":      { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200" },
+            "entityId":  { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "createdAt": { ".validate": "newData.isNumber()" },
+            "readBy": {
+              "$uid": {
+                ".write": "auth != null && auth.uid === $uid",
+                ".validate": "newData.isBoolean() && newData.val() === true"
+              }
+            },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}

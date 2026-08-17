@@ -1,0 +1,69 @@
+rules_version = '2';
+
+// ============================================================
+//  RoomMate — Firebase Storage Security Rules
+//  פריסה: firebase deploy --only storage
+//
+//  ⚠️ מגבלה ידועה: כללי Storage אינם יכולים לקרוא מ-Realtime Database,
+//     ולכן אי אפשר לאמת "האם המשתמש חבר בחדר הזה?" ברמת האחסון.
+//     ההגנה כאן: (1) חובה להיות מחובר, (2) הנתיב מכיל pushId אקראי
+//     בן 20 תווים שלא ניתן לניחוש. מי שאין לו את הקישור לא יגיע לקובץ.
+//     להקשחה מלאה בשלב מאוחר: Cloud Function שמנפיקה signed URLs.
+// ============================================================
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ---------- פונקציות עזר ----------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/(jpeg|png|webp|heic)');
+    }
+
+    function underSize(mb) {
+      return request.resource.size < mb * 1024 * 1024;
+    }
+
+    // ---------- תמונות פרופיל ----------
+    // avatars/{userId}/{fileName}
+    // כל משתמש מחובר יכול לראות אווטארים (הם מוצגים לחברי החדר),
+    // אבל רק הבעלים יכול להעלות או למחוק את שלו.
+    match /avatars/{userId}/{fileName} {
+      allow read:   if isSignedIn();
+      allow write:  if isSignedIn()
+                    && request.auth.uid == userId
+                    && isImage()
+                    && underSize(2);          // עד 2MB
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ---------- חשבוניות ----------
+    // receipts/{roomCode}/{userId}/{pushId}.jpg
+    // רק מי שהעלה יכול לכתוב או למחוק. הקריאה פתוחה למשתמשים מחוברים,
+    // אבל הנתיב כולל pushId אקראי — ראו ההערה בראש הקובץ.
+    match /receipts/{roomCode}/{userId}/{fileName} {
+      allow read:   if isSignedIn();
+      allow create: if isSignedIn()
+                    && request.auth.uid == userId
+                    && isImage()
+                    && underSize(5);          // עד 5MB
+      allow update: if false;                  // חשבונית לא משתנה — מעלים חדשה
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ---------- תמונות חדר ----------
+    // roomPhotos/{roomCode}/{fileName} — נכתב ע"י המנהל (נאכף גם בקוד ובכללי ה-DB)
+    match /roomPhotos/{roomCode}/{fileName} {
+      allow read:  if isSignedIn();
+      allow write: if isSignedIn() && isImage() && underSize(3);
+    }
+
+    // ---------- כל השאר חסום ----------
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

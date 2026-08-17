@@ -1,0 +1,51 @@
+import { useNavigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { ChevronIcon } from '../ui/icons';
+
+/**
+ * כותרת עליונה דביקה.
+ * ה-safe-top מרפד מתחת ל-Dynamic Island / הנאץ' — בלעדיו הכותרת נחתכת.
+ */
+export function TopBar({
+  title,
+  subtitle,
+  back,
+  actions,
+}: {
+  title: string;
+  subtitle?: ReactNode;
+  /** להציג חץ חזרה */
+  back?: boolean | string;
+  actions?: ReactNode;
+}) {
+  const navigate = useNavigate();
+
+  return (
+    <header
+      className="sticky top-0 z-40 border-b border-ink-200/70 bg-white/85
+                 backdrop-blur-xl backdrop-saturate-150"
+      style={{ paddingTop: 'var(--safe-top)' }}
+    >
+      <div className="mx-auto flex h-[var(--header-height)] max-w-lg items-center gap-1 px-2">
+        {back && (
+          <button
+            onClick={() => (typeof back === 'string' ? navigate(back) : navigate(-1))}
+            aria-label="חזרה"
+            className="tap grid shrink-0 place-items-center rounded-full text-ink-500
+                       transition hover:bg-ink-100 hover:text-ink-800"
+          >
+            {/* ב-RTL החץ מצביע ימינה — התמונה מתהפכת עם כיוון הדף */}
+            <ChevronIcon width={22} height={22} className="rotate-180" />
+          </button>
+        )}
+
+        <div className={`min-w-0 flex-1 ${back ? '' : 'ps-2'}`}>
+          <h1 className="truncate text-base font-bold leading-tight text-ink-900">{title}</h1>
+          {subtitle && <div className="truncate text-xs text-ink-500">{subtitle}</div>}
+        </div>
+
+        {actions && <div className="flex shrink-0 items-center gap-0.5 pe-1">{actions}</div>}
+      </div>
+    </header>
+  );
+}

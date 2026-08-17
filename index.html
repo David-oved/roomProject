@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover חיוני: בלעדיו env(safe-area-inset-*) מחזיר 0
+         והתוכן נחתך מתחת ל-Dynamic Island / הנאץ' באייפון -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5"
+    />
+    <meta name="theme-color" content="#0f766e" />
+    <meta name="description" content="ניהול קניות, מוצרים חסרים וחלוקת הוצאות בחדר משותף" />
+    <meta name="color-scheme" content="light" />
+
+    <!-- iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="RoomMate" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon-180.png" />
+
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>RoomMate — ניהול חדר משותף</title>
+  </head>
+  <body>
+    <div id="root">
+      <!-- מסך פתיחה שמוצג לפני שה-JS נטען. נמחק ע"י main.tsx -->
+      <div id="boot-splash">
+        <div class="boot-logo">🏠</div>
+        <div class="boot-name">RoomMate</div>
+        <div class="boot-bar"><span></span></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
