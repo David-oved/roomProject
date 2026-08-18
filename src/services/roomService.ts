@@ -2,6 +2,7 @@ import { get, push, ref, runTransaction, serverTimestamp, update } from 'firebas
 import { db } from '../config/firebase';
 import { generateRoomCode, slugifyRoomName } from '../lib/roomCode';
 import { assertOnline } from './guard';
+import { staplesMap } from './catalogService';
 import type { Category, JoinRequest, UserProfile } from '../types/models';
 
 export class RoomNameTakenError extends Error {
@@ -15,6 +16,8 @@ export interface RoomDraft {
   name: string;
   description?: string;
   categories: Category[];
+  /** מזהי מוצרי הבסיס שנבחרו בקטלוג */
+  staples?: string[];
 }
 
 /**
@@ -82,6 +85,11 @@ export async function createRoom(
         role: 'admin',
       },
       [`users/${userId}/rooms/${code}`]: true,
+      // מוצרי הבסיס נכתבים באותה פעולה אטומית — חדר בלי הבסיס שלו
+      // הוא חדר חצי-מוגדר, ואין סיבה שיהיה מצב ביניים כזה.
+      ...(draft.staples?.length
+        ? { [`rooms/${code}/staples`]: staplesMap(draft.staples) }
+        : {}),
     });
   } catch (err) {
     // ── 4) פיצוי: משחררים את השם, אחרת הוא נשאר "תפוס" לנצח ──

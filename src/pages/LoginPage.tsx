@@ -2,8 +2,9 @@ import { useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { PlainShell } from '../components/layout/AppShell';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
+import { Input, PasswordInput } from '../components/ui/Input';
 import { authErrorMessage, login } from '../services/authService';
+import { getLastEmail, setLastEmail } from '../lib/prefs';
 import { useConnection } from '../store/ConnectionContext';
 import { AppLogo } from '../components/layout/AppLogo';
 
@@ -12,7 +13,8 @@ export default function LoginPage() {
   const location = useLocation();
   const { isOnline } = useConnection();
 
-  const [email, setEmail] = useState('');
+  // חוסך הקלדה חוזרת — האימייל אינו סוד
+  const [email, setEmail] = useState(getLastEmail);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -23,6 +25,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await login(email, password);
+      setLastEmail(email);
       const from = (location.state as { from?: Location })?.from;
       navigate(from ? String(from) : '/onboarding', { replace: true });
     } catch (err) {
@@ -46,6 +49,7 @@ export default function LoginPage() {
             type="email"
             inputMode="email"
             autoComplete="email"
+            enterKeyHint="next"
             dir="ltr"
             className="text-start"
             placeholder="you@example.com"
@@ -54,11 +58,11 @@ export default function LoginPage() {
             required
           />
 
-          <Input
+          <PasswordInput
             label="סיסמה"
-            type="password"
             autoComplete="current-password"
             placeholder="••••••••"
+            enterKeyHint="go"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required

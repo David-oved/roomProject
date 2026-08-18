@@ -2,7 +2,13 @@ export type Category = 'kitchen' | 'bathroom' | 'cleaning' | 'other';
 export type Priority = 'high' | 'normal' | 'low';
 export type ItemStatus = 'needed' | 'buying' | 'bought' | 'done';
 export type PurchaseStatus = 'pending' | 'approved' | 'rejected' | 'settled';
-export type SplitMethod = 'equal' | 'percentage' | 'custom';
+/**
+ * 'covered' = "לקחתי על עצמי".
+ * הקנייה נרשמת ונראית לכולם, אבל אף אחד לא מחויב. מודל של מעקב
+ * תרומות במקום מעקב חובות — מתאים לקניות קטנות ותכופות, שבהן
+ * ההתחשבנות עצמה יקרה יותר מהסכום.
+ */
+export type SplitMethod = 'equal' | 'percentage' | 'custom' | 'covered';
 export type MemberRole = 'admin' | 'member';
 export type MemberStatus = 'active' | 'removed';
 
@@ -49,6 +55,8 @@ export interface Item {
   assignedTo: string | null;
   notes: string | null;
   purchaseId: string | null;
+  /** מזהה המוצר בקטלוג, אם הפריט דווח ממנו */
+  productId?: string | null;
 }
 
 export interface Purchase {
@@ -136,6 +144,13 @@ export const ITEM_STATUS_LABELS: Record<ItemStatus, string> = {
   buying: 'בקנייה',
   bought: 'נקנה',
   done: 'הושלם',
+};
+
+export const SPLIT_METHOD_LABELS: Record<SplitMethod, string> = {
+  covered: 'לקחתי על עצמי',
+  equal: 'שווה בשווה',
+  percentage: 'לפי אחוזים',
+  custom: 'סכום ידני',
 };
 
 export const PURCHASE_STATUS_LABELS: Record<PurchaseStatus, string> = {

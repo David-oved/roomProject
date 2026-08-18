@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   computeBalances,
+  computeContributions,
   defaultPercentages,
   simplifyDebts,
   splitEqual,
@@ -245,5 +246,57 @@ describe('defaultPercentages', () => {
 
   it('מחזיר אובייקט ריק כשאין משתתפים', () => {
     expect(defaultPercentages([])).toEqual({});
+  });
+});
+
+/* ═══════════════════ תרומות ═══════════════════ */
+
+describe('computeContributions', () => {
+  it('קנייה "על עצמי" זוקפת את כל העלות לקונה', () => {
+    const covered = purchase({
+      boughtBy: 'a',
+      amount: 3000,
+      splitMethod: 'covered',
+      splitBetween: { a: true },
+      shares: { a: 3000 },
+    });
+    const { borne, paidOut, total } = computeContributions([covered], ['a', 'b']);
+    expect(borne).toEqual({ a: 3000, b: 0 });
+    expect(paidOut).toEqual({ a: 3000, b: 0 });
+    expect(total).toBe(3000);
+  });
+
+  it('קנייה "על עצמי" לא מזיזה את המאזן', () => {
+    const covered = purchase({
+      boughtBy: 'a',
+      amount: 3000,
+      splitMethod: 'covered',
+      splitBetween: { a: true },
+      shares: { a: 3000 },
+    });
+    expect(computeBalances([covered], [], ['a', 'b'])).toEqual({ a: 0, b: 0 });
+  });
+
+  it('בחלוקה שווה כל אחד נושא בחלקו, אבל רק הקונה הוציא מהכיס', () => {
+    const { borne, paidOut } = computeContributions([purchase({})], ['a', 'b']);
+    expect(borne).toEqual({ a: 1000, b: 1000 });
+    expect(paidOut).toEqual({ a: 2000, b: 0 });
+  });
+
+  it('סכום כל ה-borne שווה לסכום כל הקניות המאושרות', () => {
+    const list = [
+      purchase({ amount: 2000, shares: { a: 1000, b: 1000 } }),
+      purchase({
+        boughtBy: 'b',
+        amount: 5000,
+        splitMethod: 'covered',
+        splitBetween: { b: true },
+        shares: { b: 5000 },
+      }),
+      purchase({ status: 'pending', amount: 9999 }),
+    ];
+    const { borne, total } = computeContributions(list, ['a', 'b']);
+    expect(Object.values(borne).reduce((x, y) => x + y, 0)).toBe(total);
+    expect(total).toBe(7000);
   });
 });

@@ -3,9 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { PlainShell } from '../components/layout/AppShell';
 import { AppLogo } from '../components/layout/AppLogo';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
+import { Input, PasswordInput } from '../components/ui/Input';
 import { authErrorCode, authErrorMessage, register } from '../services/authService';
 import { useConnection } from '../store/ConnectionContext';
+import { setLastEmail } from '../lib/prefs';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -39,6 +40,7 @@ export default function RegisterPage() {
     setBusy(true);
     try {
       await register(email, password, name);
+      setLastEmail(email);
       navigate('/onboarding', { replace: true });
     } catch (err) {
       setError(authErrorMessage(err));
@@ -81,22 +83,22 @@ export default function RegisterPage() {
             required
           />
 
-          <Input
+          <PasswordInput
             label="סיסמה"
-            type="password"
             autoComplete="new-password"
             placeholder="לפחות 6 תווים"
+            enterKeyHint="next"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             error={passError}
             required
           />
 
-          <Input
+          <PasswordInput
             label="אימות סיסמה"
-            type="password"
             autoComplete="new-password"
             placeholder="שוב, בבקשה"
+            enterKeyHint="go"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             error={confirmError}

@@ -8,6 +8,9 @@ import { createRoom } from '../services/roomService';
 import { useAuth } from '../store/AuthContext';
 import { useConnection } from '../store/ConnectionContext';
 import { ALL_CATEGORIES, CATEGORY_EMOJI, CATEGORY_LABELS, type Category } from '../types/models';
+import { StaplesPicker } from '../components/catalog/StaplesPicker';
+import { DEFAULT_STAPLES } from '../data/catalog';
+import { ChevronIcon } from '../components/ui/icons';
 
 export default function CreateRoomPage() {
   const navigate = useNavigate();
@@ -17,6 +20,9 @@ export default function CreateRoomPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [categories, setCategories] = useState<Category[]>(['kitchen', 'bathroom', 'cleaning']);
+  // מסומנים מראש — רוב החדרים צריכים בדיוק את אלה, וההתאמה קלה
+  const [staples, setStaples] = useState<string[]>(DEFAULT_STAPLES);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -31,7 +37,12 @@ export default function CreateRoomPage() {
     setError('');
     setBusy(true);
     try {
-      const code = await createRoom(user.uid, profile, { name, description, categories });
+      const code = await createRoom(user.uid, profile, {
+        name,
+        description,
+        categories,
+        staples,
+      });
       navigate(`/r/${code}?created=1`, { replace: true });
     } catch (err) {
       setError((err as Error).message);
@@ -99,6 +110,35 @@ export default function CreateRoomPage() {
             )}
           </fieldset>
 
+          {/* ── מוצרי בסיס ── */}
+          <div>
+            <span className="mb-2 block text-sm font-medium text-ink-700">מוצרי בסיס</span>
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="flex w-full items-center gap-3 rounded-xl border border-ink-200
+                         bg-white p-3.5 text-start transition active:scale-[.99] hover:bg-ink-50"
+            >
+              <span aria-hidden className="grid h-10 w-10 shrink-0 place-items-center
+                                           rounded-xl bg-brand-50 text-xl">
+                🧺
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-ink-900">
+                  <span className="num">{staples.length}</span> מוצרים נבחרו
+                </span>
+                <span className="block text-xs text-ink-500">
+                  {staples.length > 0 ? 'לחצו כדי לערוך את הרשימה' : 'לחצו כדי לבחור מהקטלוג'}
+                </span>
+              </span>
+              <ChevronIcon width={20} height={20} className="shrink-0 text-ink-300" />
+            </button>
+            <p className="mt-1.5 text-xs leading-relaxed text-ink-500">
+              המוצרים שתמיד צריכים להיות בבית. כשמשהו נגמר — לחיצה אחת מדווחת עליו.
+              אפשר לשנות בכל רגע.
+            </p>
+          </div>
+
           {error && (
             <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-700">
               {error}
@@ -114,6 +154,13 @@ export default function CreateRoomPage() {
             צור חדר
           </Button>
         </form>
+
+        <StaplesPicker
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          value={staples}
+          onChange={setStaples}
+        />
       </PlainShell>
     </>
   );

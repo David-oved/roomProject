@@ -1,8 +1,9 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { useRtdbList, useRtdbValue } from '../hooks/useRtdb';
 import { useAuth } from './AuthContext';
 import type { Member, RoomMetadata, WithId } from '../types/models';
+import { setLastRoom } from '../lib/prefs';
 
 interface RoomValue {
   roomCode: string | null;
@@ -56,6 +57,12 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       memberName: (uid: string) => members.find((m) => m.id === uid)?.name ?? 'משתמש שנמחק',
     };
   }, [roomCode, meta.data, meta.loading, meta.fromCache, mem.data, mem.loading, mem.fromCache, user]);
+
+  // זוכרים את החדר הפעיל, כדי לחזור אליו ישירות בכניסה הבאה.
+  // רק חברות פעילה נשמרת — אין טעם לזכור חדר שהוסרנו ממנו.
+  useEffect(() => {
+    if (roomCode && value.myMembership?.status === 'active') setLastRoom(roomCode);
+  }, [roomCode, value.myMembership?.status]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

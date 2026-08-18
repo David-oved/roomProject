@@ -4,7 +4,9 @@ import { AppLogo } from '../components/layout/AppLogo';
 import { useAuth } from '../store/AuthContext';
 import { useRtdbValue } from '../hooks/useRtdb';
 import { FullPageSpinner } from '../components/ui/Spinner';
+import { Badge } from '../components/ui/Badge';
 import { ChevronIcon } from '../components/ui/icons';
+import { getLastRoom } from '../lib/prefs';
 
 interface JoinRequestMirror {
   status: 'pending' | 'approved' | 'rejected';
@@ -19,14 +21,19 @@ export default function OnboardingPage() {
 
   if (loading) return <FullPageSpinner />;
 
-  // כבר חבר בחדר — נכנסים אליו
   const rooms = Object.keys(profile?.rooms ?? {});
-  if (rooms.length > 0) return <Navigate to={`/r/${rooms[0]}`} replace />;
 
-  // יש בקשה ממתינה — מציגים את מסך ההמתנה
+  // ── חדר אחד: נכנסים ישר, בלי מסך ביניים מיותר ──
+  if (rooms.length === 1) return <Navigate to={`/r/${rooms[0]}`} replace />;
+
+  // ── כמה חדרים: בוחרים. הקודם נזרק תמיד לראשון שרירותית. ──
+  if (rooms.length > 1) return <RoomPicker rooms={rooms} />;
+
+  // ── יש בקשה ממתינה ──
   const pending = Object.entries(requests.data ?? {}).find(([, r]) => r.status === 'pending');
   if (pending) return <Navigate to={`/rooms/${pending[0]}/pending`} replace />;
 
+  // ── אין כלום: יוצרים או מצטרפים ──
   return (
     <PlainShell>
       <div className="flex flex-1 flex-col justify-center py-6">
@@ -55,16 +62,92 @@ export default function OnboardingPage() {
           />
         </div>
 
-        <Link
-          to="/profile"
-          className="mt-8 block text-center text-sm text-ink-500 hover:underline"
-        >
+        <Link to="/profile" className="mt-8 block text-center text-sm text-ink-500 hover:underline">
           הגדרות חשבון
         </Link>
       </div>
     </PlainShell>
   );
 }
+
+/* ═══════════════ בוחר חדרים ═══════════════ */
+
+function RoomPicker({ rooms }: { rooms: string[] }) {
+  const last = getLastRoom();
+
+  // החדר האחרון שנצפה עולה לראש — כמעט תמיד זה מה שרוצים
+  const ordered = [...rooms].sort((a, b) => (a === last ? -1 : b === last ? 1 : 0));
+
+  return (
+    <PlainShell>
+      <div className="flex flex-1 flex-col justify-center py-6">
+        <AppLogo showVersion={false} />
+
+        <h1 className="mt-7 text-center text-xl font-bold text-ink-900">לאיזה חדר להיכנס?</h1>
+        <p className="mt-1 text-center text-sm text-ink-500">
+          אתם חברים ב־<span className="num">{rooms.length}</span> חדרים
+        </p>
+
+        <ul className="mt-6 space-y-2.5">
+          {ordered.map((code) => (
+            <li key={code}>
+              <RoomOption code={code} isLast={code === last} />
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-6 flex flex-col gap-2 text-center text-sm">
+          <Link to="/rooms/join" className="text-brand-700 hover:underline">
+            הצטרפות לחדר נוסף
+          </Link>
+          <Link to="/rooms/create" className="text-ink-500 hover:underline">
+            יצירת חדר חדש
+          </Link>
+        </div>
+      </div>
+    </PlainShell>
+  );
+}
+
+/**
+ * שם החדר נקרא מ-roomCodes — האינדקס הציבורי. לא מ-/rooms/{code}/metadata,
+ * כי טעינת המטא-דאטה של כל החדרים במקביל היא בזבוז, וכאן צריך רק שם.
+ */
+function RoomOption({ code, isLast }: { code: string; isLast: boolean }) {
+  const { data } = useRtdbValue<{ name: string }>(`roomCodes/${code}`);
+
+  return (
+    <Link
+      to={`/r/${code}`}
+      className="flex items-center gap-3 rounded-card border border-ink-200 bg-white p-4
+                 shadow-card transition active:scale-[.99] hover:border-brand-300"
+    >
+      <span
+        aria-hidden
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-xl"
+      >
+        🏠
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5">
+          <span className="truncate font-bold text-ink-900">{data?.name ?? '…'}</span>
+          {isLast && <Badge tone="brand">אחרון</Badge>}
+        </span>
+        <span
+          className="num mt-0.5 block font-mono text-xs tracking-wider text-ink-400"
+          style={{ direction: 'ltr' }}
+        >
+          {code}
+        </span>
+      </span>
+
+      <ChevronIcon width={20} height={20} className="shrink-0 text-ink-300" />
+    </Link>
+  );
+}
+
+/* ═══════════════ כרטיס בחירה ═══════════════ */
 
 function ChoiceCard({
   to,
@@ -83,8 +166,7 @@ function ChoiceCard({
     <Link
       to={to}
       className={[
-        'flex items-center gap-4 rounded-card border p-4 transition',
-        'active:scale-[.99]',
+        'flex items-center gap-4 rounded-card border p-4 transition active:scale-[.99]',
         primary
           ? 'border-brand-200 bg-white shadow-card hover:border-brand-300 hover:shadow-lifted'
           : 'border-ink-200 bg-white/70 hover:bg-white hover:shadow-card',

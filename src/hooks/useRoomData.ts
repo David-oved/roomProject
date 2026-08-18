@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useRtdbList } from './useRtdb';
 import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
-import { computeBalances } from '../lib/money';
+import { computeBalances, computeContributions } from '../lib/money';
 import type {
   AppNotification,
   Item,
@@ -93,6 +93,29 @@ export function useBalances() {
     activeMembers,
     loading: pLoading || sLoading,
   };
+}
+
+/**
+ * כמה כל אחד נשא בעלות. נדרש במיוחד כשמשתמשים ב"לקחתי על עצמי",
+ * כי אז המאזן תמיד אפס ואין שום דרך אחרת לראות מי באמת קונה.
+ */
+export function useContributions() {
+  const { members, activeMembers } = useRoom();
+  const { purchases, loading } = usePurchases();
+
+  const data = useMemo(
+    () => computeContributions(purchases, members.map((m) => m.id)),
+    [purchases, members]
+  );
+
+  /** הפער בין מי שנשא הכי הרבה למי שנשא הכי מעט, בין חברים פעילים */
+  const gap = useMemo(() => {
+    const values = activeMembers.map((m) => data.borne[m.id] ?? 0);
+    if (values.length < 2) return 0;
+    return Math.max(...values) - Math.min(...values);
+  }, [data.borne, activeMembers]);
+
+  return { ...data, gap, loading };
 }
 
 export function useNotifications() {

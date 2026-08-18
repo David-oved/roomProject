@@ -8,6 +8,7 @@ import { EmptyState, ErrorState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import { ReportItemSheet } from '../components/items/ReportItemSheet';
 import { MarkBoughtSheet } from '../components/items/MarkBoughtSheet';
+import { StaplesView } from '../components/catalog/StaplesView';
 import { useItems } from '../hooks/useRoomData';
 import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
@@ -25,10 +26,11 @@ import {
   type WithId,
 } from '../types/models';
 
-type Filter = 'open' | 'needed' | 'buying' | 'done';
+type Filter = 'open' | 'needed' | 'buying' | 'done' | 'staples';
 
 const FILTERS: { key: Filter; label: string }[] = [
   { key: 'open', label: 'פעילים' },
+  { key: 'staples', label: '🧺 מלאי הבית' },
   { key: 'needed', label: 'חסרים' },
   { key: 'buying', label: 'בקנייה' },
   { key: 'done', label: 'הושלמו' },
@@ -40,7 +42,11 @@ export default function ItemsPage() {
   const [reportOpen, setReportOpen] = useState(false);
   const [buyingItem, setBuyingItem] = useState<WithId<Item> | null>(null);
 
-  const { items, loading, error, fromCache, cachedAt } = useItems(filter as ItemStatus | 'open');
+  // 'staples' אינו סטטוס של פריט אלא תצוגה אחרת לגמרי
+  const isStaples = filter === 'staples';
+  const { items, loading, error, fromCache, cachedAt } = useItems(
+    isStaples ? 'open' : (filter as ItemStatus | 'open')
+  );
   const { isOnline } = useConnection();
 
   // הכפתור המרכזי בניווט מנווט לכאן עם ?new=1
@@ -55,7 +61,13 @@ export default function ItemsPage() {
     <AppShell>
       <TopBar
         title="מוצרים חסרים"
-        subtitle={items.length > 0 ? <><span className="num">{items.length}</span> פריטים</> : undefined}
+        subtitle={
+          !isStaples && items.length > 0 ? (
+            <>
+              <span className="num">{items.length}</span> פריטים
+            </>
+          ) : undefined
+        }
         actions={
           <Button
             size="sm"
@@ -94,7 +106,9 @@ export default function ItemsPage() {
           </p>
         )}
 
-        {loading ? (
+        {isStaples ? (
+          <StaplesView />
+        ) : loading ? (
           <ListSkeleton rows={4} />
         ) : error && !fromCache ? (
           <ErrorState message={error.message} onRetry={() => location.reload()} />

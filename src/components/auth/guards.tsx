@@ -21,13 +21,12 @@ export function RequireAuth() {
 
 /** דורש שהמשתמש *לא* מחובר (מסכי התחברות) */
 export function RequireGuest() {
-  const { user, profile, loading } = useAuth();
+  const { user, loading } = useAuth();
 
   if (loading) return <FullPageSpinner />;
-  if (user) {
-    const rooms = Object.keys(profile?.rooms ?? {});
-    return <Navigate to={rooms.length > 0 ? `/r/${rooms[0]}` : '/onboarding'} replace />;
-  }
+  // כל החלטות הניתוב אחרי התחברות מרוכזות ב-OnboardingPage: חדר אחד
+  // נכנס ישר, כמה חדרים מציגים בוחר, אין חדר מציעים ליצור או להצטרף.
+  if (user) return <Navigate to="/onboarding" replace />;
   return <Outlet />;
 }
 

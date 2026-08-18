@@ -131,6 +131,41 @@ export function computeBalances(
   return balances;
 }
 
+/**
+ * כמה כל אחד באמת נשא בעלות.
+ *
+ * זה המדד שהופך את "לקחתי על עצמי" למשהו הוגן ולא לחור שחור: כשאף
+ * אחד לא מחויב, המאזן תמיד אפס — ואז אין שום דרך לראות שאחד קונה כל
+ * שבוע והשני אף פעם. המספר הזה חושף בדיוק את זה.
+ *
+ *  borne   — כמה עלות נשא בפועל (סכום החלקים שלו). בקנייה "על עצמי"
+ *            זה הסכום המלא; בחלוקה שווה זה החלק שלו.
+ *  paidOut — כמה כסף הוציא מהכיס בפועל (סכום הקניות שביצע).
+ *
+ * בחדר מאוזן, borne דומה בין כולם. פער גדול הוא הסימן שמשהו לא הוגן.
+ */
+export function computeContributions(
+  purchases: Purchase[],
+  memberIds: string[]
+): { borne: Record<string, Agorot>; paidOut: Record<string, Agorot>; total: Agorot } {
+  const borne: Record<string, Agorot> = Object.fromEntries(memberIds.map((id) => [id, 0]));
+  const paidOut: Record<string, Agorot> = Object.fromEntries(memberIds.map((id) => [id, 0]));
+  let total = 0;
+
+  for (const p of purchases) {
+    if (p.status !== 'approved' && p.status !== 'settled') continue;
+
+    total += p.amount;
+    paidOut[p.boughtBy] = (paidOut[p.boughtBy] ?? 0) + p.amount;
+
+    for (const [uid, share] of Object.entries(p.shares ?? {})) {
+      borne[uid] = (borne[uid] ?? 0) + share;
+    }
+  }
+
+  return { borne, paidOut, total };
+}
+
 export interface Transfer {
   from: string;
   to: string;

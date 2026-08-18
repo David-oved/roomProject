@@ -85,6 +85,29 @@
       }
     },
 
+    // ---------- קטלוג מוצרים גלובלי ----------
+    // משותף לכל החדרים: מוצר שמישהו מוסיף זמין מיד לכולם.
+    // המחירים כאן הם ברירת מחדל בלבד — לכל חדר יש עקיפה משלו.
+    //
+    // כתיבה: יצירה בלבד, או עדכון ע"י מי שיצר. בלי זה, שינוי שם של
+    // מוצר פופולרי היה משפיע על כל החדרים במערכת בבת אחת.
+    "catalog": {
+      ".read": "auth != null",
+      "$productId": {
+        ".write": "auth != null && (!data.exists() || data.child('createdBy').val() === auth.uid)",
+        ".validate": "newData.hasChildren(['name', 'category', 'defaultPrice', 'createdBy'])",
+
+        "name":         { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 60" },
+        "nameLower":    { ".validate": "newData.isString() && newData.val().length <= 60" },
+        "category":     { ".validate": "newData.val().matches(/^(kitchen|bathroom|cleaning|other)$/)" },
+        "unit":         { ".validate": "newData.isString() && newData.val().length <= 20" },
+        "defaultPrice": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000 && newData.val() % 1 === 0" },
+        "createdBy":    { ".validate": "newData.val() === auth.uid || (data.exists() && newData.val() === data.val())" },
+        "createdAt":    { ".validate": "newData.isNumber()" },
+        "$other":       { ".validate": false }
+      }
+    },
+
     // ================= חדרים =================
     "rooms": {
       "$code": {
@@ -153,6 +176,28 @@
           }
         },
 
+        // ---------- מחירי הקטלוג של החדר ----------
+        // עקיפה מקומית בלבד. שינוי כאן לא נוגע בשום חדר אחר.
+        "catalogPrices": {
+          "$productId": {
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active'",
+            ".validate": "newData.hasChildren(['price'])",
+            "price":     { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000 && newData.val() % 1 === 0" },
+            "updatedAt": { ".validate": "newData.isNumber()" },
+            "updatedBy": { ".validate": "newData.val() === auth.uid" },
+            "$other":    { ".validate": false }
+          }
+        },
+
+        // ---------- מוצרי הבסיס של החדר ----------
+        // מה שתמיד צריך להיות בבית. כל חבר פעיל יכול לעדכן.
+        "staples": {
+          "$productId": {
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active'",
+            ".validate": "newData.isBoolean() && newData.val() === true"
+          }
+        },
+
         // ---------- מוצרים חסרים ----------
         "items": {
           ".indexOn": ["status", "category", "reportedAt", "priority"],
@@ -174,6 +219,7 @@
             "assignedTo": { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val() + '/status').val() === 'active'" },
             "notes":      { ".validate": "newData.isString() && newData.val().length <= 500" },
             "purchaseId": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "productId":  { ".validate": "newData.isString() && newData.val().length <= 40" },
             "$other":     { ".validate": false }
           }
         },
@@ -199,7 +245,7 @@
 
             "date":        { ".validate": "newData.isNumber()" },
             "createdAt":   { ".validate": "newData.isNumber() && (!data.exists() || data.val() === newData.val())" },
-            "splitMethod": { ".validate": "newData.val().matches(/^(equal|percentage|custom)$/)" },
+            "splitMethod": { ".validate": "newData.val().matches(/^(equal|percentage|custom|covered)$/)" },
 
             "splitBetween": {
               ".validate": "newData.hasChildren()",

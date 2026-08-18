@@ -10,6 +10,7 @@ import {
 import { ref, serverTimestamp, set, update } from 'firebase/database';
 import { auth, db } from '../config/firebase';
 import { clearAllCache } from '../lib/cache';
+import { clearPrefs } from '../lib/prefs';
 import { assertOnline } from './guard';
 
 const AUTH_MESSAGES: Record<string, string> = {
@@ -39,6 +40,19 @@ export function authErrorMessage(err: unknown): string {
   return AUTH_MESSAGES[code] ?? (err as Error)?.message ?? 'אירעה שגיאה. נסו שוב.';
 }
 
+/**
+ * ‼️ דגל תנאי-מרוץ.
+ *
+ * createUserWithEmailAndPassword מפעיל את onAuthStateChanged **מיד**,
+ * לפני שהספקנו לכתוב את הפרופיל ל-RTDB. AuthContext ראה פרופיל חסר,
+ * הפעיל את מנגנון הריפוי העצמי, וכתב displayName: 'משתמש' — שדרס את
+ * השם שהמשתמש הקליד בהרשמה.
+ *
+ * הדגל אומר ל-AuthContext "אל תתערב, ההרשמה כבר מטפלת בזה".
+ */
+let registrationInProgress = false;
+export const isRegistrationInProgress = () => registrationInProgress;
+
 export async function register(
   email: string,
   password: string,
@@ -46,20 +60,27 @@ export async function register(
 ): Promise<User> {
   assertOnline('להירשם');
 
-  const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
-  await updateProfile(cred.user, { displayName: displayName.trim() });
+  const name = displayName.trim();
+  registrationInProgress = true;
 
-  // ‼️ Authentication ו-Realtime Database הן שתי מערכות נפרדות.
-  // בלי הכתיבה הזו נוצר משתמש "יתום" שיכול להתחבר אבל אין לו פרופיל.
-  await set(ref(db, `users/${cred.user.uid}`), {
-    email: email.trim(),
-    displayName: displayName.trim(),
-    avatar: null,
-    createdAt: serverTimestamp(),
-    lastActiveAt: serverTimestamp(),
-  });
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+    await updateProfile(cred.user, { displayName: name });
 
-  return cred.user;
+    // Authentication ו-Realtime Database הן שתי מערכות נפרדות.
+    // בלי הכתיבה הזו נוצר משתמש "יתום" שיכול להתחבר אבל אין לו פרופיל.
+    await set(ref(db, `users/${cred.user.uid}`), {
+      email: email.trim(),
+      displayName: name,
+      avatar: null,
+      createdAt: serverTimestamp(),
+      lastActiveAt: serverTimestamp(),
+    });
+
+    return cred.user;
+  } finally {
+    registrationInProgress = false;
+  }
 }
 
 export async function login(email: string, password: string): Promise<User> {
@@ -71,6 +92,7 @@ export async function login(email: string, password: string): Promise<User> {
 
 export async function logout(): Promise<void> {
   await clearAllCache(); // 🔒 לפני ההתנתקות
+  clearPrefs();
   await signOut(auth);
 }
 

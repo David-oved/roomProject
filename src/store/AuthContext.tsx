@@ -5,10 +5,10 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { onValue, ref, serverTimestamp, set } from 'firebase/database';
+import { get, onValue, ref, serverTimestamp, set } from 'firebase/database';
 import type { User } from 'firebase/auth';
 import { db, isFirebaseConfigured } from '../config/firebase';
-import { subscribeToAuth } from '../services/authService';
+import { isRegistrationInProgress, subscribeToAuth } from '../services/authService';
 import type { UserProfile } from '../types/models';
 
 interface AuthState {
@@ -30,10 +30,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     let profileUnsub: (() => void) | undefined;
+    let healTimer: number | undefined;
 
     const authUnsub = subscribeToAuth((user) => {
       profileUnsub?.();
       profileUnsub = undefined;
+      window.clearTimeout(healTimer);
 
       if (!user) {
         setState({ user: null, profile: null, loading: false });
@@ -47,13 +49,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!snap.exists()) {
             // ריפוי עצמי של משתמש "יתום": קיים ב-Authentication אך לא ב-DB.
             // קורה כשההרשמה נקטעה באמצע. ראו docs/06-edge-cases.md מקרה 15.
-            void set(ref(db, `users/${user.uid}`), {
-              email: user.email ?? '',
-              displayName: user.displayName || 'משתמש',
-              avatar: null,
-              createdAt: serverTimestamp(),
-              lastActiveAt: serverTimestamp(),
-            });
+            //
+            // ‼️ שתי הגנות מפני דריסת השם שהמשתמש הקליד:
+            //  1. אם ההרשמה עדיין רצה — היא תכתוב את הפרופיל בעצמה.
+            //  2. גם אחרת, ממתינים רגע ובודקים שוב, כי הכתיבה עשויה
+            //     להיות באוויר. רק אם הפרופיל באמת חסר — יוצרים.
+            if (isRegistrationInProgress()) return;
+
+            healTimer = window.setTimeout(() => {
+              void get(ref(db, `users/${user.uid}`)).then((fresh) => {
+                if (fresh.exists() || isRegistrationInProgress()) return;
+                void set(ref(db, `users/${user.uid}`), {
+                  email: user.email ?? '',
+                  displayName: user.displayName || 'משתמש',
+                  avatar: null,
+                  createdAt: serverTimestamp(),
+                  lastActiveAt: serverTimestamp(),
+                });
+              });
+            }, 2500);
             return;
           }
           setState({ user, profile: snap.val() as UserProfile, loading: false });
@@ -63,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
+      window.clearTimeout(healTimer);
       profileUnsub?.();
       authUnsub();
     };

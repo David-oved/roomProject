@@ -21,6 +21,16 @@ export interface PurchaseDraft {
 /** מחשב את חלוקת החוב לפי שיטת החלוקה שנבחרה. */
 export function computeShares(draft: PurchaseDraft): Record<string, Agorot> {
   switch (draft.splitMethod) {
+    /**
+     * "לקחתי על עצמי" — כל הסכום נזקף לקונה.
+     *
+     * מבחינת המאזן זה מתקזז לאפס מעצמו: הקונה מזוכה על ההוצאה ומחויב
+     * על אותו סכום. לכן אין צורך בשום טיפול מיוחד ב-computeBalances —
+     * הקנייה פשוט לא מזיזה כלום, אבל כן נרשמת ונראית לכולם.
+     */
+    case 'covered':
+      return { [draft.splitBetween[0]]: draft.amount };
+
     case 'equal':
       return splitEqual(draft.amount, draft.splitBetween);
 
@@ -52,11 +62,13 @@ export async function createPurchase(
   if (!Number.isInteger(draft.amount) || draft.amount <= 0) {
     throw new Error('הסכום חייב להיות חיובי');
   }
-  if (draft.splitBetween.length === 0) {
+  // ב"לקחתי על עצמי" המשתתף היחיד הוא הקונה, תמיד
+  const participants = draft.splitMethod === 'covered' ? [userId] : draft.splitBetween;
+  if (participants.length === 0) {
     throw new Error('בחרו לפחות משתתף אחד');
   }
 
-  const shares = computeShares(draft);
+  const shares = computeShares({ ...draft, splitBetween: participants });
   const purchaseId = push(ref(db, `rooms/${code}/purchases`)).key!;
   const notifId = push(ref(db, `rooms/${code}/notifications`)).key!;
 
@@ -69,7 +81,7 @@ export async function createPurchase(
       date: serverTimestamp(),
       createdAt: serverTimestamp(),
       splitMethod: draft.splitMethod,
-      splitBetween: Object.fromEntries(draft.splitBetween.map((id) => [id, true])),
+      splitBetween: Object.fromEntries(participants.map((id) => [id, true])),
       shares,
       receipt: null,
       status: 'pending',
@@ -80,7 +92,10 @@ export async function createPurchase(
       type: 'purchase_made',
       actorId: userId,
       actorName: userName,
-      text: `${userName} קנה ${draft.title.trim()} ב-${formatILS(draft.amount)}`,
+      text:
+        draft.splitMethod === 'covered'
+          ? `${userName} קנה ${draft.title.trim()} ב-${formatILS(draft.amount)} — על חשבונו`
+          : `${userName} קנה ${draft.title.trim()} ב-${formatILS(draft.amount)}`,
       entityId: purchaseId,
       createdAt: serverTimestamp(),
       readBy: { [userId]: true },

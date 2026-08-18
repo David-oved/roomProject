@@ -8,6 +8,8 @@ export interface ItemDraft {
   category: Category;
   priority: Priority;
   notes?: string;
+  /** מזהה המוצר בקטלוג — כשהדיווח הגיע מרשימת מוצרי הבסיס */
+  productId?: string | null;
 }
 
 const itemsPath = (code: string) => `rooms/${code}/items`;
@@ -37,6 +39,7 @@ export async function reportItem(
       status: 'needed',
       assignedTo: null,
       purchaseId: null,
+      productId: draft.productId ?? null,
     },
     [`rooms/${code}/notifications/${notifId}`]: {
       type: 'item_added',

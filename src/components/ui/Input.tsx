@@ -1,4 +1,12 @@
-import { forwardRef, useId, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react';
+import {
+  forwardRef,
+  useId,
+  useState,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type TextareaHTMLAttributes,
+} from 'react';
+import { EyeIcon, EyeOffIcon } from './icons';
 
 interface FieldProps {
   label: string;
@@ -58,6 +66,66 @@ export const Input = forwardRef<
         <p id={`${fieldId}-hint`} className="text-xs text-ink-500">
           {hint}
         </p>
+      ) : null}
+    </div>
+  );
+});
+
+/**
+ * שדה סיסמה עם כפתור הצגה/הסתרה.
+ *
+ * במובייל זה לא נוחות בלבד: הקלדת סיסמה במקלדת נייד בלי לראות אותה היא
+ * מקור עיקרי לניסיונות התחברות כושלים, במיוחד כשמערבבים אותיות ומספרים.
+ */
+export const PasswordInput = forwardRef<
+  HTMLInputElement,
+  Omit<FieldProps, 'suffix'> & Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>
+>(function PasswordInput({ label, error, hint, className = '', id, ...rest }, ref) {
+  const autoId = useId();
+  const fieldId = id ?? autoId;
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor={fieldId} className="block text-sm font-medium text-ink-700">
+        {label}
+      </label>
+
+      <div className="relative">
+        <input
+          ref={ref}
+          id={fieldId}
+          type={visible ? 'text' : 'password'}
+          aria-invalid={!!error}
+          className={[
+            fieldBase,
+            'h-12 pe-12',
+            error
+              ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/30'
+              : 'border-ink-200',
+            className,
+          ].join(' ')}
+          {...rest}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((v) => !v)}
+          aria-label={visible ? 'הסתר סיסמה' : 'הצג סיסמה'}
+          aria-pressed={visible}
+          tabIndex={-1}
+          className="tap absolute inset-y-0 end-0 grid w-12 place-items-center
+                     rounded-e-xl text-ink-400 transition hover:text-ink-600"
+        >
+          {visible ? <EyeOffIcon width={19} height={19} /> : <EyeIcon width={19} height={19} />}
+        </button>
+      </div>
+
+      {error ? (
+        <p role="alert" className="text-sm text-rose-600">
+          {error}
+        </p>
+      ) : hint ? (
+        <p className="text-xs text-ink-500">{hint}</p>
       ) : null}
     </div>
   );

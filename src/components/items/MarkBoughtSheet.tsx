@@ -10,13 +10,47 @@ import { useToast } from '../../store/ToastContext';
 import { createPurchase } from '../../services/purchaseService';
 import { defaultPercentages, splitEqual, splitPercentage } from '../../lib/money';
 import { formatILS, toAgorot } from '../../lib/format';
-import type { Agorot, SplitMethod, WithId, Item } from '../../types/models';
+import { SPLIT_METHOD_LABELS, type Agorot, type SplitMethod, type WithId, type Item } from '../../types/models';
 
-const METHOD_LABELS: Record<SplitMethod, string> = {
-  equal: 'שווה בשווה',
-  percentage: 'לפי אחוזים',
-  custom: 'סכום ידני',
-};
+const SPLIT_MODES: SplitMethod[] = ['equal', 'percentage', 'custom'];
+
+function ModeCard({
+  active,
+  onClick,
+  emoji,
+  title,
+  body,
+}: {
+  active: boolean;
+  onClick: () => void;
+  emoji: string;
+  title: string;
+  body: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={[
+        'rounded-xl border p-3 text-start transition active:scale-[.98]',
+        active
+          ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-500/30'
+          : 'border-ink-200 bg-white',
+      ].join(' ')}
+    >
+      <span aria-hidden className="block text-xl">
+        {emoji}
+      </span>
+      <span
+        className={`mt-1 block text-sm font-bold ${active ? 'text-brand-900' : 'text-ink-700'}`}
+      >
+        {title}
+      </span>
+      <span className="mt-0.5 block text-[11px] leading-snug text-ink-500">{body}</span>
+    </button>
+  );
+}
 
 export function MarkBoughtSheet({
   open,
@@ -32,7 +66,7 @@ export function MarkBoughtSheet({
   const toast = useToast();
 
   const [amountText, setAmountText] = useState('');
-  const [method, setMethod] = useState<SplitMethod>('equal');
+  const [method, setMethod] = useState<SplitMethod>('covered');
   const [participants, setParticipants] = useState<string[]>([]);
   const [percentages, setPercentages] = useState<Record<string, string>>({});
   const [customText, setCustomText] = useState<Record<string, string>>({});
@@ -50,7 +84,7 @@ export function MarkBoughtSheet({
     );
     setCustomText({});
     setAmountText('');
-    setMethod('equal');
+    setMethod('covered');
   }, [open, activeMembers]);
 
   const amount: Agorot = useMemo(() => {
@@ -99,9 +133,10 @@ export function MarkBoughtSheet({
     } catch (err) {
       return { shares: {}, splitError: (err as Error).message };
     }
-  }, [amount, method, participants, percentages, customText]);
+  }, [amount, method, participants, percentages, customText, user]);
 
-  const canSubmit = amount > 0 && participants.length > 0 && !splitError && !busy;
+  const canSubmit =
+    amount > 0 && !splitError && !busy && (method === 'covered' || participants.length > 0);
 
   async function submit() {
     if (!user || !profile || !roomCode) return;
@@ -134,7 +169,9 @@ export function MarkBoughtSheet({
       title={item ? `קניתי: ${item.name}` : 'רישום קנייה'}
       footer={
         <Button size="lg" fullWidth loading={busy} disabled={!canSubmit} onClick={submit}>
-          {amount > 0 ? `שמור קנייה · ${formatILS(amount)}` : 'שמור קנייה'}
+          {amount > 0
+            ? `${method === 'covered' ? 'רשום על חשבוני' : 'שמור קנייה'} · ${formatILS(amount)}`
+            : 'שמור קנייה'}
         </Button>
       }
     >
@@ -153,10 +190,39 @@ export function MarkBoughtSheet({
           required
         />
 
+        {/* ── שתי דרכים לרשום קנייה ── */}
         <fieldset>
-          <legend className="mb-2 block text-sm font-medium text-ink-700">איך לחלק?</legend>
+          <legend className="mb-2 block text-sm font-medium text-ink-700">איך לרשום?</legend>
+          <div className="grid grid-cols-2 gap-2">
+            <ModeCard
+              active={method === 'covered'}
+              onClick={() => setMethod('covered')}
+              emoji="🙋"
+              title="לקחתי על עצמי"
+              body="אף אחד לא מחויב. כולם רואים שקנית."
+            />
+            <ModeCard
+              active={method !== 'covered'}
+              onClick={() => setMethod((m) => (m === 'covered' ? 'equal' : m))}
+              emoji="👥"
+              title="לחלק בין השותפים"
+              body="כל אחד חייב את חלקו."
+            />
+          </div>
+        </fieldset>
+
+        {method === 'covered' && (
+          <p className="rounded-xl bg-emerald-50 px-3.5 py-3 text-sm leading-relaxed text-emerald-900">
+            💚 הקנייה תירשם על שמך ותופיע לכולם, אבל <b>המאזנים לא ישתנו</b>. ככה
+            מתגלגלים בלי התחשבנות על כל דבר קטן.
+          </p>
+        )}
+
+        {method !== 'covered' && (
+        <fieldset>
+          <legend className="mb-2 block text-sm font-medium text-ink-700">שיטת החלוקה</legend>
           <div className="grid grid-cols-3 gap-2">
-            {(Object.keys(METHOD_LABELS) as SplitMethod[]).map((m) => (
+            {SPLIT_MODES.map((m) => (
               <button
                 key={m}
                 type="button"
@@ -169,12 +235,14 @@ export function MarkBoughtSheet({
                     : 'border-ink-200 bg-white text-ink-500',
                 ].join(' ')}
               >
-                {METHOD_LABELS[m]}
+                {SPLIT_METHOD_LABELS[m]}
               </button>
             ))}
           </div>
         </fieldset>
+        )}
 
+        {method !== 'covered' && (
         <fieldset>
           <legend className="mb-2 block text-sm font-medium text-ink-700">
             בין מי לחלק? (<span className="num">{participants.length}</span>)
@@ -256,9 +324,10 @@ export function MarkBoughtSheet({
             })}
           </ul>
         </fieldset>
+        )}
 
         {/* סיכום חי — זה מה שמונע חלוקה שלא מסתכמת */}
-        {amount > 0 && (
+        {amount > 0 && method !== 'covered' && (
           <div
             className={[
               'rounded-xl px-3.5 py-3 text-sm',
@@ -284,7 +353,9 @@ export function MarkBoughtSheet({
         )}
 
         <p className="rounded-xl bg-ink-100/70 px-3.5 py-2.5 text-xs leading-relaxed text-ink-600">
-          הקנייה תישלח לאישור מנהל החדר. המאזנים יתעדכנו רק לאחר האישור.
+          {method === 'covered'
+            ? 'הקנייה תישלח לאישור מנהל החדר ותופיע בסיכום התרומות.'
+            : 'הקנייה תישלח לאישור מנהל החדר. המאזנים יתעדכנו רק לאחר האישור.'}
         </p>
       </div>
     </Sheet>

@@ -6,7 +6,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
-import { useBalances, usePurchases } from '../hooks/useRoomData';
+import { useBalances, useContributions, usePurchases } from '../hooks/useRoomData';
 import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
 import { useConnection } from '../store/ConnectionContext';
@@ -216,7 +216,77 @@ function SummaryTab({
           ↑ מגיע לו · ↓ הוא חייב
         </p>
       </section>
+
+      <ContributionsSection />
     </div>
+  );
+}
+
+/* ═══════════════ מי נשא בכמה ═══════════════ */
+
+/**
+ * הסעיף הזה קיים בגלל "לקחתי על עצמי": כשאף אחד לא מחויב, המאזן תמיד
+ * אפס — ואז אי אפשר לראות שאחד קונה כל שבוע והשני אף פעם. כאן זה גלוי.
+ */
+function ContributionsSection() {
+  const { borne, total, gap } = useContributions();
+  const { activeMembers, memberName } = useRoom();
+  const { user } = useAuth();
+
+  if (total === 0) return null;
+
+  const max = Math.max(...activeMembers.map((m) => borne[m.id] ?? 0), 1);
+  const average = total / Math.max(activeMembers.length, 1);
+
+  return (
+    <section>
+      <h2 className="mb-2 px-1 text-sm font-bold text-ink-700">מי נשא בכמה</h2>
+
+      <div className="card p-4">
+        <ul className="space-y-3">
+          {[...activeMembers]
+            .sort((a, b) => (borne[b.id] ?? 0) - (borne[a.id] ?? 0))
+            .map((m) => {
+              const value = borne[m.id] ?? 0;
+              const isMe = m.id === user?.uid;
+              return (
+                <li key={m.id}>
+                  <div className="flex items-baseline justify-between text-sm">
+                    <span className={isMe ? 'font-bold text-ink-900' : 'text-ink-700'}>
+                      {memberName(m.id)}
+                      {isMe && <span className="text-xs font-normal text-ink-400"> (אתה)</span>}
+                    </span>
+                    <span className="num font-semibold text-ink-900">{formatILS(value)}</span>
+                  </div>
+                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-ink-100">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        value >= average ? 'bg-brand-600' : 'bg-amber-400'
+                      }`}
+                      style={{ width: `${Math.round((value / max) * 100)}%` }}
+                    />
+                  </div>
+                </li>
+              );
+            })}
+        </ul>
+
+        <div className="mt-4 flex items-center justify-between border-t border-ink-100 pt-3 text-xs">
+          <span className="text-ink-500">
+            סה"כ הוצאות החדר <span className="num font-semibold text-ink-800">{formatILS(total)}</span>
+          </span>
+          <span
+            className={`num font-semibold ${gap > average * 0.5 ? 'text-amber-700' : 'text-emerald-700'}`}
+          >
+            {gap === 0 ? 'מאוזן לגמרי' : `פער ${formatILS(gap)}`}
+          </span>
+        </div>
+      </div>
+
+      <p className="mt-2 px-1 text-xs leading-relaxed text-ink-400">
+        כולל קניות שנרשמו כ"לקחתי על עצמי" — הן לא יוצרות חוב, אבל כן נספרות כאן.
+      </p>
+    </section>
   );
 }
 
@@ -243,7 +313,10 @@ function PendingTab({ isAdmin }: { isAdmin: boolean }) {
           <div className="flex items-start gap-3">
             <Avatar name={memberName(p.boughtBy)} uid={p.boughtBy} size="sm" />
             <div className="min-w-0 flex-1">
-              <h3 className="truncate font-bold text-ink-900">{p.title}</h3>
+              <h3 className="flex items-center gap-1.5 truncate font-bold text-ink-900">
+                {p.title}
+                {p.splitMethod === 'covered' && <Badge tone="success">על חשבונו</Badge>}
+              </h3>
               <p className="text-xs text-ink-500">
                 {memberName(p.boughtBy)} · {p.createdAt ? formatSmartDate(p.createdAt) : ''}
               </p>
@@ -349,7 +422,9 @@ function HistoryTab({
             </div>
             <div className="shrink-0 text-end">
               <p className="num text-sm font-bold text-ink-900">{formatILS(p.amount)}</p>
-              <p className="text-[11px] text-ink-400">{PURCHASE_STATUS_LABELS[p.status]}</p>
+              <p className="text-[11px] text-ink-400">
+                {p.splitMethod === 'covered' ? '🙋 על חשבונו' : PURCHASE_STATUS_LABELS[p.status]}
+              </p>
             </div>
           </li>
         ))}
