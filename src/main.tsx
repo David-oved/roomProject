@@ -35,4 +35,19 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
   });
 }
 
+/**
+ * ניווט מלחיצה על התראה.
+ *
+ * כשהאפליקציה כבר פתוחה, ה-Service Worker מביא אותה לחזית ושולח לכאן
+ * את היעד במקום לפתוח חלון נוסף. HashRouter ולכן מספיק לעדכן את ה-hash.
+ */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    const data = event.data as { type?: string; url?: string } | undefined;
+    if (data?.type === 'NAVIGATE' && data.url) {
+      window.location.hash = data.url;
+    }
+  });
+}
+
 console.info(`🏠 RoomMate v${APP_VERSION}`);

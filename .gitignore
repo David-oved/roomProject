@@ -33,3 +33,6 @@ yarn-error.log*
 
 # TypeScript build info
 tsconfig.tsbuildinfo
+
+# מפתחות VAPID — 🚫 לא נכנס ל-git
+.vapid.json

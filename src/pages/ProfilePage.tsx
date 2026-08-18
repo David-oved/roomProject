@@ -12,6 +12,7 @@ import { useToast } from '../store/ToastContext';
 import { useConfirm } from '../store/ConfirmContext';
 import { useUpdate } from '../store/UpdateContext';
 import { changeDisplayName, logout } from '../services/authService';
+import { NotificationSettings } from '../components/system/NotificationSettings';
 import { APP_VERSION, BUILD_TIME } from '../lib/version';
 import { formatSmartDate } from '../lib/format';
 
@@ -70,6 +71,9 @@ export default function ProfilePage() {
               שמירה
             </Button>
           </section>
+
+          {/* התראות */}
+          <NotificationSettings />
 
           {/* גרסה ועדכונים */}
           <section className="card p-4">

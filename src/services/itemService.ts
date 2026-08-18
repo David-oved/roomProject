@@ -1,6 +1,7 @@
 import { push, ref, remove, runTransaction, serverTimestamp, update } from 'firebase/database';
 import { db } from '../config/firebase';
 import { assertOnline } from './guard';
+import { enqueueNotification } from './outboxService';
 import type { Category, Item, Priority } from '../types/models';
 
 export interface ItemDraft {
@@ -50,6 +51,18 @@ export async function reportItem(
       createdAt: serverTimestamp(),
       readBy: { [userId]: true },
     },
+  });
+
+  void enqueueNotification({
+    roomCode: code,
+    title: draft.priority === 'high' ? `דחוף: ${name}` : 'מוצר חסר בחדר',
+    body: `${userName} דיווח שחסר ${name}`,
+    url: `/r/${code}/items`,
+    tag: 'items',
+    // רק עדיפות דחופה שווה הפרעה מיידית. השאר נאסף לתקציר.
+    priority: draft.priority === 'high' ? 'now' : 'digest',
+    audience: 'room',
+    actorUid: userId,
   });
 
   return itemId;

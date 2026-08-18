@@ -1,6 +1,7 @@
-import { push, ref, runTransaction, serverTimestamp, update } from 'firebase/database';
+import { get, push, ref, runTransaction, serverTimestamp, update } from 'firebase/database';
 import { db } from '../config/firebase';
 import { assertOnline } from './guard';
+import { enqueueNotification } from './outboxService';
 import { splitEqual, splitPercentage, splitWithDebtOffset } from '../lib/money';
 import { formatILS } from '../lib/format';
 import type { Agorot, Purchase, SplitMethod } from '../types/models';
@@ -175,6 +176,19 @@ export async function approvePurchase(
   }
 
   await update(ref(db), updates);
+
+  // הקונה ממתין לתשובה — זו הפרעה שהוא רוצה לקבל
+  void enqueueNotification({
+    roomCode: code,
+    title: 'הקנייה שלך אושרה ✅',
+    body: `${purchase.title} — ${formatILS(purchase.amount)}`,
+    url: `/r/${code}/balances`,
+    tag: `purchase-${purchaseId}`,
+    priority: 'now',
+    audience: 'user',
+    targetUid: purchase.boughtBy,
+    actorUid: adminId,
+  });
 }
 
 export async function rejectPurchase(
@@ -187,6 +201,8 @@ export async function rejectPurchase(
   assertOnline('לדחות קנייה');
 
   const notifId = push(ref(db, `rooms/${code}/notifications`)).key!;
+
+  const buyerSnap = await get(ref(db, `rooms/${code}/purchases/${purchaseId}/boughtBy`));
 
   await update(ref(db), {
     [`rooms/${code}/purchases/${purchaseId}/status`]: 'rejected',
@@ -201,6 +217,20 @@ export async function rejectPurchase(
       readBy: { [adminId]: true },
     },
   });
+
+  if (buyerSnap.exists()) {
+    void enqueueNotification({
+      roomCode: code,
+      title: 'הקנייה שלך נדחתה',
+      body: reason?.trim() || 'פנו למנהל החדר לפרטים',
+      url: `/r/${code}/balances`,
+      tag: `purchase-${purchaseId}`,
+      priority: 'now',
+      audience: 'user',
+      targetUid: String(buyerSnap.val()),
+      actorUid: adminId,
+    });
+  }
 }
 
 /** רישום תשלום שסוגר חוב בין שני חברים. */

@@ -3,6 +3,7 @@ import { db } from '../config/firebase';
 import { generateRoomCode, slugifyRoomName } from '../lib/roomCode';
 import { assertOnline } from './guard';
 import { staplesMap } from './catalogService';
+import { enqueueNotification } from './outboxService';
 import type { Category, JoinRequest, UserProfile } from '../types/models';
 
 export class RoomNameTakenError extends Error {
@@ -207,6 +208,19 @@ export async function approveJoinRequest(
       createdAt: serverTimestamp(),
       readBy: { [adminId]: true },
     },
+  });
+
+  // המצטרף ממתין לאישור הזה — זו ההתראה החשובה ביותר באפליקציה
+  void enqueueNotification({
+    roomCode: code,
+    title: 'הבקשה שלך אושרה 🎉',
+    body: 'ברוכים הבאים לחדר',
+    url: `/r/${code}`,
+    tag: `join-${code}`,
+    priority: 'now',
+    audience: 'user',
+    targetUid: request.userId,
+    actorUid: adminId,
   });
 }
 

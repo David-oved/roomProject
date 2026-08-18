@@ -7,6 +7,8 @@ declare const __APP_VERSION__: string;
 declare const __BUILD_TIME__: string;
 /** מזהה בנייה ייחודי (git SHA) — מזהה פריסה גם בלי שינוי מספר גרסה. */
 declare const __BUILD_ID__: string;
+/** המפתח הציבורי של VAPID — אינו סוד. */
+declare const __VAPID_PUBLIC_KEY__: string;
 
 interface ImportMetaEnv {
   readonly VITE_FB_API_KEY?: string;

@@ -38,6 +38,14 @@ function resolveBuildId(): string {
 
 const buildId = resolveBuildId();
 
+/**
+ * המפתח הציבורי של VAPID. אינו סוד — הוא נשלח לשירות הפוש של הדפדפן
+ * ונועד להיות גלוי בקוד. הפרטי יושב ב-GitHub Secrets בלבד.
+ */
+const VAPID_PUBLIC_KEY =
+  process.env.VITE_VAPID_PUBLIC_KEY ??
+  'BH5y7BmvAbHTN78e9HG4KxxGNuK7B9FXpmIujAxDSg8ZnV84UmGop4Gfn5AoNh9RxnYll3-x0eTFisvGkRmUxHo';
+
 export default defineConfig({
   // נתיבים יחסיים — עובד בכל תת-תיקייה של GitHub Pages
   // (https://david-oved.github.io/roomProject/) בלי לקודד את שם ה-repo.
@@ -47,12 +55,18 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(versionInfo.version),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
     __BUILD_ID__: JSON.stringify(buildId),
+    __VAPID_PUBLIC_KEY__: JSON.stringify(VAPID_PUBLIC_KEY),
   },
 
   plugins: [
     react(),
 
     VitePWA({
+      // injectManifest ולא generateSW: אנחנו כותבים את ה-SW בעצמנו
+      // כדי שיטפל גם בהתראות פוש. ראו src/sw.ts
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       registerType: 'prompt',
       injectRegister: 'auto',
       includeAssets: ['favicon.svg', 'icons/apple-touch-icon-180.png'],
