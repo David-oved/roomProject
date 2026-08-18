@@ -91,10 +91,19 @@ export async function createPurchase(
   const purchaseId = push(ref(db, `rooms/${code}/purchases`)).key!;
   const notifId = push(ref(db, `rooms/${code}/notifications`)).key!;
 
+  const title = draft.title.trim();
+
   const updates: Record<string, unknown> = {
+    /**
+     * ‼️ קניות לא דורשות אישור מנהל.
+     *
+     * הן נכנסות ישר כ-'approved', והקונה הוא "המאשר" של עצמו. מנגנון
+     * האישור (approvePurchase/rejectPurchase, טאב "ממתינות") נשאר בקוד
+     * ובחוקי האבטחה בכוונה — יופעל מחדש כאפשרות הגדרה למנהל, לא נמחק.
+     */
     [`rooms/${code}/purchases/${purchaseId}`]: {
       itemId: draft.itemId,
-      title: draft.title.trim(),
+      title,
       boughtBy: userId,
       amount: draft.amount,
       date: serverTimestamp(),
@@ -103,8 +112,8 @@ export async function createPurchase(
       splitBetween: Object.fromEntries(participants.map((id) => [id, true])),
       shares,
       receipt: null,
-      status: 'pending',
-      approvedBy: null,
+      status: 'approved',
+      approvedBy: userId,
       ...(draft.note ? { note: draft.note.trim() } : {}),
     },
     [`rooms/${code}/notifications/${notifId}`]: {
@@ -113,23 +122,35 @@ export async function createPurchase(
       actorName: userName,
       text:
         draft.splitMethod === 'covered'
-          ? `${userName} קנה ${draft.title.trim()} ב-${formatILS(draft.amount)} — על חשבונו`
+          ? `${userName} קנה ${title} ב-${formatILS(draft.amount)} — על חשבונו`
           : draft.splitMethod === 'offset'
-            ? `${userName} קנה ${draft.title.trim()} ב-${formatILS(draft.amount)} — בקיזוז מהחוב`
-            : `${userName} קנה ${draft.title.trim()} ב-${formatILS(draft.amount)}`,
+            ? `${userName} קנה ${title} ב-${formatILS(draft.amount)} — בקיזוז מהחוב`
+            : `${userName} קנה ${title} ב-${formatILS(draft.amount)}`,
       entityId: purchaseId,
       createdAt: serverTimestamp(),
       readBy: { [userId]: true },
     },
   };
 
-  // אם הקנייה קשורה למוצר — מקדמים גם אותו, באותה פעולה אטומית
+  // אם הקנייה קשורה למוצר — מסתיים ישר, אין שלב ביניים של "ממתין לאישור"
   if (draft.itemId) {
-    updates[`rooms/${code}/items/${draft.itemId}/status`] = 'bought';
+    updates[`rooms/${code}/items/${draft.itemId}/status`] = 'done';
     updates[`rooms/${code}/items/${draft.itemId}/purchaseId`] = purchaseId;
   }
 
   await update(ref(db), updates);
+
+  void enqueueNotification({
+    roomCode: code,
+    title: 'קנייה חדשה בחדר',
+    body: `${userName} קנה ${title} ב-${formatILS(draft.amount)}`,
+    url: `/r/${code}/balances`,
+    tag: 'purchases',
+    priority: 'digest',
+    audience: 'room',
+    actorUid: userId,
+  });
+
   return purchaseId;
 }
 

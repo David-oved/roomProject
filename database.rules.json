@@ -301,11 +301,13 @@
         "purchases": {
           ".indexOn": ["status", "createdAt", "boughtBy"],
           "$purchaseId": {
-            // יצירה : חבר פעיל, boughtBy = הוא עצמו, status = pending בלבד.
+            // יצירה : חבר פעיל, boughtBy = הוא עצמו. status = pending (ימתין
+            //         לאישור מנהל, נתיב עתידי) או approved עם approvedBy = הוא
+            //         עצמו (אישור-עצמי — ברירת המחדל הנוכחית, ללא אישור מנהל).
             // עדכון : המנהל משנה סטטוס — אך amount ו-boughtBy קפואים לנצח.
             //         הקונה עורך רק כל עוד pending/rejected, ומחזיר ל-pending.
             // מחיקה : רק כשעדיין pending.
-            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && newData.child('boughtBy').val() === auth.uid && newData.child('status').val() === 'pending') || (data.exists() && newData.exists() && ((root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid && newData.child('amount').val() === data.child('amount').val() && newData.child('boughtBy').val() === data.child('boughtBy').val()) || (data.child('boughtBy').val() === auth.uid && (data.child('status').val() === 'pending' || data.child('status').val() === 'rejected') && newData.child('status').val() === 'pending'))) || (data.exists() && !newData.exists() && data.child('status').val() === 'pending' && (data.child('boughtBy').val() === auth.uid || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid)))",
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && newData.child('boughtBy').val() === auth.uid && (newData.child('status').val() === 'pending' || (newData.child('status').val() === 'approved' && newData.child('approvedBy').val() === auth.uid))) || (data.exists() && newData.exists() && ((root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid && newData.child('amount').val() === data.child('amount').val() && newData.child('boughtBy').val() === data.child('boughtBy').val()) || (data.child('boughtBy').val() === auth.uid && (data.child('status').val() === 'pending' || data.child('status').val() === 'rejected') && newData.child('status').val() === 'pending'))) || (data.exists() && !newData.exists() && data.child('status').val() === 'pending' && (data.child('boughtBy').val() === auth.uid || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid)))",
 
             ".validate": "newData.hasChildren(['boughtBy', 'amount', 'date', 'splitMethod', 'status', 'splitBetween', 'shares'])",
             "itemId":   { ".validate": "newData.isString() && newData.val().length <= 40" },
@@ -331,7 +333,7 @@
 
             "receipt":    { ".validate": "newData.isString() && newData.val().matches(/^https:\\/\\/.+/)" },
             "status":     { ".validate": "newData.val().matches(/^(pending|approved|rejected|settled)$/)" },
-            "approvedBy": { ".validate": "root.child('rooms/' + $code + '/metadata/adminId').val() === newData.val()" },
+            "approvedBy": { ".validate": "newData.val() === auth.uid || root.child('rooms/' + $code + '/metadata/adminId').val() === newData.val()" },
             "note":       { ".validate": "newData.isString() && newData.val().length <= 300" },
             "$other":     { ".validate": false }
           }

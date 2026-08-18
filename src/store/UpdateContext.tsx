@@ -81,6 +81,11 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     setStatus((s) => (s === 'available' ? s : 'checking'));
 
     try {
+      // מפעילים גם בדיקת עדכון ל-Service Worker עצמו, לא רק ל-version.json.
+      // בלי זה SW חדש שהדפדפן כבר הוריד יכול לשבת "ממתין" בלי סיבה נראית
+      // לעין — במיוחד בטאב דפדפן רגיל שלא עובר רענון מלא הרבה זמן.
+      void navigator.serviceWorker?.getRegistration().then((r) => r?.update()).catch(() => undefined);
+
       const manifest = await fetchRemoteVersion(controller.signal);
       setRemote(manifest);
       setLastCheckedAt(Date.now());
