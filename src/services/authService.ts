@@ -13,7 +13,7 @@ import { clearAllCache } from '../lib/cache';
 import { assertOnline } from './guard';
 
 const AUTH_MESSAGES: Record<string, string> = {
-  'auth/email-already-in-use': 'כתובת האימייל כבר רשומה במערכת',
+  'auth/email-already-in-use': 'כתובת האימייל הזו כבר רשומה במערכת.',
   'auth/invalid-email': 'כתובת אימייל לא תקינה',
   'auth/weak-password': 'הסיסמה חייבת להכיל לפחות 6 תווים',
   'auth/missing-password': 'חובה להזין סיסמה',
@@ -23,11 +23,19 @@ const AUTH_MESSAGES: Record<string, string> = {
   'auth/invalid-credential': 'האימייל או הסיסמה שגויים',
   'auth/too-many-requests': 'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות',
   'auth/network-request-failed': 'אין חיבור לאינטרנט',
-  'auth/operation-not-allowed': 'התחברות עם אימייל וסיסמה אינה מופעלת בפרויקט',
+  'auth/operation-not-allowed': 'ההרשמה אינה זמינה כרגע. נסו שוב מאוחר יותר.',
 };
 
+export function authErrorCode(err: unknown): string {
+  return (err as { code?: string })?.code ?? '';
+}
+
 export function authErrorMessage(err: unknown): string {
-  const code = (err as { code?: string })?.code ?? '';
+  const code = authErrorCode(err);
+  // תקלת תצורה — למשתמש אין מה לעשות עם הפרטים, למפתח כן
+  if (code === 'auth/operation-not-allowed' && import.meta.env.DEV) {
+    console.error('⚠️ ספק Email/Password כבוי ב-Firebase Console');
+  }
   return AUTH_MESSAGES[code] ?? (err as Error)?.message ?? 'אירעה שגיאה. נסו שוב.';
 }
 

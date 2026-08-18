@@ -46,6 +46,23 @@
     font-size: 16px;
   }
 
+  /*
+   * השלמה אוטומטית (autofill) דורסת את רקע השדה בצהוב עז ב-Safari
+   * וב-Chrome, ושוברת את העיצוב. אין דרך לבטל את הרקע ישירות — הפתרון
+   * המקובל הוא צל פנימי עבה שמכסה אותו.
+   */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+    box-shadow: 0 0 0 1000px #fff inset !important;
+    -webkit-text-fill-color: theme('colors.ink.900') !important;
+    caret-color: theme('colors.ink.900');
+    transition: background-color 9999s ease-in-out 0s;
+  }
+
   /* מספרים וסכומים תמיד LTR, גם בתוך משפט עברי */
   .num {
     direction: ltr;

@@ -4,7 +4,7 @@ import { PlainShell } from '../components/layout/AppShell';
 import { AppLogo } from '../components/layout/AppLogo';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { authErrorMessage, register } from '../services/authService';
+import { authErrorCode, authErrorMessage, register } from '../services/authService';
 import { useConnection } from '../store/ConnectionContext';
 
 export default function RegisterPage() {
@@ -16,6 +16,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState('');
   const [busy, setBusy] = useState(false);
 
   const nameError = name.length > 0 && name.trim().length < 2 ? 'השם קצר מדי' : undefined;
@@ -34,12 +35,14 @@ export default function RegisterPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
+    setErrorCode('');
     setBusy(true);
     try {
       await register(email, password, name);
       navigate('/onboarding', { replace: true });
     } catch (err) {
       setError(authErrorMessage(err));
+      setErrorCode(authErrorCode(err));
     } finally {
       setBusy(false);
     }
@@ -101,9 +104,35 @@ export default function RegisterPage() {
           />
 
           {error && (
-            <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-700">
-              {error}
-            </p>
+            <div role="alert" className="rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-700">
+              <p>{error}</p>
+
+              {/*
+                אימייל תפוס הוא מבוי סתום אם לא מציעים המשך: המשתמש לא
+                יודע אם יש לו חשבון, אם שכח סיסמה, או שהאימייל שייך
+                לחשבון שנוצר בדרך אחרת. שני הכפתורים פותרים את שלושת
+                המקרים בלי שהוא צריך להבין מה מהם קרה.
+              */}
+              {errorCode === 'auth/email-already-in-use' && (
+                <div className="mt-2.5 flex flex-wrap gap-2">
+                  <Link
+                    to="/login"
+                    className="tap inline-flex items-center rounded-lg bg-rose-600 px-3
+                               text-xs font-semibold text-white transition hover:bg-rose-700"
+                  >
+                    מעבר להתחברות
+                  </Link>
+                  <Link
+                    to="/forgot-password"
+                    className="tap inline-flex items-center rounded-lg border border-rose-300
+                               bg-white px-3 text-xs font-semibold text-rose-700
+                               transition hover:bg-rose-50"
+                  >
+                    הגדרת סיסמה חדשה
+                  </Link>
+                </div>
+              )}
+            </div>
           )}
 
           <Button type="submit" size="lg" fullWidth loading={busy} disabled={!canSubmit}>
