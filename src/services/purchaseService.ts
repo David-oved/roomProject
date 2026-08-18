@@ -1,7 +1,7 @@
 import { push, ref, runTransaction, serverTimestamp, update } from 'firebase/database';
 import { db } from '../config/firebase';
 import { assertOnline } from './guard';
-import { splitEqual, splitPercentage } from '../lib/money';
+import { splitEqual, splitPercentage, splitWithDebtOffset } from '../lib/money';
 import { formatILS } from '../lib/format';
 import type { Agorot, Purchase, SplitMethod } from '../types/models';
 
@@ -15,6 +15,10 @@ export interface PurchaseDraft {
   percentages?: Record<string, number>;
   /** נדרש ל-custom */
   customShares?: Record<string, Agorot>;
+  /** נדרש ל-offset: כמה הקונה חייב כרגע, כמספר חיובי */
+  buyerDebt?: Agorot;
+  /** נדרש ל-offset: מזהה הקונה */
+  buyerId?: string;
   note?: string;
 }
 
@@ -30,6 +34,20 @@ export function computeShares(draft: PurchaseDraft): Record<string, Agorot> {
      */
     case 'covered':
       return { [draft.splitBetween[0]]: draft.amount };
+
+    /**
+     * קיזוז מהחוב — הזיכוי לקונה חסום בגובה החוב שלו.
+     * ראו splitWithDebtOffset ב-lib/money.ts.
+     */
+    case 'offset': {
+      const buyerId = draft.buyerId ?? draft.splitBetween[0];
+      return splitWithDebtOffset(
+        draft.amount,
+        buyerId,
+        draft.splitBetween,
+        draft.buyerDebt ?? 0
+      );
+    }
 
     case 'equal':
       return splitEqual(draft.amount, draft.splitBetween);
@@ -68,7 +86,7 @@ export async function createPurchase(
     throw new Error('בחרו לפחות משתתף אחד');
   }
 
-  const shares = computeShares({ ...draft, splitBetween: participants });
+  const shares = computeShares({ ...draft, splitBetween: participants, buyerId: userId });
   const purchaseId = push(ref(db, `rooms/${code}/purchases`)).key!;
   const notifId = push(ref(db, `rooms/${code}/notifications`)).key!;
 
@@ -95,7 +113,9 @@ export async function createPurchase(
       text:
         draft.splitMethod === 'covered'
           ? `${userName} קנה ${draft.title.trim()} ב-${formatILS(draft.amount)} — על חשבונו`
-          : `${userName} קנה ${draft.title.trim()} ב-${formatILS(draft.amount)}`,
+          : draft.splitMethod === 'offset'
+            ? `${userName} קנה ${draft.title.trim()} ב-${formatILS(draft.amount)} — בקיזוז מהחוב`
+            : `${userName} קנה ${draft.title.trim()} ב-${formatILS(draft.amount)}`,
       entityId: purchaseId,
       createdAt: serverTimestamp(),
       readBy: { [userId]: true },

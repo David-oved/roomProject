@@ -271,7 +271,7 @@
 
             "date":        { ".validate": "newData.isNumber()" },
             "createdAt":   { ".validate": "newData.isNumber() && (!data.exists() || data.val() === newData.val())" },
-            "splitMethod": { ".validate": "newData.val().matches(/^(equal|percentage|custom|covered)$/)" },
+            "splitMethod": { ".validate": "newData.val().matches(/^(equal|percentage|custom|covered|offset)$/)" },
 
             "splitBetween": {
               ".validate": "newData.hasChildren()",

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useRtdbList } from './useRtdb';
 import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
-import { computeBalances, computeContributions } from '../lib/money';
+import { computeBalances, computeContributions, whoIsNext } from '../lib/money';
 import type {
   AppNotification,
   Item,
@@ -115,7 +115,13 @@ export function useContributions() {
     return Math.max(...values) - Math.min(...values);
   }, [data.borne, activeMembers]);
 
-  return { ...data, gap, loading };
+  /** מי נשא הכי פחות ולכן "תורו" לקנות. null כשהפער זניח. */
+  const next = useMemo(
+    () => whoIsNext(data.borne, activeMembers.map((m) => m.id)),
+    [data.borne, activeMembers]
+  );
+
+  return { ...data, gap, next, loading };
 }
 
 export function useNotifications() {

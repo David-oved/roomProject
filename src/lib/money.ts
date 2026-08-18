@@ -90,6 +90,50 @@ export function defaultPercentages(userIds: string[]): Record<string, number> {
   return out;
 }
 
+/**
+ * חלוקה שמקזזת חוב קיים — "להוריד מהחוב שלי".
+ *
+ * הבעיה שהיא פותרת: מי שחייב כסף וקונה משהו "על עצמו" נשאר עם החוב,
+ * למרות שתרם. מי שמחלק רגיל — עלול להתהפך מחייב לזכאי ולהתחיל
+ * מעגל התחשבנות חדש. הפונקציה הזו היא הדרך האמצעית.
+ *
+ * הכלל: הזיכוי לקונה **חסום בגובה החוב שלו**. את מה שמעבר לכך הוא
+ * סופג בעצמו.
+ *
+ *   חייב 20₪ · קנה ב-90₪ · 3 שותפים
+ *     חלוקה רגילה : האחרים נושאים 60₪  →  הקונה הופך לזכאי 40₪
+ *     עם קיזוז    : האחרים נושאים 20₪  →  הקונה מתאפס, סופג 70₪
+ *
+ * למה זה הוגן לכל השאר: הם לעולם לא מחויבים ביותר ממה שהיו מחויבים
+ * בחלוקה רגילה — רק בפחות. הקונה הוא היחיד שמוותר.
+ *
+ * @param buyerDebt כמה הקונה חייב, כמספר חיובי. 0 = לא חייב כלום.
+ */
+export function splitWithDebtOffset(
+  total: Agorot,
+  buyerId: string,
+  participantIds: string[],
+  buyerDebt: Agorot
+): Record<string, Agorot> {
+  const ids = [...new Set(participantIds)].sort();
+  if (ids.length === 0) throw new Error('אין משתתפים בחלוקה');
+  if (!ids.includes(buyerId)) throw new Error('הקונה חייב להיות בין המשתתפים');
+
+  const others = ids.filter((id) => id !== buyerId);
+  if (others.length === 0) return { [buyerId]: total };
+
+  // כמה האחרים היו נושאים בחלוקה שווה רגילה
+  const normal = splitEqual(total, ids);
+  const othersNormalTotal = total - normal[buyerId];
+
+  const credit = Math.min(Math.max(buyerDebt, 0), othersNormalTotal);
+  if (credit <= 0) return { [buyerId]: total };
+
+  const shares = splitEqual(credit, others);
+  shares[buyerId] = total - credit;
+  return shares;
+}
+
 /** אימות חלוקה מותאמת אישית. */
 export function validateCustomSplit(
   total: Agorot,
@@ -164,6 +208,34 @@ export function computeContributions(
   }
 
   return { borne, paidOut, total };
+}
+
+/**
+ * מי אמור לקחת את הקנייה הבאה.
+ *
+ * במודל "לקחתי על עצמי" אין חובות ולכן אין מה לסגור — ההוגנות נשמרת
+ * בכך שאנשים מתחלפים. הפונקציה הזו הופכת את התור מהרגשה מעורפלת
+ * למספר: מי נשא הכי פחות ביחס לממוצע.
+ *
+ * מוחזר null כשהפער זניח (פחות מ-10% מהממוצע) — אין טעם לדחוף
+ * מישהו לקנות בגלל הפרש של כמה שקלים.
+ */
+export function whoIsNext(
+  borne: Record<string, Agorot>,
+  memberIds: string[]
+): { userId: string; behindBy: Agorot } | null {
+  if (memberIds.length < 2) return null;
+
+  const values = memberIds.map((id) => ({ id, value: borne[id] ?? 0 }));
+  const total = values.reduce((sum, v) => sum + v.value, 0);
+  if (total === 0) return null;
+
+  const average = total / memberIds.length;
+  const lowest = values.reduce((min, v) => (v.value < min.value ? v : min));
+  const behindBy = Math.round(average - lowest.value);
+
+  if (behindBy <= average * 0.1) return null;
+  return { userId: lowest.id, behindBy };
 }
 
 export interface Transfer {

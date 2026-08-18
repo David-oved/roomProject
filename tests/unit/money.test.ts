@@ -5,6 +5,8 @@ import {
   defaultPercentages,
   simplifyDebts,
   splitEqual,
+  splitWithDebtOffset,
+  whoIsNext,
   splitPercentage,
   validateCustomSplit,
 } from '../../src/lib/money';
@@ -298,5 +300,77 @@ describe('computeContributions', () => {
     const { borne, total } = computeContributions(list, ['a', 'b']);
     expect(Object.values(borne).reduce((x, y) => x + y, 0)).toBe(total);
     expect(total).toBe(7000);
+  });
+});
+
+/* ═══════════════════ קיזוז חוב ═══════════════════ */
+
+describe('splitWithDebtOffset', () => {
+  it('חוב קטן מהחלק של האחרים — הזיכוי נחסם בגובה החוב', () => {
+    // חייב 20₪, קנה ב-90₪, 3 שותפים. בחלוקה רגילה היה מזוכה 60₪.
+    const shares = splitWithDebtOffset(9000, 'a', ['a', 'b', 'c'], 2000);
+    expect(shares).toEqual({ a: 7000, b: 1000, c: 1000 });
+    expect(Object.values(shares).reduce((x, y) => x + y, 0)).toBe(9000);
+
+    // המאזן שלו עולה בדיוק בגובה החוב — לא יותר
+    const delta = 9000 - shares.a;
+    expect(delta).toBe(2000);
+  });
+
+  it('חוב גדול מהחלק של האחרים — מתנהג כמו חלוקה שווה', () => {
+    const offset = splitWithDebtOffset(3000, 'a', ['a', 'b', 'c'], 10000);
+    expect(offset).toEqual(splitEqual(3000, ['a', 'b', 'c']));
+  });
+
+  it('בלי חוב — הקונה סופג הכל, בדיוק כמו "על עצמי"', () => {
+    expect(splitWithDebtOffset(5000, 'a', ['a', 'b', 'c'], 0)).toEqual({ a: 5000 });
+  });
+
+  it('הקונה לבדו — סופג הכל', () => {
+    expect(splitWithDebtOffset(5000, 'a', ['a'], 9999)).toEqual({ a: 5000 });
+  });
+
+  it('האחרים לעולם לא משלמים יותר מאשר בחלוקה רגילה', () => {
+    for (let i = 0; i < 300; i++) {
+      const total = Math.floor(Math.random() * 50_000) + 1;
+      const n = Math.floor(Math.random() * 5) + 2;
+      const ids = Array.from({ length: n }, (_, k) => `u${k}`);
+      const debt = Math.floor(Math.random() * 60_000);
+
+      const normal = splitEqual(total, ids);
+      const offset = splitWithDebtOffset(total, 'u0', ids, debt);
+
+      for (const id of ids) {
+        if (id === 'u0') continue;
+        expect(offset[id] ?? 0).toBeLessThanOrEqual(normal[id]);
+      }
+      expect(Object.values(offset).reduce((x, y) => x + y, 0)).toBe(total);
+    }
+  });
+
+  it('זורק כשהקונה אינו בין המשתתפים', () => {
+    expect(() => splitWithDebtOffset(1000, 'z', ['a', 'b'], 500)).toThrow();
+  });
+});
+
+/* ═══════════════════ תור הקנייה ═══════════════════ */
+
+describe('whoIsNext', () => {
+  it('מזהה את מי שנשא הכי פחות', () => {
+    const next = whoIsNext({ a: 10_000, b: 2000, c: 6000 }, ['a', 'b', 'c']);
+    expect(next?.userId).toBe('b');
+    expect(next?.behindBy).toBe(4000); // ממוצע 6000
+  });
+
+  it('לא דוחף אף אחד כשהפער זניח', () => {
+    expect(whoIsNext({ a: 10_000, b: 9800, c: 10_100 }, ['a', 'b', 'c'])).toBeNull();
+  });
+
+  it('מחזיר null כשאין הוצאות בכלל', () => {
+    expect(whoIsNext({ a: 0, b: 0 }, ['a', 'b'])).toBeNull();
+  });
+
+  it('מחזיר null לחדר של אדם אחד', () => {
+    expect(whoIsNext({ a: 5000 }, ['a'])).toBeNull();
   });
 });

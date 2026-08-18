@@ -229,7 +229,7 @@ function SummaryTab({
  * אפס — ואז אי אפשר לראות שאחד קונה כל שבוע והשני אף פעם. כאן זה גלוי.
  */
 function ContributionsSection() {
-  const { borne, total, gap } = useContributions();
+  const { borne, total, gap, next } = useContributions();
   const { activeMembers, memberName } = useRoom();
   const { user } = useAuth();
 
@@ -282,6 +282,21 @@ function ContributionsSection() {
           </span>
         </div>
       </div>
+
+      {next && (
+        <div className="mt-2 flex items-start gap-2.5 rounded-card bg-amber-50 px-3.5 py-3">
+          <span aria-hidden className="text-lg">
+            👉
+          </span>
+          <p className="text-sm leading-relaxed text-amber-900">
+            <b>{memberName(next.userId)}</b> נשא ב־
+            <span className="num font-semibold">{formatILS(next.behindBy)}</span> פחות מהממוצע.
+            <span className="mt-0.5 block text-xs opacity-80">
+              הקנייה הבאה עליו — ככה זה נשאר הוגן בלי להתחשבן.
+            </span>
+          </p>
+        </div>
+      )}
 
       <p className="mt-2 px-1 text-xs leading-relaxed text-ink-400">
         כולל קניות שנרשמו כ"לקחתי על עצמי" — הן לא יוצרות חוב, אבל כן נספרות כאן.

@@ -8,7 +8,7 @@ export type PurchaseStatus = 'pending' | 'approved' | 'rejected' | 'settled';
  * תרומות במקום מעקב חובות — מתאים לקניות קטנות ותכופות, שבהן
  * ההתחשבנות עצמה יקרה יותר מהסכום.
  */
-export type SplitMethod = 'equal' | 'percentage' | 'custom' | 'covered';
+export type SplitMethod = 'equal' | 'percentage' | 'custom' | 'covered' | 'offset';
 export type MemberRole = 'admin' | 'member';
 export type MemberStatus = 'active' | 'removed';
 
@@ -148,6 +148,7 @@ export const ITEM_STATUS_LABELS: Record<ItemStatus, string> = {
 
 export const SPLIT_METHOD_LABELS: Record<SplitMethod, string> = {
   covered: 'לקחתי על עצמי',
+  offset: 'קיזוז מהחוב',
   equal: 'שווה בשווה',
   percentage: 'לפי אחוזים',
   custom: 'סכום ידני',
