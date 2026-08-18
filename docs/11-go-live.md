@@ -1,122 +1,77 @@
-# 11 · הפעלה — מה נשאר לעשות
+# 11 · הפעלה — מצב נוכחי
 
-**מצב נכון ל-18.8.2026, 01:05** · האפליקציה חיה ב-https://david-oved.github.io/roomProject/ אך עדיין לא פעילה.
-
----
-
-## מה כבר נעשה ✅
-
-| פריט | מצב |
-|------|-----|
-| הקוד באוויר ב-GitHub Pages | ✅ |
-| פריסה אוטומטית בכל push ל-main | ✅ |
-| 6 מתוך 7 מפתחות Firebase שמורים כ-GitHub Secrets | ✅ |
-| `VITE_FB_DATABASE_URL` | ⛔ **מכוון: לא הוגדר** — ראו הסבר למטה |
+**עודכן: 18.8.2026, 09:15** · https://david-oved.github.io/roomProject/ · גרסה `1.0.2`
 
 ---
 
-## מה נבדק בפרויקט Firebase שסיפקת
+## נותר צעד אחד ⚠️
 
-פרויקט: `gen-lang-client-0675991189`
+### הפעלת התחברות עם אימייל וסיסמה
 
-| בדיקה | תוצאה |
-|-------|-------|
-| ה-API key תקין ומגיב | ✅ HTTP 200 מ-Identity Toolkit |
-| Realtime Database קיים | ❌ **404 בכל שלושת האזורים** — לא נוצר מעולם |
-| ספק Email/Password מופעל | ❌ **`PASSWORD_LOGIN_DISABLED`** |
-| `david-oved.github.io` ברשימת הדומיינים המורשים | ❌ לא מופיע |
+זהו **החסם היחיד** שנותר. בדקתי כרגע מול השרת והתשובה עדיין:
 
-**זו הסיבה שבקונפיג שהעברת חסר `databaseURL`** — Firebase לא מייצר את השדה הזה עד שיוצרים את בסיס הנתונים.
+```
+PASSWORD_LOGIN_DISABLED
+```
 
-> **הערה:** `gen-lang-client-*` הוא פרויקט שנוצר אוטומטית ע"י Google AI Studio. הוא יעבוד מצוין, אבל אם תעדיף פרויקט ייעודי ונקי — צור חדש בשם `roommate` ופשוט החלף את 7 המפתחות.
+כלומר אף אחד לא יכול להירשם או להתחבר. כל השאר מוכן וממתין.
 
----
+**מה לעשות** (20 שניות):
 
-## 3 הצעדים שרק אתה יכול לבצע
+1. [console.firebase.google.com](https://console.firebase.google.com) ← פרויקט `gen-lang-client-0675991189`
+2. תפריט שמאלי: **Build → Authentication → Get started**
+3. לשונית **Sign-in method** ← לחץ על השורה **Email/Password**
+4. הפעל את **המתג הראשון בלבד** (את "Email link (passwordless)" השאר כבוי)
+5. **Save**
 
-זמן משוער: **6 דקות**.
+לא צריך לפרוס מחדש כלום — האפליקציה תתחיל לעבוד מיד.
 
-### ① יצירת Realtime Database  ← החסם העיקרי
-
-1. [console.firebase.google.com](https://console.firebase.google.com) ← בחר `gen-lang-client-0675991189`
-2. תפריט צד ← **Build → Realtime Database** ← **Create Database**
-
-   > ⚠️ **Realtime Database**, לא Firestore. אלה שני מוצרים שונים לגמרי, והאפליקציה בנויה על הראשון.
-
-3. **מיקום:** בחר `europe-west1 (Belgium)` — הכי קרוב לישראל, כ-40ms במקום כ-150ms מארה"ב
-4. **Security rules:** בחר **Start in locked mode** ← 🚫 לעולם לא "Test mode"
-5. **העתק את ה-URL** שמופיע בראש המסך. הוא ייראה כך:
-
-   ```
-   https://gen-lang-client-0675991189-default-rtdb.europe-west1.firebasedatabase.app
-   ```
-
-### ② הפעלת Email/Password
-
-**Build → Authentication → Get started → Sign-in method → Email/Password → Enable → Save**
-
-סמן רק את השורה הראשונה. את "Email link (passwordless)" השאר כבוי.
-
-### ③ הוספת הדומיין של GitHub Pages
+### מומלץ גם (לא חוסם)
 
 **Authentication → Settings → Authorized domains → Add domain:**
-
 ```
 david-oved.github.io
 ```
-
-בלי זה קישורי איפוס הסיסמה יישלחו לדומיין הלא נכון.
-
----
-
-## ואז — הפעלת האפליקציה
-
-הוסף את המפתח האחרון:
-
-**[Settings → Secrets → Actions → New repository secret](https://github.com/David-oved/roomProject/settings/secrets/actions)**
-
-| Name | Secret |
-|------|--------|
-| `VITE_FB_DATABASE_URL` | ה-URL שהעתקת בצעד ① |
-
-ואז: **[Actions](https://github.com/David-oved/roomProject/actions) ← הריצה האחרונה ← Re-run all jobs**
-
-תוך כ-2 דקות האפליקציה תעלה עם מסך ההתחברות ותהיה פעילה במלואה.
+בלי זה קישורי איפוס סיסמה יופנו לדומיין הלא נכון.
 
 ---
 
-## למה `VITE_FB_DATABASE_URL` הושאר בחוץ בכוונה
+## מה כבר מוכן ✅
 
-`isFirebaseConfigured` דורש את כל חמשת המפתחות הקריטיים. כל עוד ה-URL חסר, האפליקציה מציגה מסך "לא זמין כרגע" ידידותי.
-
-לו הייתי מגדיר URL לבסיס נתונים שלא קיים, המשתמשים היו מקבלים מסך התחברות **שנראה תקין אבל לא עובד**: הבאנר "אין חיבור לאינטרנט" היה מופיע קבוע, וכל הכפתורים היו מושבתים — כי כך מודל האופליין שלנו מגיב לניתוק מהשרת.
-
-מסך "לא זמין" כן, ממשק שבור לא. המפתח החסר הוא מתג ההפעלה.
-
----
-
-## ולבסוף — העלאת כללי האבטחה
-
-**חובה.** בלעדיהם בסיס הנתונים נשאר ב-locked mode וכל גישה נחסמת:
-
-```bash
-cd "C:\Users\wbddw\OneDrive\שולחן העבודה\roomProject"
-firebase login
-firebase use gen-lang-client-0675991189
-firebase deploy --only database
-```
-
-אימות: Console ← Realtime Database ← לשונית **Rules** ← צריך להופיע ה-JSON מ-`database.rules.json`.
+| פריט | מצב | אימות |
+|------|-----|-------|
+| הקוד באוויר ב-GitHub Pages | ✅ | גרסה 1.0.2 מוגשת מהשרת |
+| פריסה אוטומטית בכל push | ✅ | 5 ריצות מוצלחות |
+| 7 מפתחות Firebase כ-GitHub Secrets | ✅ | כולל `VITE_FB_DATABASE_URL` |
+| Realtime Database (`europe-west1`) | ✅ | קיים ומגיב |
+| כללי אבטחה בענן | ✅ | נפרסו; גישה אנונימית מוחזרת עם 401 |
+| תחביר הכללים | ✅ | אומת ע"י Firebase — 125 הצהרות |
+| קונפיג בנוי לתוך ה-bundle | ✅ | ה-databaseURL נמצא ב-JS המופץ |
+| `.env.local` לפיתוח מקומי | ✅ | נוצר, מוחרג מ-git |
+| **התחברות אימייל/סיסמה** | ❌ | **PASSWORD_LOGIN_DISABLED** |
 
 ---
 
-## בדיקת קבלה — 6 סימונים
+## בדיקת קבלה — אחרי שתפעיל
 
-לאחר כל הצעדים, פתח את https://david-oved.github.io/roomProject/ ובדוק:
+פתח את https://david-oved.github.io/roomProject/ ובדוק:
 
-- [ ] מופיע מסך התחברות (ולא "לא זמין כרגע")
+- [ ] מופיע מסך התחברות (לא "לא זמין כרגע")
 - [ ] **אין** באנר שחור "אין חיבור לאינטרנט"
-- [ ] הרשמה עם אימייל אמיתי עובדת ומעבירה למסך בחירת חדר
+- [ ] הרשמה עם אימייל אמיתי עוברת ומגיעה למסך בחירת חדר
 - [ ] יצירת חדר מחזירה קוד בן 6 תווים
-- [ ] בדפדפן שני (מצב פרטי) — הרשמה + הצטרפות עם הקוד → הבקשה מופיעה אצל המנהל
-- [ ] אישור הבקשה → המשתמש השני נכנס לחדר תוך שנייה
+- [ ] בדפדפן שני (מצב פרטי): הרשמה + הצטרפות עם הקוד → הבקשה מופיעה אצל המנהל
+- [ ] אישור → המשתמש השני נכנס לחדר **תוך שנייה**
+- [ ] דיווח מוצר בדפדפן אחד מופיע בשני תוך שנייה
+
+---
+
+## אם משהו נראה תקוע על גרסה ישנה
+
+תוקן ב-1.0.2, אבל אם דפדפן כבר שמר גרסה מוקדמת יותר:
+
+**סגור את כל הטאבים של האתר ופתח מחדש.** הדפדפן מחליף את ה-Service Worker רק כשאין אף טאב פתוח.
+
+אם גם זה לא עזר — `Ctrl+Shift+R`, או DevTools ← Application ← Clear site data.
+
+**זה לא יקרה יותר:** מגרסה 1.0.2 האפליקציה מזהה כל פריסה חדשה אוטומטית לפי מזהה בנייה, וגם אם היא נשברת לגמרי — ה-HTML עצמו מנקה ומרענן אחרי 10 שניות.
