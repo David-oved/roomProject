@@ -45,12 +45,74 @@
     </div>
 
     <script>
-      // רשת ביטחון: אם React לא הספיק להסיר את מסך הפתיחה תוך 10 שניות,
-      // משהו נשבר בטעינה. עדיף הודעה ברורה מאשר ספינר אינסופי.
-      window.setTimeout(function () {
-        var err = document.getElementById('boot-error');
-        if (err && document.getElementById('boot-splash')) err.hidden = false;
-      }, 10000);
+      /*
+       * פתח מילוט אוטומטי.
+       *
+       * אם React לא הספיק להסיר את מסך הפתיחה תוך 10 שניות, הקוד
+       * שה-Service Worker מגיש שבור. במצב הזה האפליקציה לא יכולה לתקן
+       * את עצמה — היא בכלל לא רצה. לכן הסקריפט הזה יושב ב-HTML עצמו,
+       * רץ לפני כל קוד אחר, ולא תלוי בשום דבר שעלול להישבר.
+       *
+       * ניסיון אחד בלבד לכל סשן: מנקה Service Worker ומטמונים, ומרענן.
+       * אם גם זה לא עזר — מציג הודעה ברורה במקום ספינר אינסופי.
+       */
+      (function () {
+        var RECOVER_KEY = 'rm:boot-recover';
+
+        function showError() {
+          var err = document.getElementById('boot-error');
+          if (err) err.hidden = false;
+        }
+
+        window.setTimeout(function () {
+          if (!document.getElementById('boot-splash')) return; // עלה בהצלחה
+
+          var tried = false;
+          try {
+            tried = sessionStorage.getItem(RECOVER_KEY) === '1';
+          } catch (e) {}
+
+          if (tried) {
+            showError();
+            return;
+          }
+
+          try {
+            sessionStorage.setItem(RECOVER_KEY, '1');
+          } catch (e) {}
+
+          var jobs = [];
+          try {
+            if (navigator.serviceWorker) {
+              jobs.push(
+                navigator.serviceWorker.getRegistrations().then(function (rs) {
+                  return Promise.all(
+                    rs.map(function (r) {
+                      return r.unregister();
+                    })
+                  );
+                })
+              );
+            }
+            if (window.caches) {
+              jobs.push(
+                caches.keys().then(function (ks) {
+                  return Promise.all(
+                    ks.map(function (k) {
+                      return caches.delete(k);
+                    })
+                  );
+                })
+              );
+            }
+          } catch (e) {}
+
+          function reload() {
+            location.replace(location.pathname + '?_r=' + Date.now());
+          }
+          Promise.all(jobs).then(reload, reload);
+        }, 10000);
+      })();
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>

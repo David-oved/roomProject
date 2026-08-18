@@ -18,25 +18,36 @@ import ServiceUnavailablePage from './pages/ServiceUnavailablePage';
  * גם בכל קישור הצטרפות שנשלח בוואטסאפ.
  */
 export default function App() {
-  // אין קונפיגורציה.
-  // בפיתוח: הוראות טכניות מפורטות. בייצור: הודעה ידידותית בלי שום
-  // פרט טכני — משתמש קצה לא אמור להתעסק בהגדרות שרת.
-  if (!isFirebaseConfigured) {
-    return import.meta.env.DEV ? <SetupRequiredPage /> : <ServiceUnavailablePage />;
-  }
-
   return (
+    /**
+     * ‼️ UpdateProvider ו-UpdateNotice עוטפים את הכל, ותמיד נטענים.
+     *
+     * בגרסה קודמת בדיקת הקונפיגורציה החזירה מסך *לפני* הספק הזה.
+     * התוצאה הייתה מלכודת: גרסה שהגיעה למצב "לא מוגדר" לא הריצה את
+     * בדיקת העדכונים, ולכן לא יכלה לעולם לקבל את התיקון — המשתמש
+     * נשאר תקוע בה לצמיתות. מנגנון העדכון הוא פתח המילוט של
+     * האפליקציה, ולכן הוא חייב לרוץ בכל מצב שהוא.
+     */
     <UpdateProvider>
       <ToastProvider>
         <ConfirmProvider>
-        <AuthProvider>
-          <ConnectionProvider>
-            <HashRouter>
-              <AppRoutes />
-            </HashRouter>
-            <UpdateNotice />
-          </ConnectionProvider>
-        </AuthProvider>
+          {isFirebaseConfigured ? (
+            <AuthProvider>
+              <ConnectionProvider>
+                <HashRouter>
+                  <AppRoutes />
+                </HashRouter>
+              </ConnectionProvider>
+            </AuthProvider>
+          ) : import.meta.env.DEV ? (
+            // בפיתוח: הוראות טכניות מפורטות
+            <SetupRequiredPage />
+          ) : (
+            // בייצור: הודעה ידידותית בלי שום פרט טכני
+            <ServiceUnavailablePage />
+          )}
+
+          <UpdateNotice />
         </ConfirmProvider>
       </ToastProvider>
     </UpdateProvider>
