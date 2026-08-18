@@ -50,9 +50,25 @@ export async function createRoom(
   if (!code) throw new Error('לא הצלחנו ליצור קוד חדר. נסו שוב.');
 
   // ── 2) תפיסת השם, אטומית ──
+  //
+  // לפני התפיסה בודקים אם השם "יתום": תפוס ע"י קוד חדר שאינו קיים.
+  // זה קורה כשיצירת חדר נכשלה אחרי תפיסת השם ולפני יצירת החדר עצמו.
+  // בלי הבדיקה הזו השם נשאר חסום לנצח ואי אפשר להשתמש בו שוב.
   const nameRef = ref(db, `roomNames/${slug}`);
+  let orphanCode: string | null = null;
+
+  const held = await get(nameRef);
+  if (held.exists()) {
+    const heldBy = String(held.val());
+    // roomCodes הוא האינדקס הציבורי — ניתן לקריאה גם למי שאינו חבר,
+    // בניגוד ל-/rooms עצמו. לכן הוא הדרך היחידה לבדוק אם החדר קיים.
+    const codeSnap = await get(ref(db, `roomCodes/${heldBy}`));
+    if (codeSnap.exists()) throw new RoomNameTakenError(draft.name);
+    orphanCode = heldBy;
+  }
+
   const result = await runTransaction(nameRef, (current: string | null) =>
-    current === null ? code : undefined // undefined = ביטול, השם תפוס
+    current === null || current === orphanCode ? code : undefined
   );
   if (!result.committed) throw new RoomNameTakenError(draft.name);
 
@@ -93,7 +109,15 @@ export async function createRoom(
     });
   } catch (err) {
     // ── 4) פיצוי: משחררים את השם, אחרת הוא נשאר "תפוס" לנצח ──
-    await runTransaction(nameRef, (cur: string | null) => (cur === code ? null : cur));
+    //
+    // ‼️ עטוף ב-try משלו. אם גם השחרור נכשל, הוא היה זורק שגיאה
+    // חדשה שמחליפה את המקורית — והמשתמש היה מקבל הודעה על תקלה
+    // אחרת לגמרי מזו שבאמת קרתה. קרה בפועל.
+    try {
+      await runTransaction(nameRef, (cur: string | null) => (cur === code ? null : cur));
+    } catch {
+      // השם יישאר יתום, אבל הבדיקה בסעיף 2 תשחרר אותו בניסיון הבא
+    }
     throw err;
   }
 

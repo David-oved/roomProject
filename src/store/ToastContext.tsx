@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { OfflineError } from '../services/guard';
+import { friendlyError } from '../lib/errors';
 
 type ToastTone = 'success' | 'error' | 'warn' | 'info';
 
@@ -86,12 +87,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           if (err instanceof OfflineError) {
             push('warn', err.message);
           } else {
-            const code = (err as { code?: string })?.code;
-            if (code === 'PERMISSION_DENIED') {
-              push('error', 'אין לך הרשאה לבצע פעולה זו');
-            } else {
-              push('error', (err as Error)?.message || 'משהו השתבש. נסו שוב.');
-            }
+            push('error', friendlyError(err));
           }
           if (import.meta.env.DEV) console.error(err);
           return null;

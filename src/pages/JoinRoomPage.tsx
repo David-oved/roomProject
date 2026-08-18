@@ -5,6 +5,7 @@ import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
 import { CopyIcon } from '../components/ui/icons';
 import { requestToJoin } from '../services/roomService';
+import { friendlyError } from '../lib/errors';
 import { useAuth } from '../store/AuthContext';
 import { useConnection } from '../store/ConnectionContext';
 import { CODE_LENGTH, isValidRoomCode, sanitizeRoomCode } from '../lib/roomCode';
@@ -36,7 +37,7 @@ export default function JoinRoomPage() {
         await requestToJoin(value, user.uid, profile);
         navigate(`/rooms/${value}/pending`, { replace: true });
       } catch (err) {
-        setError((err as Error).message);
+        setError(friendlyError(err));
       } finally {
         setBusy(false);
       }

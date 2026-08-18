@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Input, Textarea } from '../components/ui/Input';
 import { TopBar } from '../components/layout/TopBar';
 import { createRoom } from '../services/roomService';
+import { friendlyError } from '../lib/errors';
 import { useAuth } from '../store/AuthContext';
 import { useConnection } from '../store/ConnectionContext';
 import { ALL_CATEGORIES, CATEGORY_EMOJI, CATEGORY_LABELS, type Category } from '../types/models';
@@ -45,7 +46,7 @@ export default function CreateRoomPage() {
       });
       navigate(`/r/${code}?created=1`, { replace: true });
     } catch (err) {
-      setError((err as Error).message);
+      setError(friendlyError(err));
     } finally {
       setBusy(false);
     }

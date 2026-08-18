@@ -57,11 +57,21 @@
     },
 
     // ---------- אינדקס ייחודיות שמות חדרים ----------
-    // נכתב ב-runTransaction. כתיבה מותרת רק אם השם פנוי, או שאתה מנהל החדר שמחזיק בו.
+    // נכתב ב-runTransaction.
+    //
+    // שלוש דרכים לכתוב כאן:
+    //  1. השם פנוי.
+    //  2. אתה מנהל החדר שמחזיק בשם.
+    //  3. ‼️ השם "יתום" — מחזיק בקוד חדר שאינו קיים ב-roomCodes.
+    //
+    // הסעיף השלישי קריטי. תפיסת השם קורית **לפני** יצירת החדר, ואם
+    // היצירה נכשלת באמצע נשאר שם תפוס שלא שייך לאף חדר. בלי הסעיף
+    // הזה גם מנגנון הפיצוי נחסם — הוא דורש להיות מנהל של חדר שמעולם
+    // לא נוצר — והשם ננעל לצמיתות. קרה בפועל, פעמיים.
     "roomNames": {
       "$slug": {
         ".read": "auth != null",
-        ".write": "auth != null && ((!data.exists() && (!root.child('roomCodes/' + newData.val()).exists() || root.child('roomCodes/' + newData.val() + '/adminId').val() === auth.uid)) || (data.exists() && root.child('rooms/' + data.val() + '/metadata/adminId').val() === auth.uid))",
+        ".write": "auth != null && ((!data.exists() && (!root.child('roomCodes/' + newData.val()).exists() || root.child('roomCodes/' + newData.val() + '/adminId').val() === auth.uid)) || (data.exists() && root.child('rooms/' + data.val() + '/metadata/adminId').val() === auth.uid) || (data.exists() && !root.child('roomCodes/' + data.val()).exists()))",
         ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{6}$/) && $slug.length >= 2 && $slug.length <= 60"
       }
     },
@@ -191,9 +201,25 @@
 
         // ---------- מוצרי הבסיס של החדר ----------
         // מה שתמיד צריך להיות בבית. כל חבר פעיל יכול לעדכן.
+        //
+        // ‼️ הסעיף השני הוא "ביצה ותרנגולת": ביצירת חדר, מוצרי הבסיס
+        // נכתבים באותה פעולה אטומית שיוצרת גם את החברות. ב-Security
+        // Rules המשתנה root מייצג את המצב **לפני** הכתיבה, ולכן החבר
+        // עדיין לא קיים והכלל הראשון נכשל — ואיתו כל יצירת החדר.
+        // אותו דפוס בדיוק קיים בכלל של members.
         "staples": {
+          // ‼️ ה-.write יושב כאן ולא על $productId, בכוונה.
+          //
+          // ב-RTDB, הרשאת כתיבה על צמתים בנים אינה מאפשרת לכתוב את
+          // צומת האב עצמו. יצירת חדר כותבת את כל אובייקט ה-staples
+          // במכה אחת, ולכן כלל שיושב רק על $productId היה חוסם אותה.
+          // ברמה הזו הכלל מכסה גם כתיבה מלאה (יצירה) וגם כתיבה בודדת
+          // (סימון מוצר), כי הרשאת כתיבה מדורגת כלפי מטה.
+          //
+          // הסעיף השני הוא "ביצה ותרנגולת": ביצירת חדר, root מייצג את
+          // המצב לפני הכתיבה — ולכן החברות של היוצר עדיין לא קיימת.
+          ".write": "auth != null && (root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' || !root.child('rooms/' + $code + '/metadata').exists())",
           "$productId": {
-            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active'",
             ".validate": "newData.isBoolean() && newData.val() === true"
           }
         },
