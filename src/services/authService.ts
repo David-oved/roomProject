@@ -11,6 +11,7 @@ import { ref, serverTimestamp, set, update } from 'firebase/database';
 import { auth, db } from '../config/firebase';
 import { clearAllCache } from '../lib/cache';
 import { clearPrefs } from '../lib/prefs';
+import { unsubscribeFromPush } from './pushService';
 import { assertOnline } from './guard';
 
 const AUTH_MESSAGES: Record<string, string> = {
@@ -91,6 +92,16 @@ export async function login(email: string, password: string): Promise<User> {
 }
 
 export async function logout(): Promise<void> {
+  /**
+   * ‼️ ביטול המנוי לפוש לפני הכל.
+   *
+   * המנוי שמור תחת users/{uid}, אבל ה-endpoint שייך למכשיר. בלי
+   * הביטול, משתמש שיתחבר אחר כך באותו מכשיר יקבל את ההתראות של
+   * הקודם — במעונות, שם מכשיר עובר בין אנשים, זו דליפה ממשית.
+   */
+  const uid = auth.currentUser?.uid;
+  if (uid) await unsubscribeFromPush(uid).catch(() => undefined);
+
   await clearAllCache(); // 🔒 לפני ההתנתקות
   clearPrefs();
   await signOut(auth);

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { BottomNav } from './BottomNav';
+import { useLiveNotifications } from '../../hooks/useLiveNotifications';
 import { OfflineBanner } from './OfflineBanner';
 
 /**
@@ -9,6 +10,9 @@ import { OfflineBanner } from './OfflineBanner';
  * באייפון) — בלעדיו התוכן האחרון ברשימה מוסתר מאחורי הסרגל.
  */
 export function AppShell({ children }: { children: ReactNode }) {
+  // התראה מיידית כשהאפליקציה ברקע — בלי להמתין לשרת
+  useLiveNotifications();
+
   return (
     <div className="min-h-[100dvh] bg-ink-50">
       <OfflineBanner />

@@ -93,10 +93,20 @@ function subscriptionId(endpoint: string): string {
   return `s${h1.toString(36)}${h2.toString(36)}`;
 }
 
-async function getRegistration(): Promise<ServiceWorkerRegistration | null> {
+/**
+ * ‼️ navigator.serviceWorker.ready לא נכשל כשאין Service Worker פעיל —
+ * הוא פשוט **לעולם לא נפתר**. בלי timeout, כל קוד שממתין לו נתקע,
+ * וקומפוננטה שמחכה לתוצאה נשארת ריקה בלי שום סימן שמשהו השתבש.
+ * קרה בפועל: סעיף ההתראות פשוט לא הופיע.
+ */
+async function getRegistration(timeoutMs = 4000): Promise<ServiceWorkerRegistration | null> {
   if (!('serviceWorker' in navigator)) return null;
+
   try {
-    return await navigator.serviceWorker.ready;
+    return await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    ]);
   } catch {
     return null;
   }
@@ -110,10 +120,17 @@ export async function isSubscribed(): Promise<boolean> {
 }
 
 export async function getState(): Promise<PushState> {
+  let subscribed = false;
+  try {
+    subscribed = await isSubscribed();
+  } catch {
+    // בדיקת המנוי נכשלה — עדיין מציגים את המסך, פשוט כלא-רשום
+  }
+
   return {
     support: getSupport(),
     permission: getPermission(),
-    subscribed: await isSubscribed(),
+    subscribed,
   };
 }
 
@@ -146,7 +163,7 @@ export async function subscribeToPush(userId: string): Promise<void> {
     throw new PushError('לא אישרת קבלת התראות');
   }
 
-  const reg = await getRegistration();
+  const reg = await getRegistration(15_000);
   if (!reg) throw new PushError('לא הצלחנו לרשום את המכשיר. נסו לרענן את הדף.');
 
   // מנוי קיים נשמר כמו שהוא — אין טעם לייצר endpoint חדש בכל הפעלה

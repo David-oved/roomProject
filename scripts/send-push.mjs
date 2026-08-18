@@ -33,6 +33,14 @@ const DIGEST_HOUR = 18;
 /** התראות ישנות מזה נמחקות מהתור, שלא ייערם לנצח */
 const RETENTION_DAYS = 7;
 
+/**
+ * אחרי כך וכך כישלונות רצופים הרשומה מסומנת כנשלחה ונזנחת.
+ *
+ * בלי זה, רשומה פגומה אחת — חדר שנמחק, נמען שלא קיים — נבדקת מחדש
+ * בכל ריצה לנצח, וצוברת שגיאות בלוג עד שאי אפשר לראות בו כלום.
+ */
+const MAX_ATTEMPTS = 5;
+
 /* ───────────────────── אתחול ───────────────────── */
 
 const required = [
@@ -126,7 +134,12 @@ async function sendTo(subs, payload) {
           await db.ref(`users/${s.uid}/pushSubscriptions/${s.id}`).remove();
           gone++;
         } else {
-          console.warn(`  ⚠️ שליחה נכשלה (${code ?? '?'}) עבור ${s.uid}`);
+          // ‼️ בלי גוף השגיאה, כשל שאינו HTTP (URL פסול, בעיית הצפנה,
+          // מפתח VAPID שגוי) מדווח כ-"(?)" ואי אפשר לאבחן אותו בכלל.
+          const detail = err?.body || err?.message || String(err);
+          console.warn(
+            `  ⚠️ שליחה נכשלה (${code ?? 'ללא קוד'}) עבור ${s.uid}: ${String(detail).slice(0, 200)}`
+          );
         }
       }
     })
@@ -165,8 +178,24 @@ async function run() {
 
   /* ── התראות מיידיות ── */
   for (const entry of immediate) {
-    const uids = await recipientsOf(entry);
-    const subs = (await Promise.all(uids.map(subscriptionsFor))).flat();
+    const attempts = (entry.attempts || 0) + 1;
+
+    if (attempts > MAX_ATTEMPTS) {
+      console.warn(`  ⛔ "${entry.title}" נזנחה אחרי ${MAX_ATTEMPTS} ניסיונות`);
+      updates[`outbox/${entry.id}/sentAt`] = now;
+      continue;
+    }
+
+    let uids = [];
+    let subs = [];
+    try {
+      uids = await recipientsOf(entry);
+      subs = (await Promise.all(uids.map(subscriptionsFor))).flat();
+    } catch (err) {
+      console.warn(`  ⚠️ "${entry.title}" נכשלה (ניסיון ${attempts}): ${err?.message ?? err}`);
+      updates[`outbox/${entry.id}/attempts`] = attempts;
+      continue;
+    }
 
     if (subs.length > 0) {
       const res = await sendTo(subs, {

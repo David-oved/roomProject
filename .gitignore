@@ -36,3 +36,9 @@ tsconfig.tsbuildinfo
 
 # מפתחות VAPID — 🚫 לא נכנס ל-git
 .vapid.json
+
+# service account לסימולציה מקומית — 🚫 לא נכנס ל-git
+.sim-sa.json
+
+# אישורים זמניים לסימולציה
+.sim-certs/

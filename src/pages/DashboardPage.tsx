@@ -13,6 +13,7 @@ import { formatAmount, formatILS, formatRelativeTime } from '../lib/format';
 import { CATEGORY_EMOJI, PRIORITY_LABELS } from '../types/models';
 import { RoomCodeCard } from '../components/rooms/RoomCodeCard';
 import { QuickReport } from '../components/catalog/QuickReport';
+import { NotificationPrompt } from '../components/system/NotificationPrompt';
 
 export default function DashboardPage() {
   const [params, setParams] = useSearchParams();
@@ -179,6 +180,9 @@ export default function DashboardPage() {
             )}
           </section>
         )}
+
+        {/* ── הזמנה להפעיל התראות ── */}
+        <NotificationPrompt />
 
         {/* ── דיווח מהיר ממוצרי הבסיס ── */}
         <QuickReport />

@@ -93,6 +93,47 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
   );
 });
 
+/**
+ * ‼️ המנוי לפוש מתחלף מדי פעם — הדפדפן מסובב endpoint-ים, ואפל עושה
+ * זאת באגרסיביות. כשזה קורה בלי טיפול, המנוי הישן שאצלנו בשרת מת
+ * בשקט: השליחה נכשלת ל-410, המנוי נמחק, והמשתמש מפסיק לקבל התראות
+ * בלי שאיש יידע למה.
+ *
+ * האירוע הזה הוא ההזדמנות היחידה להירשם מחדש. אין דרך אחרת לגלות.
+ */
+self.addEventListener('pushsubscriptionchange', (rawEvent: Event) => {
+  // TypeScript לא מגדיר את האירוע הזה; הוא ExtendableEvent בפועל
+  const e = rawEvent as ExtendableEvent & {
+    oldSubscription?: PushSubscription;
+    newSubscription?: PushSubscription;
+  };
+
+  e.waitUntil(
+    (async () => {
+      // מודיעים לכל חלון פתוח שיטפל ברישום מחדש מול השרת
+      const clientsList = await self.clients.matchAll({ includeUncontrolled: true });
+      for (const client of clientsList) {
+        client.postMessage({
+          type: 'PUSH_SUBSCRIPTION_CHANGED',
+          oldEndpoint: e.oldSubscription?.endpoint ?? null,
+        });
+      }
+
+      // אין חלון פתוח — נרשמים מחדש כאן. האפליקציה תסנכרן בכניסה הבאה.
+      if (clientsList.length === 0 && e.oldSubscription) {
+        try {
+          await self.registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: e.oldSubscription.options.applicationServerKey ?? undefined,
+          });
+        } catch {
+          /* אין מה לעשות מכאן */
+        }
+      }
+    })()
+  );
+});
+
 // מאפשר לאפליקציה לבקש החלפה מיידית של SW ממתין
 self.addEventListener('message', (event: ExtendableMessageEvent) => {
   if ((event.data as { type?: string })?.type === 'SKIP_WAITING') {
