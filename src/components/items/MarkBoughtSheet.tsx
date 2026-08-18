@@ -198,7 +198,7 @@ export function MarkBoughtSheet({
     );
     setBusy(false);
     if (res !== null) {
-      toast.success('הקנייה נרשמה וממתינה לאישור המנהל');
+      toast.success('הקנייה נרשמה');
       onClose();
     }
   }
@@ -442,8 +442,8 @@ export function MarkBoughtSheet({
 
         <p className="rounded-xl bg-ink-100/70 px-3.5 py-2.5 text-xs leading-relaxed text-ink-600">
           {mode === 'covered'
-            ? 'הקנייה תישלח לאישור מנהל החדר ותופיע בסיכום התרומות.'
-            : 'הקנייה תישלח לאישור מנהל החדר. המאזנים יתעדכנו רק לאחר האישור.'}
+            ? 'הקנייה תירשם מיד ותופיע בסיכום התרומות.'
+            : 'הקנייה תירשם מיד והמאזנים יתעדכנו באותה שנייה.'}
         </p>
       </div>
     </Sheet>
