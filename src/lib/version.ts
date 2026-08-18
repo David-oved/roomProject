@@ -26,6 +26,9 @@ export const APP_VERSION: string = __APP_VERSION__;
 /** מתי נבנתה הגרסה שרצה כרגע. */
 export const BUILD_TIME: string = __BUILD_TIME__;
 
+/** מזהה הבנייה שרצה כרגע (git SHA מקוצר). */
+export const BUILD_ID: string = __BUILD_ID__;
+
 export interface VersionManifest {
   /** מספר הגרסה, למשל "1.0.1" */
   version: string;
@@ -37,6 +40,11 @@ export interface VersionManifest {
   title?: string;
   /** רשימת שינויים להצגה למשתמש */
   notes?: string[];
+  /**
+   * מזהה בנייה, נחתם אוטומטית בזמן ה-build.
+   * מאפשר לזהות פריסה חדשה גם כשמספר הגרסה לא עודכן.
+   */
+  buildId?: string;
 }
 
 /** מונע לולאת עדכון אינסופית אם version.json לא תואם ל-build שהועלה. */
@@ -75,6 +83,7 @@ export async function fetchRemoteVersion(signal?: AbortSignal): Promise<VersionM
     forceUpdate: data.forceUpdate === true,
     title: data.title,
     notes: Array.isArray(data.notes) ? data.notes : [],
+    buildId: typeof data.buildId === 'string' ? data.buildId : undefined,
   };
 }
 
@@ -103,9 +112,25 @@ export function compareVersions(a: string, b: string): number {
   return 0;
 }
 
-/** האם הגרסה שעל השרת שונה מזו שרצה כרגע. */
-export function isUpdateAvailable(remote: string): boolean {
-  return compareVersions(remote, APP_VERSION) !== 0;
+/**
+ * האם יש גרסה חדשה בשרת.
+ *
+ * שתי בדיקות, לא אחת:
+ *  1. מספר הגרסה — מה שהמפתח מגדיר ידנית, ומה שהמשתמש רואה.
+ *  2. מזהה הבנייה — נחתם אוטומטית בכל פריסה.
+ *
+ * הבדיקה השנייה קיימת כי הראשונה לבדה נכשלה בפועל: העלינו קוד מתוקן
+ * בלי לעדכן את version.json, וכל מי שכבר התקין את האפליקציה נשאר עם
+ * הגרסה השבורה — ה-Service Worker המשיך להגיש לו את הקבצים הישנים
+ * ושום דבר לא סימן שיש מה לעדכן.
+ */
+export function isUpdateAvailable(remote: VersionManifest | string): boolean {
+  if (typeof remote === 'string') return compareVersions(remote, APP_VERSION) !== 0;
+
+  if (compareVersions(remote.version, APP_VERSION) !== 0) return true;
+
+  // אותה גרסה אבל בנייה אחרת = נפרסה גרסה חדשה בלי עדכון המספר
+  return !!remote.buildId && !!BUILD_ID && remote.buildId !== BUILD_ID;
 }
 
 /**

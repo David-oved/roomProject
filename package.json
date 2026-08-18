@@ -1,12 +1,12 @@
 {
   "name": "roommate",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "RoomMate — ניהול חכם של חדר משותף במעונות סטודנטים",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b --noEmit && vite build",
+    "build": "npm run clean && tsc -b --noEmit && vite build && node scripts/stamp-build.mjs",
     "preview": "vite preview",
     "emu": "firebase emulators:start --import=./.emulator-data --export-on-exit",
     "test": "vitest run",
@@ -15,7 +15,8 @@
     "lint": "eslint src --max-warnings 0",
     "release": "node scripts/release.mjs",
     "icons": "node scripts/generate-icons.mjs",
-    "check:version": "node scripts/check-version.mjs"
+    "check:version": "node scripts/check-version.mjs",
+    "clean": "node scripts/clean.mjs"
   },
   "dependencies": {
     "date-fns": "^3.6.0",

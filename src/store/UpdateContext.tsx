@@ -85,7 +85,7 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       setRemote(manifest);
       setLastCheckedAt(Date.now());
 
-      if (!isUpdateAvailable(manifest.version)) {
+      if (!isUpdateAvailable(manifest)) {
         // אנחנו מעודכנים — מאפסים את מונה הניסיונות הכפויים
         clearForceAttempts();
         setStatus('current');

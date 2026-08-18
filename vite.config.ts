@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { readFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 /**
@@ -16,6 +17,27 @@ const versionInfo = JSON.parse(readFileSync(versionFile, 'utf8')) as {
   forceUpdate: boolean;
 };
 
+/**
+ * מזהה בנייה ייחודי.
+ *
+ * למה זה נחוץ בנוסף למספר הגרסה: אם מעלים קוד חדש ושוכחים להעלות את
+ * version.json, המנגנון לא מזהה עדכון — ומשתמש שכבר התקין את ה-PWA
+ * נשאר תקוע על הגרסה הישנה לנצח, כי ה-Service Worker מגיש לו את
+ * הקבצים מהמטמון. קרה בפועל.
+ *
+ * ה-SHA משתנה בכל commit, ולכן כל פריסה מזוהה — גם בלי לזכור כלום.
+ */
+function resolveBuildId(): string {
+  if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA.slice(0, 12);
+  try {
+    return execSync('git rev-parse --short=12 HEAD', { encoding: 'utf8' }).trim();
+  } catch {
+    return 'dev-' + Date.now().toString(36);
+  }
+}
+
+const buildId = resolveBuildId();
+
 export default defineConfig({
   // נתיבים יחסיים — עובד בכל תת-תיקייה של GitHub Pages
   // (https://david-oved.github.io/roomProject/) בלי לקודד את שם ה-repo.
@@ -24,6 +46,7 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(versionInfo.version),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    __BUILD_ID__: JSON.stringify(buildId),
   },
 
   plugins: [
