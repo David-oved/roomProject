@@ -10,6 +10,7 @@ import { useToast } from '../../store/ToastContext';
 import { createPurchase } from '../../services/purchaseService';
 import { defaultPercentages, splitEqual, splitPercentage } from '../../lib/money';
 import { formatILS, toAgorot } from '../../lib/format';
+import { useCatalog } from '../../hooks/useCatalog';
 import { SPLIT_METHOD_LABELS, type Agorot, type SplitMethod, type WithId, type Item } from '../../types/models';
 
 const SPLIT_MODES: SplitMethod[] = ['equal', 'percentage', 'custom'];
@@ -63,6 +64,7 @@ export function MarkBoughtSheet({
 }) {
   const { user, profile } = useAuth();
   const { roomCode, activeMembers } = useRoom();
+  const { getProduct } = useCatalog();
   const toast = useToast();
 
   const [amountText, setAmountText] = useState('');
@@ -71,6 +73,8 @@ export function MarkBoughtSheet({
   const [percentages, setPercentages] = useState<Record<string, string>>({});
   const [customText, setCustomText] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  /** האם הסכום הגיע מהקטלוג ולא מהקלדה — משפיע רק על הטקסט המנחה */
+  const [priceFromCatalog, setPriceFromCatalog] = useState(false);
 
   // ברירת מחדל: כל החברים הפעילים משתתפים
   useEffect(() => {
@@ -83,9 +87,25 @@ export function MarkBoughtSheet({
       Object.fromEntries(Object.entries(defaultPercentages(ids)).map(([id, v]) => [id, String(v)]))
     );
     setCustomText({});
-    setAmountText('');
     setMethod('covered');
-  }, [open, activeMembers]);
+
+    /**
+     * מילוי מחיר מראש מהקטלוג.
+     *
+     * אם הפריט דווח מתוך רשימת המוצרים, כבר ידוע כמה הוא עולה בחדר
+     * הזה — כולל מחיר שהחדר עדכן לעצמו. הקלדה מחדש של מספר שהמערכת
+     * כבר יודעת היא בדיוק סוג החיכוך שהקטלוג נועד להסיר.
+     * זו הצעה בלבד: המחיר ניתן לשינוי, כי בפועל הוא משתנה בין קניות.
+     */
+    const product = item?.productId ? getProduct(item.productId) : null;
+    if (product) {
+      setAmountText((product.price / 100).toFixed(2));
+      setPriceFromCatalog(true);
+    } else {
+      setAmountText('');
+      setPriceFromCatalog(false);
+    }
+  }, [open, activeMembers, item, getProduct]);
 
   const amount: Agorot = useMemo(() => {
     const n = Number(amountText.replace(',', '.'));
@@ -184,8 +204,17 @@ export function MarkBoughtSheet({
           min="0.01"
           placeholder="0.00"
           value={amountText}
-          onChange={(e) => setAmountText(e.target.value)}
+          onChange={(e) => {
+            setAmountText(e.target.value);
+            setPriceFromCatalog(false);
+          }}
           suffix="₪"
+          hint={
+            priceFromCatalog
+              ? 'מולא לפי המחיר בקטלוג של החדר — שנו אם שילמתם אחרת'
+              : undefined
+          }
+          onFocus={(e) => e.currentTarget.select()}
           autoFocus
           required
         />

@@ -12,6 +12,7 @@ import { useBalances, useItems, useJoinRequests, useNotifications, usePurchases 
 import { formatAmount, formatILS, formatRelativeTime } from '../lib/format';
 import { CATEGORY_EMOJI, PRIORITY_LABELS } from '../types/models';
 import { RoomCodeCard } from '../components/rooms/RoomCodeCard';
+import { QuickReport } from '../components/catalog/QuickReport';
 
 export default function DashboardPage() {
   const [params, setParams] = useSearchParams();
@@ -178,6 +179,9 @@ export default function DashboardPage() {
             )}
           </section>
         )}
+
+        {/* ── דיווח מהיר ממוצרי הבסיס ── */}
+        <QuickReport />
 
         {/* ── מוצרים חסרים ── */}
         <section>

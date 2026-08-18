@@ -16,7 +16,8 @@ import { useConnection } from '../store/ConnectionContext';
 import { useToast } from '../store/ToastContext';
 import { useConfirm } from '../store/ConfirmContext';
 import { claimItem, deleteItem, unclaimItem } from '../services/itemService';
-import { formatRelativeTime, formatTime } from '../lib/format';
+import { formatILS, formatRelativeTime, formatTime } from '../lib/format';
+import { useCatalog } from '../hooks/useCatalog';
 import {
   CATEGORY_EMOJI,
   CATEGORY_LABELS,
@@ -53,6 +54,12 @@ export default function ItemsPage() {
   useEffect(() => {
     if (params.get('new') === '1') {
       setReportOpen(true);
+      setParams({}, { replace: true });
+      return;
+    }
+    // קישור ישיר ללשונית מלאי הבית, מהדשבורד
+    if (params.get('tab') === 'staples') {
+      setFilter('staples');
       setParams({}, { replace: true });
     }
   }, [params, setParams]);
@@ -154,11 +161,14 @@ function ItemCard({ item, onBuy }: { item: WithId<Item>; onBuy: () => void }) {
   const { user } = useAuth();
   const { roomCode, isAdmin, memberName } = useRoom();
   const { isOnline } = useConnection();
+  const { getProduct } = useCatalog();
   const toast = useToast();
   const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
 
   const mine = item.assignedTo === user?.uid;
+  // מוצר מהקטלוג — מציגים את המחיר שידוע לחדר הזה
+  const product = item.productId ? getProduct(item.productId) : null;
   const guard = {
     disabled: !isOnline || busy,
     title: isOnline ? undefined : 'פעולה זו דורשת חיבור לאינטרנט',
@@ -192,6 +202,13 @@ function ItemCard({ item, onBuy }: { item: WithId<Item>; onBuy: () => void }) {
             {CATEGORY_LABELS[item.category]} · דיווח {memberName(item.reportedBy)} ·{' '}
             {item.reportedAt ? formatRelativeTime(item.reportedAt) : ''}
           </p>
+
+          {product && (
+            <p className="mt-1 text-xs text-ink-400">
+              מחיר משוער <span className="num font-medium text-ink-600">{formatILS(product.price)}</span>
+              {product.unit && <span> · {product.unit}</span>}
+            </p>
+          )}
 
           {item.notes && (
             <p className="mt-2 rounded-lg bg-ink-50 px-2.5 py-1.5 text-xs leading-relaxed text-ink-600">

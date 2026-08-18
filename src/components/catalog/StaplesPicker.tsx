@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Sheet } from '../ui/Sheet';
 import { Button } from '../ui/Button';
-import { CheckIcon } from '../ui/icons';
-import { useCatalog } from '../../hooks/useCatalog';
+import { CheckIcon, ChevronIcon } from '../ui/icons';
+import { useCatalog, type RoomProduct } from '../../hooks/useCatalog';
 import { formatILS } from '../../lib/format';
 import {
   ALL_CATEGORIES,
@@ -16,6 +16,12 @@ import {
  *
  * מוצג גם ביצירת חדר (לפני שיש חדר בכלל) וגם מתוך חדר קיים, ולכן הוא
  * **controlled**: הוא לא יודע איפה הבחירה נשמרת, רק מה נבחר כרגע.
+ *
+ * המבנה: קטגוריות מתקפלות. 213 מוצרים ברשימה שטוחה אחת הם קיר —
+ * אי אפשר לסרוק אותו בעין ואי אפשר להתמצא בו. מקופל, המסך מתחיל
+ * בארבע שורות שאפשר להבין במבט אחד, ונפתח רק מה שמעניין.
+ *
+ * חיפוש עוקף את הקיפול לגמרי: מי שיודע מה הוא מחפש לא צריך לנווט.
  */
 export function StaplesPicker({
   open,
@@ -30,29 +36,49 @@ export function StaplesPicker({
   onChange: (ids: string[]) => void;
   onDone?: () => void;
 }) {
-  const { search } = useCatalog();
+  const { products, search } = useCatalog();
   const [query, setQuery] = useState('');
-  const [category, setCategory] = useState<Category | null>(null);
+  const [expanded, setExpanded] = useState<Category | null>(null);
 
   const selected = useMemo(() => new Set(value), [value]);
+  const searching = query.trim().length > 0;
 
-  const results = useMemo(
-    () => search(query, category ?? undefined, 300),
-    [search, query, category]
-  );
+  const results = useMemo(() => (searching ? search(query, undefined, 60) : []), [
+    searching,
+    search,
+    query,
+  ]);
+
+  /** מוצרים לפי קטגוריה + כמה מהם נבחרו */
+  const byCategory = useMemo(() => {
+    return ALL_CATEGORIES.map((category) => {
+      const list = products
+        .filter((p) => p.category === category)
+        .sort((a, b) => a.name.localeCompare(b.name, 'he'));
+      return {
+        category,
+        list,
+        chosen: list.filter((p) => selected.has(p.id)).length,
+      };
+    }).filter((g) => g.list.length > 0);
+  }, [products, selected]);
 
   /**
    * עלות משוערת של סל הבסיס.
-   * זה המספר שהופך רשימת מוצרים מופשטת למשהו שאפשר להחליט לפיו —
-   * "בחרתי 40 מוצרים" לא אומר כלום, "כ-₪620 לסבב מלא" כן.
+   * "בחרתי 40 מוצרים" לא אומר כלום. "כ-₪620 לסבב מלא" כן.
    */
   const estimate = useMemo(() => {
-    const byId = new Map(results.map((p) => [p.id, p]));
+    const byId = new Map(products.map((p) => [p.id, p]));
     return value.reduce((sum, id) => sum + (byId.get(id)?.price ?? 0), 0);
-  }, [value, results]);
+  }, [value, products]);
 
   const toggle = (id: string) =>
     onChange(selected.has(id) ? value.filter((x) => x !== id) : [...value, id]);
+
+  const toggleAll = (list: RoomProduct[], on: boolean) => {
+    const ids = list.map((p) => p.id);
+    onChange(on ? [...new Set([...value, ...ids])] : value.filter((x) => !ids.includes(x)));
+  };
 
   return (
     <Sheet
@@ -67,7 +93,8 @@ export function StaplesPicker({
             </span>
             {estimate > 0 && (
               <span className="num text-ink-500">
-                עלות משוערת <span className="font-semibold text-brand-800">{formatILS(estimate)}</span>
+                עלות משוערת{' '}
+                <span className="font-semibold text-brand-800">{formatILS(estimate)}</span>
               </span>
             )}
           </div>
@@ -90,70 +117,125 @@ export function StaplesPicker({
           בלי להקליד שם ומחיר מחדש.
         </p>
 
-        {/* חיפוש */}
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="חיפוש מוצר…"
-          type="search"
-          className="w-full rounded-xl border border-ink-200 bg-white px-3.5 py-3
-                     text-[16px] placeholder:text-ink-400 focus:border-brand-500
-                     focus:outline-none focus:ring-2 focus:ring-brand-500/30"
-        />
-
-        {/* קטגוריות */}
-        <div className="scroll-area -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-          <Chip active={category === null} onClick={() => setCategory(null)}>
-            הכל
-          </Chip>
-          {ALL_CATEGORIES.map((c) => (
-            <Chip key={c} active={category === c} onClick={() => setCategory(c)}>
-              {CATEGORY_EMOJI[c]} {CATEGORY_LABELS[c]}
-            </Chip>
-          ))}
+        {/* ── חיפוש מהיר ── */}
+        <div className="sticky top-0 z-10 -mx-1 bg-white px-1 pb-1 pt-0.5">
+          <div className="relative">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="חיפוש מהיר…"
+              type="search"
+              enterKeyHint="search"
+              className="w-full rounded-xl border border-ink-200 bg-white ps-10 pe-3 py-3
+                         text-[16px] placeholder:text-ink-400 focus:border-brand-500
+                         focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            />
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 start-3 grid place-items-center
+                         text-ink-400"
+            >
+              🔍
+            </span>
+          </div>
         </div>
 
-        {/* רשימה */}
-        {results.length === 0 ? (
-          <p className="py-8 text-center text-sm text-ink-500">
-            לא נמצאו מוצרים עבור "{query}"
-          </p>
+        {searching ? (
+          /* ── תוצאות חיפוש: רשימה שטוחה, בלי קיפול ── */
+          results.length === 0 ? (
+            <p className="py-8 text-center text-sm text-ink-500">
+              לא נמצאו מוצרים עבור "{query.trim()}"
+            </p>
+          ) : (
+            <div>
+              <p className="mb-1.5 px-1 text-xs text-ink-500">
+                <span className="num">{results.length}</span> תוצאות
+              </p>
+              <ul className="divide-y divide-ink-100 overflow-hidden rounded-xl border border-ink-200 bg-white">
+                {results.map((p) => (
+                  <ProductRow
+                    key={p.id}
+                    product={p}
+                    checked={selected.has(p.id)}
+                    onToggle={() => toggle(p.id)}
+                    showCategory
+                  />
+                ))}
+              </ul>
+            </div>
+          )
         ) : (
-          <ul className="divide-y divide-ink-100 rounded-xl border border-ink-200 bg-white">
-            {results.map((p) => {
-              const on = selected.has(p.id);
+          /* ── קטגוריות מתקפלות ── */
+          <ul className="space-y-2">
+            {byCategory.map(({ category, list, chosen }) => {
+              const isOpen = expanded === category;
+              const allChosen = chosen === list.length;
+
               return (
-                <li key={p.id}>
+                <li
+                  key={category}
+                  className="overflow-hidden rounded-xl border border-ink-200 bg-white"
+                >
                   <button
                     type="button"
-                    onClick={() => toggle(p.id)}
-                    aria-pressed={on}
-                    className={`flex w-full items-center gap-3 px-3 py-2.5 text-start
-                                transition ${on ? 'bg-brand-50/70' : 'hover:bg-ink-50'}`}
+                    onClick={() => setExpanded(isOpen ? null : category)}
+                    aria-expanded={isOpen}
+                    className={`tap flex w-full items-center gap-3 px-3.5 text-start transition
+                                ${isOpen ? 'bg-brand-50/60' : 'hover:bg-ink-50'}`}
                   >
-                    <span
-                      aria-hidden
-                      className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border-2
-                                  transition ${
-                                    on
-                                      ? 'border-brand-600 bg-brand-600 text-white'
-                                      : 'border-ink-300'
-                                  }`}
-                    >
-                      {on && <CheckIcon width={13} height={13} />}
+                    <span aria-hidden className="text-xl">
+                      {CATEGORY_EMOJI[category]}
                     </span>
 
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-ink-900">
-                        {p.name}
+                      <span className="block font-bold text-ink-900">
+                        {CATEGORY_LABELS[category]}
                       </span>
-                      {p.unit && <span className="text-xs text-ink-400">{p.unit}</span>}
+                      <span className="num block text-xs text-ink-500">
+                        {chosen > 0 ? (
+                          <>
+                            <span className="font-semibold text-brand-700">{chosen}</span> נבחרו
+                            מתוך {list.length}
+                          </>
+                        ) : (
+                          <>{list.length} מוצרים</>
+                        )}
+                      </span>
                     </span>
 
-                    <span className="num shrink-0 text-sm text-ink-500">
-                      {formatILS(p.price)}
-                    </span>
+                    {/* החץ מסתובב כלפי מטה כשפתוח */}
+                    <ChevronIcon
+                      width={20}
+                      height={20}
+                      className={`shrink-0 text-ink-400 transition-transform duration-200
+                                  ${isOpen ? '-rotate-90' : ''}`}
+                    />
                   </button>
+
+                  {isOpen && (
+                    <div className="animate-fade-in border-t border-ink-100">
+                      <div className="flex justify-end px-3.5 py-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleAll(list, !allChosen)}
+                          className="rounded-lg px-2 py-1 text-xs font-semibold text-brand-700
+                                     transition hover:bg-brand-50"
+                        >
+                          {allChosen ? 'הסר הכל' : 'בחר הכל'}
+                        </button>
+                      </div>
+                      <ul className="divide-y divide-ink-100 border-t border-ink-100">
+                        {list.map((p) => (
+                          <ProductRow
+                            key={p.id}
+                            product={p}
+                            checked={selected.has(p.id)}
+                            onToggle={() => toggle(p.id)}
+                          />
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </li>
               );
             })}
@@ -164,25 +246,51 @@ export function StaplesPicker({
   );
 }
 
-function Chip({
-  active,
-  onClick,
-  children,
+/* ═══════════════ שורת מוצר ═══════════════ */
+
+function ProductRow({
+  product,
+  checked,
+  onToggle,
+  showCategory,
 }: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
+  product: RoomProduct;
+  checked: boolean;
+  onToggle: () => void;
+  showCategory?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-        active ? 'bg-brand-700 text-white' : 'bg-ink-100 text-ink-600'
-      }`}
-    >
-      {children}
-    </button>
+    <li>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-pressed={checked}
+        className={`flex w-full items-center gap-3 px-3.5 py-2.5 text-start transition
+                    ${checked ? 'bg-brand-50/70' : 'hover:bg-ink-50'}`}
+      >
+        <span
+          aria-hidden
+          className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 transition
+                      ${checked ? 'border-brand-600 bg-brand-600 text-white' : 'border-ink-300'}`}
+        >
+          {checked && <CheckIcon width={13} height={13} />}
+        </span>
+
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-ink-900">{product.name}</span>
+          <span className="text-xs text-ink-400">
+            {showCategory && (
+              <>
+                {CATEGORY_EMOJI[product.category]} {CATEGORY_LABELS[product.category]}
+                {product.unit && ' · '}
+              </>
+            )}
+            {product.unit}
+          </span>
+        </span>
+
+        <span className="num shrink-0 text-sm text-ink-500">{formatILS(product.price)}</span>
+      </button>
+    </li>
   );
 }
