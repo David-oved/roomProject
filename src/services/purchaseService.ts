@@ -258,6 +258,7 @@ export async function rejectPurchase(
 export async function createSettlement(
   code: string,
   from: string,
+  fromName: string,
   to: string,
   amount: Agorot
 ): Promise<void> {
@@ -265,6 +266,8 @@ export async function createSettlement(
   if (!Number.isInteger(amount) || amount <= 0) throw new Error('הסכום חייב להיות חיובי');
 
   const id = push(ref(db, `rooms/${code}/settlements`)).key!;
+  const notifId = push(ref(db, `rooms/${code}/notifications`)).key!;
+
   await update(ref(db), {
     [`rooms/${code}/settlements/${id}`]: {
       from,
@@ -273,5 +276,27 @@ export async function createSettlement(
       date: serverTimestamp(),
       confirmedBy: null,
     },
+    [`rooms/${code}/notifications/${notifId}`]: {
+      type: 'settlement',
+      actorId: from,
+      actorName: fromName,
+      text: `${fromName} סימן שהעביר לך ${formatILS(amount)}`,
+      entityId: id,
+      createdAt: serverTimestamp(),
+      readBy: { [from]: true },
+    },
+  });
+
+  // הצד שמגיע לו כסף ממתין לדעת שהוא קיבל אותו — הפרעה שהוא רוצה
+  void enqueueNotification({
+    roomCode: code,
+    title: 'קיבלת תשלום',
+    body: `${fromName} סימן שהעביר לך ${formatILS(amount)}`,
+    url: `/r/${code}/balances`,
+    tag: `settlement-${id}`,
+    priority: 'now',
+    audience: 'user',
+    targetUid: to,
+    actorUid: from,
   });
 }

@@ -42,7 +42,9 @@ export default function RoomSettingsPage() {
 
   async function save() {
     setBusy(true);
-    const res = await toast.run(() => updateRoomMetadata(roomCode!, { name, description }));
+    const res = await toast.run(() =>
+      updateRoomMetadata(roomCode!, metadata?.name ?? '', { name, description })
+    );
     if (res !== null) toast.success('ההגדרות נשמרו');
     setBusy(false);
   }

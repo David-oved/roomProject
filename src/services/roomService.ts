@@ -277,22 +277,78 @@ export async function leaveRoom(code: string, userId: string): Promise<void> {
   });
 }
 
+/**
+ * עדכון פרטי חדר. שינוי שם דורש להעביר את תפיסת roomNames לשם החדש —
+ * בלעדיו: (א) ייחודיות השם מפסיקה להיאכף על השם החדש, ו-(ב) השם הישן
+ * נשאר תפוס לנצח (עד שמישהו ינסה להשתמש בו ומפעיל את מנגנון היתומים).
+ * נתפס בדיוק כמו ביצירת חדר, כולל טיפול בשם יתום — ראו createRoom.
+ */
 export async function updateRoomMetadata(
   code: string,
+  currentName: string,
   patch: { name?: string; description?: string }
 ): Promise<void> {
   assertOnline('לעדכן את החדר');
 
   const updates: Record<string, unknown> = {};
+  let oldSlug: string | null = null;
+  let newSlug: string | null = null;
+
   if (patch.name !== undefined) {
-    updates[`rooms/${code}/metadata/name`] = patch.name.trim();
-    updates[`roomCodes/${code}/name`] = patch.name.trim();
+    const newName = patch.name.trim();
+    oldSlug = slugifyRoomName(currentName);
+    newSlug = slugifyRoomName(newName);
+
+    if (newSlug.length < 2) throw new Error('שם החדר קצר מדי');
+
+    if (newSlug !== oldSlug) {
+      const newSlugRef = ref(db, `roomNames/${newSlug}`);
+      let orphanCode: string | null = null;
+
+      const held = await get(newSlugRef);
+      if (held.exists() && String(held.val()) !== code) {
+        const heldBy = String(held.val());
+        const codeSnap = await get(ref(db, `roomCodes/${heldBy}`));
+        if (codeSnap.exists()) throw new RoomNameTakenError(newName);
+        orphanCode = heldBy;
+      }
+
+      const result = await runTransaction(newSlugRef, (current: string | null) =>
+        current === null || current === orphanCode || current === code ? code : undefined
+      );
+      if (!result.committed) throw new RoomNameTakenError(newName);
+
+      updates[`roomNames/${oldSlug}`] = null;
+    } else {
+      // אותו slug (שינוי ניקוד/רווחים בלבד) — אין מה להעביר
+      oldSlug = null;
+      newSlug = null;
+    }
+
+    updates[`rooms/${code}/metadata/name`] = newName;
+    updates[`roomCodes/${code}/name`] = newName;
   }
+
   if (patch.description !== undefined) {
     updates[`rooms/${code}/metadata/description`] = patch.description.trim();
   }
 
-  await update(ref(db), updates);
+  try {
+    await update(ref(db), updates);
+  } catch (err) {
+    // פיצוי: אם תפסנו slug חדש אבל שאר הכתיבה נכשלה, לשחרר אותו —
+    // עטוף בנפרד כדי לא להסתיר את השגיאה המקורית (ראו createRoom).
+    if (newSlug) {
+      try {
+        await runTransaction(ref(db, `roomNames/${newSlug}`), (cur: string | null) =>
+          cur === code ? null : cur
+        );
+      } catch {
+        /* יישאר יתום, יתפנה בפעם הבאה שמישהו ינסה את השם */
+      }
+    }
+    throw err;
+  }
 }
 
 /**

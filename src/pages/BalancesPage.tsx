@@ -176,7 +176,13 @@ function SummaryTab({
                         if (!ok) return;
                         setBusy(key);
                         await toast.run(() =>
-                          createSettlement(roomCode!, t.from, t.to, t.amount)
+                          createSettlement(
+                            roomCode!,
+                            t.from,
+                            memberName(t.from),
+                            t.to,
+                            t.amount
+                          )
                         );
                         setBusy(null);
                       }}
