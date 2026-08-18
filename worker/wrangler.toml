@@ -1,0 +1,17 @@
+name = "roommate-push"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# הצפנת Web Push דורשת Web Crypto מלא
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+FIREBASE_PROJECT_ID = "gen-lang-client-0675991189"
+FIREBASE_DATABASE_URL = "https://gen-lang-client-0675991189-default-rtdb.europe-west1.firebasedatabase.app"
+VAPID_SUBJECT = "mailto:wbddwd55@gmail.com"
+ALLOWED_ORIGIN = "https://david-oved.github.io"
+
+# סודות מוגדרים בנפרד ולא נכנסים לקובץ:
+#   wrangler secret put FIREBASE_SERVICE_ACCOUNT
+#   wrangler secret put VAPID_PUBLIC_KEY
+#   wrangler secret put VAPID_PRIVATE_KEY

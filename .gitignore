@@ -42,3 +42,7 @@ tsconfig.tsbuildinfo
 
 # אישורים זמניים לסימולציה
 .sim-certs/
+
+# תלויות ה-Worker
+worker/node_modules/
+worker/.wrangler/

@@ -1,5 +1,5 @@
 import { push, ref, serverTimestamp, set } from 'firebase/database';
-import { db } from '../config/firebase';
+import { auth, db } from '../config/firebase';
 
 /**
  * ═══════════════════════════════════════════════════════════════════
@@ -40,6 +40,45 @@ interface OutboxDraft {
 }
 
 /**
+ * כתובת ה-Worker ששולח מיידית. ריק = אין Worker, והתור נשלח רק
+ * ע"י המשימה המתוזמנת.
+ */
+const PUSH_ENDPOINT = import.meta.env.VITE_PUSH_ENDPOINT ?? '';
+
+/**
+ * מבקש מה-Worker לשלוח עכשיו, במקום להמתין למשימה המתוזמנת.
+ *
+ * ‼️ "מיטב המאמץ" בלבד, ובכוונה: הרשומה כבר בתור, ולכן גם אם הקריאה
+ * הזו נכשלת לגמרי — ההתראה תישלח תוך 5 דקות ע"י המשימה המתוזמנת.
+ * לכן אין כאן ניסיונות חוזרים, אין המתנה, ואין הודעת שגיאה למשתמש.
+ * זו האצה, לא תלות.
+ */
+async function requestImmediateSend(entryId: string): Promise<void> {
+  if (!PUSH_ENDPOINT) return;
+
+  try {
+    const idToken = await auth.currentUser?.getIdToken();
+    if (!idToken) return;
+
+    // מגבלת זמן קצרה — אין טעם להחזיק בקשה פתוחה על משהו אופציונלי
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+
+    await fetch(`${PUSH_ENDPOINT}/notify`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ idToken, entryId }),
+      signal: controller.signal,
+      keepalive: true,
+    });
+
+    clearTimeout(timer);
+  } catch {
+    // המשימה המתוזמנת תטפל
+  }
+}
+
+/**
  * מוסיף התראה לתור.
  *
  * ‼️ אף פעם לא זורק. התראה היא תוספת, לא חלק מהפעולה עצמה — כישלון
@@ -48,6 +87,8 @@ interface OutboxDraft {
 export async function enqueueNotification(draft: OutboxDraft): Promise<void> {
   try {
     const entry = push(ref(db, 'outbox'));
+    const entryId = entry.key;
+
     await set(entry, {
       roomCode: draft.roomCode,
       title: draft.title.slice(0, 60),
@@ -60,6 +101,9 @@ export async function enqueueNotification(draft: OutboxDraft): Promise<void> {
       excludeUid: draft.actorUid,
       createdAt: serverTimestamp(),
     });
+
+    // הרשומה בתור ובטוחה. מכאן ואילך זו רק שאלה של מהירות.
+    if (entryId) void requestImmediateSend(entryId);
   } catch {
     // ההתראה לא נשלחה, אבל הפעולה עצמה כבר הצליחה — וזה מה שחשוב
   }
