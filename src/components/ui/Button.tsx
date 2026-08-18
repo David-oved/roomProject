@@ -28,8 +28,8 @@ const VARIANTS: Record<Variant, string> = {
 };
 
 const SIZES: Record<Size, string> = {
-  sm: 'h-9 px-3 text-sm rounded-lg gap-1.5',
-  md: 'h-11 px-4 text-[15px] rounded-xl gap-2',
+  sm: 'h-11 px-3.5 text-sm rounded-xl gap-1.5',
+  md: 'h-12 px-4 text-[15px] rounded-xl gap-2',
   lg: 'h-13 px-5 text-base rounded-xl gap-2 min-h-[52px]',
 };
 
@@ -53,7 +53,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={[
-        'inline-flex select-none items-center justify-center font-semibold',
+        'inline-flex min-h-[44px] select-none items-center justify-center font-semibold',
         'transition-[background-color,transform,box-shadow] duration-150',
         'active:scale-[.98] disabled:cursor-not-allowed disabled:active:scale-100',
         VARIANTS[variant],

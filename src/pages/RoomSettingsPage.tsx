@@ -9,6 +9,7 @@ import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
 import { useConnection } from '../store/ConnectionContext';
 import { useToast } from '../store/ToastContext';
+import { useConfirm } from '../store/ConfirmContext';
 import { useBalances } from '../hooks/useRoomData';
 import {
   deleteRoom,
@@ -26,6 +27,7 @@ export default function RoomSettingsPage() {
   const { isOnline } = useConnection();
   const { balances } = useBalances();
   const toast = useToast();
+  const confirm = useConfirm();
   const navigate = useNavigate();
 
   const [name, setName] = useState(metadata?.name ?? '');
@@ -99,7 +101,13 @@ export default function RoomSettingsPage() {
                       variant="secondary"
                       disabled={!isOnline}
                       onClick={async () => {
-                        if (!confirm(`להעביר את ניהול החדר ל${m.name}?`)) return;
+                        const ok = await confirm({
+                          title: 'העברת ניהול',
+                          body: `להעביר את ניהול החדר ל${m.name}? תהפכו לחבר רגיל ולא תוכלו לאשר קניות או חברים.`,
+                          confirmLabel: 'העבר ניהול',
+                          danger: true,
+                        });
+                        if (!ok) return;
                         const res = await toast.run(() =>
                           transferAdmin(roomCode!, user!.uid, m.id)
                         );
@@ -149,7 +157,13 @@ export default function RoomSettingsPage() {
                   className="mt-3"
                   disabled={!isOnline}
                   onClick={async () => {
-                    if (!confirm('לעזוב את החדר?')) return;
+                    const ok = await confirm({
+                      title: 'עזיבת החדר',
+                      body: 'הקניות והמאזן שלכם יישמרו בהיסטוריה. תוכלו לבקש להצטרף מחדש בעתיד.',
+                      confirmLabel: 'עזוב את החדר',
+                      danger: true,
+                    });
+                    if (!ok) return;
                     const res = await toast.run(() => leaveRoom(roomCode!, user!.uid));
                     if (res !== null) navigate('/onboarding', { replace: true });
                   }}

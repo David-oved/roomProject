@@ -41,7 +41,7 @@ export default function DashboardPage() {
     <AppShell>
       <TopBar
         title={metadata?.name ?? 'החדר שלי'}
-        subtitle={`${activeMembers.length} חברים`}
+        subtitle={<><span className="num">{activeMembers.length}</span> חברים</>}
         actions={
           <>
             <Link
@@ -122,7 +122,7 @@ export default function DashboardPage() {
                        text-sm font-semibold backdrop-blur transition hover:bg-white/30"
           >
             פירוט מלא
-            <ChevronIcon width={16} height={16} className="rotate-180" />
+            <ChevronIcon width={16} height={16} />
           </Link>
 
           {!isConsistent && (

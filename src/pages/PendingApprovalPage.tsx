@@ -32,13 +32,20 @@ export default function PendingApprovalPage() {
     user && code ? `joinRequests/${user.uid}/${code}` : null
   );
 
-  // ברגע שהמנהל מאשר — נכנסים לחדר אוטומטית
+  // ברגע שהמנהל מאשר — נכנסים לחדר אוטומטית.
+  //
+  // ‼️ התנאי הכפול חיוני: המראה האישית היא נתון משני שעלול להתיישן,
+  // בעוד profile.rooms הוא הסימן הסמכותי לחברות. בלי הבדיקה הכפולה,
+  // משתמש שהוסר מהחדר היה מנווט לכאן, נשלח חזרה לחדר, נדחה שוב —
+  // ונלכד בלולאה אינסופית.
+  const isMember = !!(code && profile?.rooms?.[code]);
+
   useEffect(() => {
-    if (data?.status === 'approved' && code) {
+    if (data?.status === 'approved' && isMember && code) {
       toast.success('הבקשה אושרה! ברוכים הבאים 🎉');
       navigate(`/r/${code}`, { replace: true });
     }
-  }, [data?.status, code, navigate, toast]);
+  }, [data?.status, isMember, code, navigate, toast]);
 
   if (loading) return <FullPageSpinner label="בודק את סטטוס הבקשה…" />;
   if (!code) return <Navigate to="/onboarding" replace />;
@@ -88,14 +95,13 @@ export default function PendingApprovalPage() {
 
         <h1 className="text-xl font-bold text-ink-900">ממתינים לאישור</h1>
         <p className="max-w-xs text-sm leading-relaxed text-ink-500">
-          שלחנו בקשת הצטרפות ל
+          שלחנו בקשת הצטרפות לחדר{' '}
           {data.roomName ? (
             <b className="text-ink-700">"{data.roomName}"</b>
           ) : (
-            <span>חדר </span>
+            <span className="num font-mono text-ink-700">{code}</span>
           )}
-          <span className="num font-mono text-ink-700"> {code}</span>. ברגע שמנהל החדר יאשר,
-          תיכנסו אוטומטית.
+          . ברגע שמנהל החדר יאשר, תיכנסו אוטומטית.
         </p>
 
         {data.requestedAt && (

@@ -13,6 +13,7 @@ import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
 import { useConnection } from '../store/ConnectionContext';
 import { useToast } from '../store/ToastContext';
+import { useConfirm } from '../store/ConfirmContext';
 import { claimItem, deleteItem, unclaimItem } from '../services/itemService';
 import { formatRelativeTime, formatTime } from '../lib/format';
 import {
@@ -54,7 +55,7 @@ export default function ItemsPage() {
     <AppShell>
       <TopBar
         title="מוצרים חסרים"
-        subtitle={items.length > 0 ? `${items.length} פריטים` : undefined}
+        subtitle={items.length > 0 ? <><span className="num">{items.length}</span> פריטים</> : undefined}
         actions={
           <Button
             size="sm"
@@ -75,7 +76,7 @@ export default function ItemsPage() {
             onClick={() => setFilter(f.key)}
             aria-pressed={filter === f.key}
             className={[
-              'shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition',
+              'tap shrink-0 rounded-full px-4 text-sm font-semibold transition',
               filter === f.key
                 ? 'bg-brand-700 text-white shadow-sm'
                 : 'bg-white text-ink-600 ring-1 ring-ink-200',
@@ -140,6 +141,7 @@ function ItemCard({ item, onBuy }: { item: WithId<Item>; onBuy: () => void }) {
   const { roomCode, isAdmin, memberName } = useRoom();
   const { isOnline } = useConnection();
   const toast = useToast();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
 
   const mine = item.assignedTo === user?.uid;
@@ -163,7 +165,7 @@ function ItemCard({ item, onBuy }: { item: WithId<Item>; onBuy: () => void }) {
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <h3 className="truncate font-bold text-ink-900">{item.name}</h3>
+            <h3 className="min-w-0 flex-1 truncate font-bold text-ink-900">{item.name}</h3>
             {item.priority === 'high' && <Badge tone="danger">{PRIORITY_LABELS.high}</Badge>}
             {item.status === 'buying' && (
               <Badge tone="info">{mine ? 'אתה קונה' : `${memberName(item.assignedTo ?? '')} קונה`}</Badge>
@@ -216,10 +218,14 @@ function ItemCard({ item, onBuy }: { item: WithId<Item>; onBuy: () => void }) {
               variant="ghost"
               className="ms-auto text-rose-600"
               {...guard}
-              onClick={() => {
-                if (confirm(`למחוק את "${item.name}"?`)) {
-                  void run(() => deleteItem(roomCode!, item.id));
-                }
+              onClick={async () => {
+                const ok = await confirm({
+                  title: 'מחיקת מוצר',
+                  body: `למחוק את "${item.name}" מהרשימה?`,
+                  confirmLabel: 'מחק',
+                  danger: true,
+                });
+                if (ok) await run(() => deleteItem(roomCode!, item.id));
               }}
             >
               מחק

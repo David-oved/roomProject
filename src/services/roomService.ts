@@ -204,6 +204,10 @@ export async function removeMember(
   await update(ref(db), {
     [`rooms/${code}/members/${memberId}/status`]: 'removed',
     [`users/${memberId}/rooms/${code}`]: null,
+    // ‼️ ניקוי המראה האישית והבקשה. בלעדיו הן נשארות 'approved' לנצח,
+    // ומסך ההמתנה ינווט את המשתמש חזרה לחדר שהוא כבר לא חבר בו.
+    [`joinRequests/${memberId}/${code}`]: null,
+    [`rooms/${code}/pendingRequests/${memberId}`]: null,
     [`rooms/${code}/notifications/${notifId}`]: {
       type: 'member_removed',
       actorId: adminId,
@@ -221,6 +225,9 @@ export async function leaveRoom(code: string, userId: string): Promise<void> {
   await update(ref(db), {
     [`rooms/${code}/members/${userId}/status`]: 'removed',
     [`users/${userId}/rooms/${code}`]: null,
+    // כמו ב-removeMember: מנקים את המראה כדי שלא תיווצר לולאת ניתוב
+    [`joinRequests/${userId}/${code}`]: null,
+    [`rooms/${code}/pendingRequests/${userId}`]: null,
   });
 }
 

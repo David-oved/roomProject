@@ -8,7 +8,7 @@ import { useAuth } from '../../store/AuthContext';
 import { useRoom } from '../../store/RoomContext';
 import { useToast } from '../../store/ToastContext';
 import { createPurchase } from '../../services/purchaseService';
-import { splitEqual, splitPercentage } from '../../lib/money';
+import { defaultPercentages, splitEqual, splitPercentage } from '../../lib/money';
 import { formatILS, toAgorot } from '../../lib/format';
 import type { Agorot, SplitMethod, WithId, Item } from '../../types/models';
 
@@ -43,7 +43,11 @@ export function MarkBoughtSheet({
     if (!open) return;
     const ids = activeMembers.map((m) => m.id);
     setParticipants(ids);
-    setPercentages(Object.fromEntries(ids.map((id) => [id, (100 / ids.length).toFixed(1)])));
+    // defaultPercentages מבטיח סכום של 100 בדיוק.
+    // (100 / n).toFixed(1) נשבר ברוב גדלי החדר — ראו lib/money.ts
+    setPercentages(
+      Object.fromEntries(Object.entries(defaultPercentages(ids)).map(([id, v]) => [id, String(v)]))
+    );
     setCustomText({});
     setAmountText('');
     setMethod('equal');
@@ -173,7 +177,7 @@ export function MarkBoughtSheet({
 
         <fieldset>
           <legend className="mb-2 block text-sm font-medium text-ink-700">
-            בין מי לחלק? ({participants.length})
+            בין מי לחלק? (<span className="num">{participants.length}</span>)
           </legend>
           <ul className="space-y-1.5">
             {activeMembers.map((m) => {
@@ -222,7 +226,7 @@ export function MarkBoughtSheet({
                           setPercentages((p) => ({ ...p, [m.id]: e.target.value }))
                         }
                         aria-label={`אחוז עבור ${m.name}`}
-                        className="num w-16 rounded-lg border border-ink-200 px-2 py-1 text-center text-sm"
+                        className="num h-11 w-16 rounded-lg border border-ink-200 px-2 text-center text-sm"
                       />
                     )}
 
@@ -237,7 +241,7 @@ export function MarkBoughtSheet({
                           setCustomText((c) => ({ ...c, [m.id]: e.target.value }))
                         }
                         aria-label={`סכום עבור ${m.name}`}
-                        className="num w-20 rounded-lg border border-ink-200 px-2 py-1 text-center text-sm"
+                        className="num h-11 w-20 rounded-lg border border-ink-200 px-2 text-center text-sm"
                       />
                     )}
 

@@ -9,6 +9,7 @@ import { LogoutIcon, RefreshIcon } from '../components/ui/icons';
 import { useAuth } from '../store/AuthContext';
 import { useConnection } from '../store/ConnectionContext';
 import { useToast } from '../store/ToastContext';
+import { useConfirm } from '../store/ConfirmContext';
 import { useUpdate } from '../store/UpdateContext';
 import { changeDisplayName, logout } from '../services/authService';
 import { APP_VERSION, BUILD_TIME } from '../lib/version';
@@ -19,6 +20,7 @@ export default function ProfilePage() {
   const { isOnline } = useConnection();
   const navigate = useNavigate();
   const toast = useToast();
+  const confirm = useConfirm();
   const { status, remote, checkNow, applyUpdate } = useUpdate();
 
   const [name, setName] = useState(profile?.displayName ?? '');
@@ -128,7 +130,12 @@ export default function ProfilePage() {
             size="lg"
             icon={<LogoutIcon width={18} height={18} />}
             onClick={async () => {
-              if (!confirm('להתנתק מהחשבון?')) return;
+              const ok = await confirm({
+                title: 'יציאה מהחשבון',
+                body: 'הנתונים השמורים במכשיר יימחקו. תצטרכו להתחבר מחדש.',
+                confirmLabel: 'התנתק',
+              });
+              if (!ok) return;
               await logout();
               navigate('/login', { replace: true });
             }}

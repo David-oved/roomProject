@@ -93,6 +93,9 @@ export default defineConfig({
 
   build: {
     target: 'es2020',
+    // בלי זה נכסים ישנים נערמים ב-dist ותופחים ל-Service Worker
+    // עוד מאות KB שהמשתמש מוריד לחינם.
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         manualChunks: {

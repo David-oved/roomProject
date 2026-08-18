@@ -11,6 +11,7 @@ import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
 import { useConnection } from '../store/ConnectionContext';
 import { useToast } from '../store/ToastContext';
+import { useConfirm } from '../store/ConfirmContext';
 import { approvePurchase, createSettlement, rejectPurchase } from '../services/purchaseService';
 import { simplifyDebts } from '../lib/money';
 import { formatAmount, formatILS, formatSmartDate } from '../lib/format';
@@ -72,7 +73,7 @@ export default function BalancesPage() {
               onClick={() => setTab(t.key)}
               aria-pressed={tab === t.key}
               className={[
-                'flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2',
+                'tap flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3',
                 'text-sm font-semibold transition',
                 tab === t.key
                   ? 'bg-white text-brand-800 shadow-card ring-1 ring-brand-200'
@@ -126,6 +127,7 @@ function SummaryTab({
   const { roomCode } = useRoom();
   const { isOnline } = useConnection();
   const toast = useToast();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState<string | null>(null);
 
   if (allTransfers.length === 0) {
@@ -166,8 +168,12 @@ function SummaryTab({
                       disabled={!isOnline || busy === key}
                       loading={busy === key}
                       onClick={async () => {
-                        if (!confirm(`לרשום תשלום של ${formatILS(t.amount)} ל${memberName(other)}?`))
-                          return;
+                        const ok = await confirm({
+                          title: 'רישום תשלום',
+                          body: `לרשום שהעברת ${formatILS(t.amount)} ל${memberName(other)}? החוב ייסגר.`,
+                          confirmLabel: 'כן, שילמתי',
+                        });
+                        if (!ok) return;
                         setBusy(key);
                         await toast.run(() =>
                           createSettlement(roomCode!, t.from, t.to, t.amount)
@@ -223,6 +229,7 @@ function PendingTab({ isAdmin }: { isAdmin: boolean }) {
   const { user } = useAuth();
   const { isOnline } = useConnection();
   const toast = useToast();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState<string | null>(null);
 
   if (pendingApproval.length === 0) {
@@ -277,10 +284,17 @@ function PendingTab({ isAdmin }: { isAdmin: boolean }) {
                 variant="secondary"
                 disabled={!isOnline || busy === p.id}
                 onClick={async () => {
-                  const reason = prompt('סיבת הדחייה (אופציונלי):') ?? undefined;
+                  const reason = await confirm.prompt({
+                    title: 'דחיית קנייה',
+                    label: 'סיבת הדחייה',
+                    placeholder: 'לדוגמה: הסכום לא תואם לחשבונית',
+                    optional: true,
+                    confirmLabel: 'דחה קנייה',
+                  });
+                  if (reason === null) return;
                   setBusy(p.id);
                   await toast.run(() =>
-                    rejectPurchase(roomCode!, user!.uid, profile!.displayName, p.id, reason)
+                    rejectPurchase(roomCode!, user!.uid, profile!.displayName, p.id, reason || undefined)
                   );
                   setBusy(null);
                 }}

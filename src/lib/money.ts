@@ -60,6 +60,36 @@ export function splitPercentage(
   return shares;
 }
 
+/**
+ * אחוזים ברירת-מחדל לחלוקה שווה, שמסתכמים **בדיוק** ל-100.
+ *
+ * הגישה הנאיבית `(100 / n).toFixed(1)` נשברת ברוב גדלי החדר:
+ *   3 אנשים → 33.3 × 3 = 99.9  ❌
+ *   6 אנשים → 16.7 × 6 = 100.2 ❌
+ *   7 אנשים → 14.3 × 7 = 100.1 ❌
+ * ודווקא 3 שותפים הוא גודל החדר הנפוץ ביותר במעונות.
+ * לכן האחרון סופג את השארית — בדיוק כמו בשאר מנוע הכספים.
+ */
+export function defaultPercentages(userIds: string[]): Record<string, number> {
+  const ids = [...new Set(userIds)].sort();
+  if (ids.length === 0) return {};
+
+  const each = Math.round((100 / ids.length) * 10) / 10;
+  const out: Record<string, number> = {};
+  let allocated = 0;
+
+  ids.forEach((id, i) => {
+    if (i === ids.length - 1) {
+      out[id] = Math.round((100 - allocated) * 10) / 10;
+    } else {
+      out[id] = each;
+      allocated += each;
+    }
+  });
+
+  return out;
+}
+
 /** אימות חלוקה מותאמת אישית. */
 export function validateCustomSplit(
   total: Agorot,

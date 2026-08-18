@@ -11,6 +11,7 @@ import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
 import { useConnection } from '../store/ConnectionContext';
 import { useToast } from '../store/ToastContext';
+import { useConfirm } from '../store/ConfirmContext';
 import { approveJoinRequest, rejectJoinRequest, removeMember } from '../services/roomService';
 import { formatFullDate, formatRelativeTime } from '../lib/format';
 
@@ -20,6 +21,7 @@ export default function MembersPage() {
   const { user, profile } = useAuth();
   const { isOnline } = useConnection();
   const toast = useToast();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState<string | null>(null);
 
   const guard = { disabled: !isOnline, title: isOnline ? undefined : 'פעולה זו דורשת חיבור לאינטרנט' };
@@ -33,7 +35,7 @@ export default function MembersPage() {
         {isAdmin && !reqLoading && requests.length > 0 && (
           <section>
             <h2 className="mb-2 px-1 text-sm font-bold text-ink-700">
-              בקשות הצטרפות ({requests.length})
+              בקשות הצטרפות (<span className="num">{requests.length}</span>)
             </h2>
             <ul className="space-y-2">
               {requests.map((r) => (
@@ -75,7 +77,13 @@ export default function MembersPage() {
                       variant="secondary"
                       {...guard}
                       onClick={async () => {
-                        if (!confirm(`לדחות את הבקשה של ${r.displayName}?`)) return;
+                        const ok = await confirm({
+                          title: 'דחיית בקשה',
+                          body: `לדחות את בקשת ההצטרפות של ${r.displayName}?`,
+                          confirmLabel: 'דחה',
+                          danger: true,
+                        });
+                        if (!ok) return;
                         setBusy(r.id);
                         await toast.run(() => rejectJoinRequest(roomCode!, r.userId));
                         setBusy(null);
@@ -93,7 +101,7 @@ export default function MembersPage() {
         {/* רשימת החברים */}
         <section>
           <h2 className="mb-2 px-1 text-sm font-bold text-ink-700">
-            חברים ({activeMembers.length})
+            חברים (<span className="num">{activeMembers.length}</span>)
           </h2>
 
           {loading ? (
@@ -104,12 +112,16 @@ export default function MembersPage() {
                 <li key={m.id} className="flex items-center gap-3 px-4 py-3">
                   <Avatar name={m.name} uid={m.id} src={m.avatar} size="sm" />
                   <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-1.5 truncate font-semibold text-ink-900">
-                      {m.name}
+                    <p className="flex items-center gap-1.5 font-semibold text-ink-900">
+                      <span className="min-w-0 truncate">{m.name}</span>
                       {m.id === user?.uid && (
-                        <span className="text-xs font-normal text-ink-400">(אתה)</span>
+                        <span className="shrink-0 text-xs font-normal text-ink-400">(אתה)</span>
                       )}
-                      {m.role === 'admin' && <Badge tone="brand">מנהל</Badge>}
+                      {m.role === 'admin' && (
+                        <span className="shrink-0">
+                          <Badge tone="brand">מנהל</Badge>
+                        </span>
+                      )}
                     </p>
                     {m.joinedAt && (
                       <p className="text-xs text-ink-500">הצטרף {formatFullDate(m.joinedAt)}</p>
@@ -124,12 +136,13 @@ export default function MembersPage() {
                       {...guard}
                       loading={busy === m.id}
                       onClick={async () => {
-                        if (
-                          !confirm(
-                            `להסיר את ${m.name} מהחדר?\n\nהקניות והמאזן שלו יישמרו בהיסטוריה.`
-                          )
-                        )
-                          return;
+                        const ok = await confirm({
+                          title: 'הסרת חבר',
+                          body: `להסיר את ${m.name} מהחדר? הקניות והמאזן יישמרו בהיסטוריה.`,
+                          confirmLabel: 'הסר מהחדר',
+                          danger: true,
+                        });
+                        if (!ok) return;
                         setBusy(m.id);
                         await toast.run(() =>
                           removeMember(roomCode!, user!.uid, profile!.displayName, m.id, m.name)

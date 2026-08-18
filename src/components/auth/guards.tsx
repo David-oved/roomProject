@@ -40,11 +40,17 @@ export function RequireRoomMember() {
 
   if (!metadata) return <Navigate to="/onboarding" replace />;
 
-  if (!myMembership || myMembership.status !== 'active') {
-    return <Navigate to={`/rooms/${code}/pending`} replace />;
+  // ‼️ חובה להבחין בין "טרם היה חבר" לבין "היה והוסר".
+  // בלי ההבחנה נוצרת לולאת ניתוב אינסופית: מסך ההמתנה קורא את המראה
+  // האישית שעדיין רשום בה 'approved', מנווט חזרה לחדר, השומר מזהה
+  // שהחברות אינה פעילה ומנווט שוב להמתנה — והמשתמש לכוד.
+  if (myMembership) {
+    if (myMembership.status === 'active') return <Outlet />;
+    return <Navigate to="/onboarding" replace state={{ removedFrom: code }} />;
   }
 
-  return <Outlet />;
+  // אף פעם לא היה חבר — ייתכן שיש בקשה ממתינה
+  return <Navigate to={`/rooms/${code}/pending`} replace />;
 }
 
 /** דורש הרשאת מנהל */

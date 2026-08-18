@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   computeBalances,
+  defaultPercentages,
   simplifyDebts,
   splitEqual,
   splitPercentage,
@@ -214,5 +215,35 @@ describe('simplifyDebts', () => {
       after[t.to as keyof typeof after] -= t.amount;
     }
     expect(Object.values(after).every((v) => v === 0)).toBe(true);
+  });
+});
+
+/* ═══════════════════ אחוזי ברירת מחדל ═══════════════════ */
+
+describe('defaultPercentages', () => {
+  // הבאג שנתפס: (100/n).toFixed(1) נשבר ברוב גדלי החדר.
+  // 3 שותפים הוא גודל החדר הנפוץ ביותר במעונות — ושם זה נשבר.
+  it.each([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])(
+    'סכום האחוזים ל-%s משתתפים הוא בדיוק 100',
+    (n) => {
+      const ids = Array.from({ length: n }, (_, i) => `u${i}`);
+      const pct = defaultPercentages(ids);
+      const sum = Object.values(pct).reduce((a, b) => a + b, 0);
+      expect(Math.round(sum * 10) / 10).toBe(100);
+    }
+  );
+
+  it('ברירת המחדל מתקבלת ע"י splitPercentage בלי לזרוק', () => {
+    for (let n = 1; n <= 12; n++) {
+      const ids = Array.from({ length: n }, (_, i) => `u${i}`);
+      const pct = defaultPercentages(ids);
+      expect(() => splitPercentage(10_000, pct)).not.toThrow();
+      const shares = splitPercentage(10_000, pct);
+      expect(Object.values(shares).reduce((a, b) => a + b, 0)).toBe(10_000);
+    }
+  });
+
+  it('מחזיר אובייקט ריק כשאין משתתפים', () => {
+    expect(defaultPercentages([])).toEqual({});
   });
 });
