@@ -55,9 +55,7 @@ export default function ChatConversationPage() {
 
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
-  const [composeHeight, setComposeHeight] = useState(72);
   const listRef = useRef<HTMLDivElement>(null);
-  const composeRef = useRef<HTMLDivElement>(null);
   const isFirstRender = useRef(true);
   const animatedIds = useRef<Set<string>>(new Set());
 
@@ -76,52 +74,48 @@ export default function ChatConversationPage() {
     animatedIds.current = new Set();
   }, [path]);
 
-  // גובה שורת הכתיבה בפועל — כדי שהודעות אחרונות לא ייעלמו מתחתיה
-  useEffect(() => {
-    const el = composeRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver((entries) => setComposeHeight(entries[0].contentRect.height));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+  /**
+   * ═══════════════════════════════════════════════════════════════
+   *  גובה המסך = גובה ה-visual viewport בפועל, ממש עכשיו — לא fixed
+   *  inset-0, לא 100dvh, בלי לנחש כמה גבוהה המקלדת.
+   * ═══════════════════════════════════════════════════════════════
+   *  הניסיון הקודם (fixed inset-0 + שורת כתיבה fixed נפרדת שמוזזת
+   *  ב-transform) הסתמך על ההנחה ש-window.innerHeight (ה-layout
+   *  viewport) לא זז כשהמקלדת נפתחת. ‼️ ההנחה הזו לא נכונה בברירת
+   *  המחדל של רוב דפדפני אנדרואיד/כרום ("resizes-content") — שם
+   *  ה-layout viewport עצמו מתכווץ, ואיתו כל fixed. בפועל זה הרגיש
+   *  בדיוק כמו שהמשתמש תיאר: "בועת הכתיבה מרגישה חלק מהרקע — כשהיא
+   *  עולה הכל עולה איתה", כי שניהם זזו יחד באותו אלמנט fixed.
+   *
+   *  הפתרון החזק והפשוט באמת: לא נלחמים בדפדפן, פשוט קוראים כל הזמן
+   *  את הגודל האמיתי שהוא כבר נותן (visualViewport.height/offsetTop —
+   *  זה תמיד משקף את השטח הנראה בפועל, בלי קשר לאיזה מצב הדפדפן
+   *  נמצא בו) ומצמידים את הקונטיינר בדיוק אליו. בתוך קונטיינר שגודלו
+   *  תמיד נכון, שורת הכתיבה היא ילד flex רגיל (לא fixed, לא transform,
+   *  בלי שום "שכבה נפרדת") — היא פשוט תמיד בתחתית הקונטיינר, וכותרת
+   *  ה-header נשארת קבועה למעלה כי רק אזור ההודעות (flex-1) הוא מה
+   *  שמתכווץ. זה בדיוק "רק הבועה עולה" — כי מבחינת ה-DOM זה באמת ככה.
+   */
+  const [viewport, setViewport] = useState(() => ({
+    height: window.visualViewport?.height ?? window.innerHeight,
+    top: window.visualViewport?.offsetTop ?? 0,
+  }));
 
-  // ‼️ קריטי: בלי זה, בדפדפני כרום/אנדרואיד (וכל דפדפן שברירת המחדל שלו
-  // "resizes-content") המקלדת מכווצת את ה-layout viewport עצמו — ואיתו כל
-  // fixed inset-0, לא משנה איך בונים אותו. זו הייתה הסיבה שהמסך "התרחב"
-  // (בעצם התכווץ) גם אחרי המעבר ל-fixed. ה-API הזה אומר לדפדפן: אל תזיז
-  // ואל תכווץ שום דבר בשביל המקלדת — אני כבר מטפל בזה לבד. קיים רק
-  // בדפדפני Chromium; בספארי לא צריך אותו כי ה-layout viewport שם ממילא
-  // לא מתכווץ עבור המקלדת (ולכן הקוד למטה כבר עבד שם).
-  useEffect(() => {
-    const vk = navigator.virtualKeyboard;
-    if (!vk) return;
-    vk.overlaysContent = true;
-    return () => {
-      vk.overlaysContent = false;
-    };
-  }, []);
-
-  // המסך כולו לא זז/מצטמצם כשהמקלדת נפתחת — רק שורת הכתיבה עולה מעליה.
-  // הקונטיינר קבוע (fixed inset-0), ושורת הכתיבה עצמה fixed בנפרד ומוזזת
-  // ב-JS לפי visualViewport — הנוסחה הסטנדרטית לגובה המקלדת: ההפרש בין
-  // גובה חלון הפריסה לגובה ה-visual viewport, פחות היסט הפאן שלו.
   useEffect(() => {
     const vv = window.visualViewport;
-    const compose = composeRef.current;
-    if (!vv || !compose) return;
+    if (!vv) return;
 
-    function reposition() {
-      const overlap = Math.max(0, window.innerHeight - vv!.height - vv!.offsetTop);
-      compose!.style.transform = overlap > 0 ? `translateY(-${overlap}px)` : '';
+    function sync() {
+      setViewport({ height: vv!.height, top: vv!.offsetTop });
     }
 
-    vv.addEventListener('resize', reposition);
-    vv.addEventListener('scroll', reposition);
-    reposition();
+    vv.addEventListener('resize', sync);
+    vv.addEventListener('scroll', sync);
+    sync();
 
     return () => {
-      vv.removeEventListener('resize', reposition);
-      vv.removeEventListener('scroll', reposition);
+      vv.removeEventListener('resize', sync);
+      vv.removeEventListener('scroll', sync);
     };
   }, []);
 
@@ -173,7 +167,10 @@ export default function ChatConversationPage() {
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-ink-50">
+    <div
+      className="fixed inset-x-0 flex flex-col bg-ink-50"
+      style={{ top: viewport.top, height: viewport.height }}
+    >
       {/* ── כותרת ── */}
       <header
         className="sticky top-0 z-10 flex shrink-0 items-center gap-2.5 border-b border-ink-200/70
@@ -220,8 +217,7 @@ export default function ChatConversationPage() {
       {/* ── הודעות ── */}
       <div
         ref={listRef}
-        className="scroll-area min-h-0 flex-1 overflow-y-auto px-3 pt-3 safe-x"
-        style={{ paddingBottom: `calc(0.75rem + ${composeHeight}px)` }}
+        className="scroll-area min-h-0 flex-1 overflow-y-auto px-3 py-3 safe-x"
       >
         {sorted.length === 0 && messagesLoading ? (
           // ‼️ בכוונה לא מציגים "עדיין אין הודעות" כל עוד עוד לא ידוע בוודאות
@@ -280,12 +276,11 @@ export default function ChatConversationPage() {
         )}
       </div>
 
-      {/* ── שורת כתיבה — fixed בנפרד, מוזזת ב-JS לפי visualViewport כדי
-          שרק היא תעלה מעל המקלדת; שאר המסך לא זז ── */}
+      {/* ── שורת כתיבה — ילד flex רגיל, לא fixed ולא transform. היא
+          "עולה" רק כי הקונטיינר שמעליה מצטמצם בדיוק לגובה הנראה בפועל —
+          ראו ההערה למעלה. ── */}
       <div
-        ref={composeRef}
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-ink-200/70 bg-white px-3 py-2.5
-                   safe-x transition-transform duration-100 ease-out"
+        className="shrink-0 border-t border-ink-200/70 bg-white px-3 py-2.5 safe-x"
         style={{ paddingBottom: 'calc(var(--safe-bottom) + 0.625rem)' }}
       >
         <div className="flex items-end gap-2">

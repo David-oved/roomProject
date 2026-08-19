@@ -30,17 +30,3 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
-
-/**
- * VirtualKeyboard API — כרגע רק בדפדפני Chromium (אנדרואיד/דסקטופ עם מגע).
- * כשמופעל, המקלדת "צפה" מעל התוכן במקום לכווץ את ה-layout viewport.
- * ראו שימוש ב-ChatConversationPage.
- */
-interface Navigator {
-  virtualKeyboard?: {
-    overlaysContent: boolean;
-    boundingRect: DOMRect;
-    addEventListener(type: 'geometrychange', listener: () => void): void;
-    removeEventListener(type: 'geometrychange', listener: () => void): void;
-  };
-}
