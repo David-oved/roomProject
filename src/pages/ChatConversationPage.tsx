@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../store/AuthContext';
 import { useRoom } from '../store/RoomContext';
 import { useConnection } from '../store/ConnectionContext';
+import { useToast } from '../store/ToastContext';
 import { useRtdbList } from '../hooks/useRtdb';
 import {
   GENERAL_SCOPE,
@@ -26,6 +27,7 @@ export default function ChatConversationPage() {
   const { user, profile } = useAuth();
   const { activeMembers, memberName } = useRoom();
   const { isOnline } = useConnection();
+  const toast = useToast();
 
   const isGeneral = !otherUid;
   const myUid = user?.uid ?? '';
@@ -44,7 +46,7 @@ export default function ChatConversationPage() {
       ? [otherUid]
       : [];
 
-  const { data: messages } = useRtdbList<ChatMessage>(path);
+  const { data: messages, loading: messagesLoading } = useRtdbList<ChatMessage>(path);
   const sorted = useMemo(
     () => [...messages].sort((a, b) => (a.sentAt ?? 0) - (b.sentAt ?? 0)),
     [messages]
@@ -131,6 +133,11 @@ export default function ChatConversationPage() {
       } else if (otherUid) {
         await sendDirectMessage(code, user.uid, profile.displayName, otherUid, trimmed);
       }
+    } catch {
+      // השליחה נכשלה בפועל (לא רק "לא נראה מיד") — מחזירים את הטקסט
+      // במקום לאבד אותו בשקט, כדי שהמשתמש יוכל לנסות שוב.
+      setText(trimmed);
+      toast.error('שליחת ההודעה נכשלה. נסו שוב');
     } finally {
       setSending(false);
     }
@@ -175,7 +182,14 @@ export default function ChatConversationPage() {
         className="scroll-area min-h-0 flex-1 overflow-y-auto px-3 pt-3 safe-x"
         style={{ paddingBottom: `calc(0.75rem + ${composeHeight}px)` }}
       >
-        {sorted.length === 0 ? (
+        {sorted.length === 0 && messagesLoading ? (
+          // ‼️ בכוונה לא מציגים "עדיין אין הודעות" כל עוד עוד לא ידוע בוודאות
+          // שאין הודעות — ברשת חלשה זה נראה כאילו הודעות "נעלמות" כשבעצם
+          // הן פשוט עוד לא נטענו.
+          <div className="flex h-full items-center justify-center">
+            <span className="h-6 w-6 animate-spin rounded-full border-2 border-ink-200 border-t-brand-500" />
+          </div>
+        ) : sorted.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
             <span className="grid h-12 w-12 place-items-center rounded-2xl bg-ink-100 text-ink-400">
               <ChatIcon width={22} height={22} />
