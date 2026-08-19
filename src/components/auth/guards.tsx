@@ -51,13 +51,3 @@ export function RequireRoomMember() {
   // אף פעם לא היה חבר — ייתכן שיש בקשה ממתינה
   return <Navigate to={`/rooms/${code}/pending`} replace />;
 }
-
-/** דורש הרשאת מנהל */
-export function RequireAdmin() {
-  const { code } = useParams<{ code: string }>();
-  const { isAdmin, loading } = useRoom();
-
-  if (loading) return <FullPageSpinner />;
-  if (!isAdmin) return <Navigate to={`/r/${code}`} replace />;
-  return <Outlet />;
-}

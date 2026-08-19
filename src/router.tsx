@@ -1,11 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
-import {
-  RequireAdmin,
-  RequireAuth,
-  RequireGuest,
-  RequireRoomMember,
-} from './components/auth/guards';
+import { RequireAuth, RequireGuest, RequireRoomMember } from './components/auth/guards';
 import { RoomProvider } from './store/RoomContext';
 import { FullPageSpinner } from './components/ui/Spinner';
 
@@ -24,7 +19,7 @@ const ItemsPage = lazy(() => import('./pages/ItemsPage'));
 const BalancesPage = lazy(() => import('./pages/BalancesPage'));
 const MembersPage = lazy(() => import('./pages/MembersPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
-const RoomSettingsPage = lazy(() => import('./pages/RoomSettingsPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
@@ -64,10 +59,7 @@ export function AppRoutes() {
               <Route path="balances" element={<BalancesPage />} />
               <Route path="members" element={<MembersPage />} />
               <Route path="notifications" element={<NotificationsPage />} />
-
-              <Route element={<RequireAdmin />}>
-                <Route path="settings" element={<RoomSettingsPage />} />
-              </Route>
+              <Route path="settings" element={<SettingsPage />} />
             </Route>
           </Route>
         </Route>

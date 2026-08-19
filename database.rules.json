@@ -68,9 +68,13 @@
     "outbox": {
       ".read": false,
       "$entryId": {
-        // יצירה בלבד, ורק ע"י חבר פעיל בחדר שעליו ההתראה. אין עריכה
-        // ואין מחיקה מהלקוח — כדי שאי אפשר יהיה לשנות התראה שכבר בתור.
-        ".write": "auth != null && !data.exists() && newData.exists() && root.child('rooms/' + newData.child('roomCode').val() + '/members/' + auth.uid + '/status').val() === 'active'",
+        // יצירה בלבד, ורק ע"י חבר פעיל בחדר שעליו ההתראה — עם חריג יחיד:
+        // מי ששלח בקשת הצטרפות ל-pendingRequests (עדיין לא חבר) מותר לו
+        // להודיע *רק* למנהל האמיתי של אותו חדר *רק* כשהבקשה שלו קיימת
+        // ו-pending. כך אין דרך להודיע למישהו אחר או על חדר אחר.
+        // אין עריכה ואין מחיקה מהלקוח — כדי שאי אפשר יהיה לשנות התראה
+        // שכבר בתור.
+        ".write": "auth != null && !data.exists() && newData.exists() && (root.child('rooms/' + newData.child('roomCode').val() + '/members/' + auth.uid + '/status').val() === 'active' || (newData.child('audience').val() === 'user' && newData.child('targetUid').val() === root.child('rooms/' + newData.child('roomCode').val() + '/metadata/adminId').val() && root.child('rooms/' + newData.child('roomCode').val() + '/pendingRequests/' + auth.uid + '/status').val() === 'pending'))",
         ".validate": "newData.hasChildren(['roomCode', 'title', 'body', 'audience', 'priority', 'createdAt'])",
 
         "roomCode":   { ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{6}$/)" },

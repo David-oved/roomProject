@@ -8,7 +8,14 @@ import { ListSkeleton } from '../components/ui/Skeleton';
 import { BellIcon, ChevronIcon, SettingsIcon } from '../components/ui/icons';
 import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
-import { useBalances, useItems, useJoinRequests, useNotifications, usePurchases } from '../hooks/useRoomData';
+import {
+  useBalances,
+  useItems,
+  useJoinRequests,
+  useNotifications,
+  usePurchases,
+  useSettlements,
+} from '../hooks/useRoomData';
 import { formatAmount, formatILS, formatRelativeTime } from '../lib/format';
 import { CATEGORY_EMOJI, PRIORITY_LABELS } from '../types/models';
 import { RoomCodeCard } from '../components/rooms/RoomCodeCard';
@@ -24,6 +31,7 @@ export default function DashboardPage() {
   const { myBalance, isConsistent } = useBalances();
   const { requests } = useJoinRequests();
   const { unreadCount } = useNotifications();
+  const { awaitingMyConfirmation } = useSettlements();
 
   const justCreated = params.get('created') === '1';
   const firstName = profile?.displayName?.split(' ')[0] ?? '';
@@ -62,16 +70,14 @@ export default function DashboardPage() {
                 </span>
               )}
             </Link>
-            {isAdmin && (
-              <Link
-                to={`/r/${roomCode}/settings`}
-                aria-label="הגדרות חדר"
-                className="tap grid place-items-center rounded-full text-ink-500
-                           transition hover:bg-ink-100 hover:text-ink-800"
-              >
-                <SettingsIcon width={20} height={20} />
-              </Link>
-            )}
+            <Link
+              to={`/r/${roomCode}/settings`}
+              aria-label="הגדרות"
+              className="tap grid place-items-center rounded-full text-ink-500
+                         transition hover:bg-ink-100 hover:text-ink-800"
+            >
+              <SettingsIcon width={20} height={20} />
+            </Link>
           </>
         }
       />
@@ -134,12 +140,36 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {/* ── פעולות שדורשות תשומת לב (מנהל) ── */}
-        {isAdmin && (requests.length > 0 || pendingApproval.length > 0) && (
+        {/* ── פעולות שדורשות תשומת לב ── */}
+        {((isAdmin && (requests.length > 0 || pendingApproval.length > 0)) ||
+          awaitingMyConfirmation.length > 0) && (
           <section className="space-y-2">
             <h2 className="px-1 text-sm font-bold text-ink-700">דורש את אישורך</h2>
 
-            {requests.length > 0 && (
+            {awaitingMyConfirmation.length > 0 && (
+              <Link
+                to={`/r/${roomCode}/balances`}
+                className="card flex items-center gap-3 p-4 transition active:scale-[.99] hover:shadow-lifted"
+              >
+                <span aria-hidden className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-50 text-lg">
+                  💸
+                </span>
+                <span className="flex-1">
+                  <span className="block text-sm font-semibold text-ink-900">
+                    {awaitingMyConfirmation.length === 1
+                      ? 'תשלום ממתין לאישורך'
+                      : `${awaitingMyConfirmation.length} תשלומים ממתינים לאישורך`}
+                  </span>
+                  <span className="num text-xs text-ink-500">
+                    סה"כ{' '}
+                    {formatILS(awaitingMyConfirmation.reduce((a, s) => a + s.amount, 0))}
+                  </span>
+                </span>
+                <Badge tone="success">{awaitingMyConfirmation.length}</Badge>
+              </Link>
+            )}
+
+            {isAdmin && requests.length > 0 && (
               <Link
                 to={`/r/${roomCode}/members`}
                 className="card flex items-center gap-3 p-4 transition active:scale-[.99] hover:shadow-lifted"
@@ -159,7 +189,7 @@ export default function DashboardPage() {
               </Link>
             )}
 
-            {pendingApproval.length > 0 && (
+            {isAdmin && pendingApproval.length > 0 && (
               <Link
                 to={`/r/${roomCode}/balances`}
                 className="card flex items-center gap-3 p-4 transition active:scale-[.99] hover:shadow-lifted"
@@ -266,9 +296,9 @@ export default function DashboardPage() {
         )}
 
         <div className="pt-2 text-center">
-          <Link to="/profile">
+          <Link to={`/r/${roomCode}/settings`}>
             <Button variant="ghost" size="sm">
-              הגדרות חשבון
+              הגדרות
             </Button>
           </Link>
         </div>

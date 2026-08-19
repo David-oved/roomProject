@@ -59,7 +59,22 @@ export function usePurchases() {
 
 export function useSettlements() {
   const { roomCode } = useRoom();
-  return useRtdbList<Settlement>(roomCode ? `rooms/${roomCode}/settlements` : null);
+  const { user } = useAuth();
+  const state = useRtdbList<Settlement>(roomCode ? `rooms/${roomCode}/settlements` : null);
+
+  /** תשלומים שמישהו סימן שהעביר לי — ממתינים לאישור שלי */
+  const awaitingMyConfirmation = useMemo(
+    () => state.data.filter((s) => !s.confirmedBy && s.to === user?.uid),
+    [state.data, user]
+  );
+
+  /** תשלומים ששלחתי ועדיין לא אושרו בצד השני */
+  const awaitingOthers = useMemo(
+    () => state.data.filter((s) => !s.confirmedBy && s.from === user?.uid),
+    [state.data, user]
+  );
+
+  return { ...state, awaitingMyConfirmation, awaitingOthers };
 }
 
 /**

@@ -3,6 +3,7 @@ import { Sheet } from '../ui/Sheet';
 import { Button } from '../ui/Button';
 import { Input, Textarea } from '../ui/Input';
 import { Badge } from '../ui/Badge';
+import { AddProductForm } from '../catalog/AddProductForm';
 import { reportItem } from '../../services/itemService';
 import { useAuth } from '../../store/AuthContext';
 import { useRoom } from '../../store/RoomContext';
@@ -41,6 +42,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
 
   /** המוצר מהקטלוג שנבחר. null = טקסט חופשי. */
   const [picked, setPicked] = useState<RoomProduct | null>(null);
+  const [addingProduct, setAddingProduct] = useState(false);
 
   const categories = useMemo(() => {
     const active = ALL_CATEGORIES.filter((c) => metadata?.categories?.[c]);
@@ -80,6 +82,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
     if (!open) return;
     setName('');
     setPicked(null);
+    setAddingProduct(false);
     setCategory(categories[0] ?? 'kitchen');
     setPriority('normal');
     setNotes('');
@@ -143,38 +146,74 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
             required
           />
 
-          {/* ── הצעות מהקטלוג ── */}
-          {!exactPick && suggestions.length > 0 && (
+          {/* ── הוספת מוצר חדש לקטלוג ── */}
+          {addingProduct ? (
             <div className="mt-2">
-              <p className="mb-1.5 px-1 text-xs font-medium text-ink-500">
-                {name.trim().length === 0 ? '🧺 מוצרי הבסיס של החדר' : 'מהקטלוג'}
-              </p>
-              <ul className="divide-y divide-ink-100 overflow-hidden rounded-xl border border-ink-200 bg-white">
-                {suggestions.map((p) => (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      onClick={() => choose(p)}
-                      className="flex w-full items-center gap-2.5 px-3 py-2.5 text-start
-                                 transition hover:bg-brand-50/60"
-                    >
-                      <span aria-hidden className="shrink-0 text-base">
-                        {CATEGORY_EMOJI[p.category]}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-ink-900">
-                          {p.name}
-                        </span>
-                        {p.unit && <span className="text-xs text-ink-400">{p.unit}</span>}
-                      </span>
-                      <span className="num shrink-0 text-sm text-ink-500">
-                        {formatILS(p.price)}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <AddProductForm
+                initialName={name.trim()}
+                onCancel={() => setAddingProduct(false)}
+                onAdded={({ id, name: addedName, category: cat, priceShekels }) => {
+                  setName(addedName);
+                  setCategory(cat);
+                  setAddingProduct(false);
+                  // מקשר את הדיווח למוצר החדש, בדיוק כמו בחירה מהקטלוג
+                  setPicked({
+                    id,
+                    name: addedName,
+                    category: cat,
+                    price: Math.round(priceShekels * 100),
+                  } as RoomProduct);
+                }}
+              />
             </div>
+          ) : (
+            <>
+              {/* ── הצעות מהקטלוג ── */}
+              {!exactPick && suggestions.length > 0 && (
+                <div className="mt-2">
+                  <p className="mb-1.5 px-1 text-xs font-medium text-ink-500">
+                    {name.trim().length === 0 ? '🧺 מוצרי הבסיס של החדר' : 'מהקטלוג'}
+                  </p>
+                  <ul className="divide-y divide-ink-100 overflow-hidden rounded-xl border border-ink-200 bg-white">
+                    {suggestions.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          onClick={() => choose(p)}
+                          className="flex w-full items-center gap-2.5 px-3 py-2.5 text-start
+                                     transition hover:bg-brand-50/60"
+                        >
+                          <span aria-hidden className="shrink-0 text-base">
+                            {CATEGORY_EMOJI[p.category]}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium text-ink-900">
+                              {p.name}
+                            </span>
+                            {p.unit && <span className="text-xs text-ink-400">{p.unit}</span>}
+                          </span>
+                          <span className="num shrink-0 text-sm text-ink-500">
+                            {formatILS(p.price)}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* ── קישור להוספה לקטלוג — רק כשיש שם שלא נבחר מדויק מהקטלוג ── */}
+              {!exactPick && name.trim().length >= 2 && (
+                <button
+                  type="button"
+                  onClick={() => setAddingProduct(true)}
+                  className="mt-2 w-full rounded-xl px-3 py-2 text-center text-xs font-semibold
+                             text-brand-700 transition hover:bg-brand-50"
+                >
+                  ➕ הוספת "{name.trim()}" כמוצר קבוע בקטלוג
+                </button>
+              )}
+            </>
           )}
 
           {/* ── נבחר מהקטלוג ── */}

@@ -254,7 +254,13 @@ export async function rejectPurchase(
   }
 }
 
-/** רישום תשלום שסוגר חוב בין שני חברים. */
+/**
+ * רישום תשלום — טענה של המשלם, לא עובדה מאושרת.
+ *
+ * ‼️ החוב לא נסגר כאן. computeBalances מתעלם מתשלום עד ש-confirmSettlement
+ * נקרא ע"י מי שהיה אמור לקבל את הכסף. ראו lib/money.ts. בלי זה, כל אחד
+ * יכול היה "לסגור" חוב שהוא לא באמת שילם.
+ */
 export async function createSettlement(
   code: string,
   from: string,
@@ -280,23 +286,68 @@ export async function createSettlement(
       type: 'settlement',
       actorId: from,
       actorName: fromName,
-      text: `${fromName} סימן שהעביר לך ${formatILS(amount)}`,
+      text: `${fromName} מסמן/ת שהעביר/ה לך ${formatILS(amount)} — ממתין לאישורך`,
       entityId: id,
       createdAt: serverTimestamp(),
       readBy: { [from]: true },
     },
   });
 
-  // הצד שמגיע לו כסף ממתין לדעת שהוא קיבל אותו — הפרעה שהוא רוצה
+  // הצד שמגיע לו כסף חייב לאשר קבלה — בלי זה החוב לא נסגר, וזו בדיוק
+  // ההפרעה שהוא רוצה לקבל מיד
   void enqueueNotification({
     roomCode: code,
-    title: 'קיבלת תשלום',
-    body: `${fromName} סימן שהעביר לך ${formatILS(amount)}`,
+    title: 'מישהו סימן שהעביר לך תשלום',
+    body: `${fromName} — ${formatILS(amount)}. אשרו שקיבלתם כדי לסגור את החוב.`,
     url: `/r/${code}/balances`,
     tag: `settlement-${id}`,
     priority: 'now',
     audience: 'user',
     targetUid: to,
     actorUid: from,
+  });
+}
+
+/**
+ * אישור קבלת תשלום ע"י מי שהיה אמור לקבל את הכסף.
+ *
+ * זה הרגע שבו החוב באמת נסגר — ראו computeBalances. רק `to` יכול לקרוא
+ * לפונקציה הזו בהצלחה; חוקי ה-DB אוכפים את זה גם ברמת השרת.
+ */
+export async function confirmSettlement(
+  code: string,
+  settlementId: string,
+  confirmerId: string,
+  confirmerName: string,
+  payerId: string,
+  amount: Agorot
+): Promise<void> {
+  assertOnline('לאשר קבלת תשלום');
+
+  const notifId = push(ref(db, `rooms/${code}/notifications`)).key!;
+
+  await update(ref(db), {
+    [`rooms/${code}/settlements/${settlementId}/confirmedBy`]: confirmerId,
+    [`rooms/${code}/notifications/${notifId}`]: {
+      type: 'settlement',
+      actorId: confirmerId,
+      actorName: confirmerName,
+      text: `${confirmerName} אישר/ה קבלת ${formatILS(amount)} — החוב נסגר`,
+      entityId: settlementId,
+      createdAt: serverTimestamp(),
+      readBy: { [confirmerId]: true },
+    },
+  });
+
+  void enqueueNotification({
+    roomCode: code,
+    title: 'התשלום שלך אושר ✅',
+    body: `${confirmerName} אישר/ה שקיבל/ה ${formatILS(amount)}`,
+    url: `/r/${code}/balances`,
+    tag: `settlement-confirm-${settlementId}`,
+    priority: 'now',
+    audience: 'user',
+    targetUid: payerId,
+    actorUid: confirmerId,
   });
 }

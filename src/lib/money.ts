@@ -168,6 +168,9 @@ export function computeBalances(
   }
 
   for (const s of settlements) {
+    // תשלום שטרם אושר ע"י מי שמגיע לו הכסף לא משפיע על המאזן — רק
+    // טענה, לא עובדה. ראו confirmSettlement ב-purchaseService.
+    if (!s.confirmedBy) continue;
     balances[s.from] = (balances[s.from] ?? 0) + s.amount;
     balances[s.to] = (balances[s.to] ?? 0) - s.amount;
   }

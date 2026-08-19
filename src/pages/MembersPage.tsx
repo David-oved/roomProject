@@ -85,7 +85,7 @@ export default function MembersPage() {
                         });
                         if (!ok) return;
                         setBusy(r.id);
-                        await toast.run(() => rejectJoinRequest(roomCode!, r.userId));
+                        await toast.run(() => rejectJoinRequest(roomCode!, user!.uid, r.userId));
                         setBusy(null);
                       }}
                     >

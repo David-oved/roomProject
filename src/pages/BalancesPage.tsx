@@ -6,13 +6,18 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
-import { useBalances, useContributions, usePurchases } from '../hooks/useRoomData';
+import { useBalances, useContributions, usePurchases, useSettlements } from '../hooks/useRoomData';
 import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
 import { useConnection } from '../store/ConnectionContext';
 import { useToast } from '../store/ToastContext';
 import { useConfirm } from '../store/ConfirmContext';
-import { approvePurchase, createSettlement, rejectPurchase } from '../services/purchaseService';
+import {
+  approvePurchase,
+  confirmSettlement,
+  createSettlement,
+  rejectPurchase,
+} from '../services/purchaseService';
 import { simplifyDebts } from '../lib/money';
 import { formatAmount, formatILS, formatSmartDate } from '../lib/format';
 import { PURCHASE_STATUS_LABELS } from '../types/models';
@@ -123,14 +128,15 @@ function SummaryTab({
   memberIds: string[];
   memberName: (uid: string) => string;
 }) {
-  const { user } = useAuth();
-  const { roomCode } = useRoom();
+  const { user, profile } = useAuth();
+  const { roomCode, memberName: roomMemberName } = useRoom();
   const { isOnline } = useConnection();
   const toast = useToast();
   const confirm = useConfirm();
   const [busy, setBusy] = useState<string | null>(null);
+  const { awaitingMyConfirmation, awaitingOthers } = useSettlements();
 
-  if (allTransfers.length === 0) {
+  if (allTransfers.length === 0 && awaitingMyConfirmation.length === 0) {
     return (
       <EmptyState
         icon="✅"
@@ -142,6 +148,52 @@ function SummaryTab({
 
   return (
     <div className="space-y-4">
+      {/* ── תשלומים שממתינים לאישור שלי ── */}
+      {awaitingMyConfirmation.length > 0 && (
+        <section>
+          <h2 className="mb-2 px-1 text-sm font-bold text-amber-800">
+            ממתין לאישורך — קיבלת את הכסף?
+          </h2>
+          <ul className="space-y-2">
+            {awaitingMyConfirmation.map((s) => (
+              <li
+                key={s.id}
+                className="card flex items-center gap-3 border-amber-200 bg-amber-50/60 p-4"
+              >
+                <Avatar name={roomMemberName(s.from)} uid={s.from} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-ink-900">
+                    {roomMemberName(s.from)} מסמן/ת שהעביר/ה לך
+                  </p>
+                  <p className="num text-lg font-bold text-emerald-700">{formatILS(s.amount)}</p>
+                </div>
+                <Button
+                  size="sm"
+                  disabled={!isOnline || busy === s.id}
+                  loading={busy === s.id}
+                  onClick={async () => {
+                    setBusy(s.id);
+                    await toast.run(() =>
+                      confirmSettlement(
+                        roomCode!,
+                        s.id,
+                        user!.uid,
+                        profile!.displayName,
+                        s.from,
+                        s.amount
+                      )
+                    );
+                    setBusy(null);
+                  }}
+                >
+                  קיבלתי
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {transfers.length > 0 && (
         <section>
           <h2 className="mb-2 px-1 text-sm font-bold text-ink-700">מה שנוגע לך</h2>
@@ -150,6 +202,7 @@ function SummaryTab({
               const iOwe = t.from === user?.uid;
               const other = iOwe ? t.to : t.from;
               const key = `${t.from}-${t.to}-${i}`;
+              const alreadySent = awaitingOthers.some((s) => s.from === t.from && s.to === t.to);
               return (
                 <li key={key} className="card flex items-center gap-3 p-4">
                   <Avatar name={memberName(other)} uid={other} size="sm" />
@@ -161,7 +214,12 @@ function SummaryTab({
                       {formatILS(t.amount)}
                     </p>
                   </div>
-                  {iOwe && (
+                  {iOwe && alreadySent && (
+                    <span className="shrink-0 text-xs font-medium text-amber-700">
+                      ממתין לאישור {memberName(other)}
+                    </span>
+                  )}
+                  {iOwe && !alreadySent && (
                     <Button
                       size="sm"
                       variant="secondary"
@@ -170,7 +228,7 @@ function SummaryTab({
                       onClick={async () => {
                         const ok = await confirm({
                           title: 'רישום תשלום',
-                          body: `לרשום שהעברת ${formatILS(t.amount)} ל${memberName(other)}? החוב ייסגר.`,
+                          body: `${memberName(other)} יקבל/תקבל בקשת אישור. החוב ייסגר רק אחרי שיאשר/תאשר שקיבל/ה את ${formatILS(t.amount)}.`,
                           confirmLabel: 'כן, שילמתי',
                         });
                         if (!ok) return;

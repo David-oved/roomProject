@@ -1,9 +1,12 @@
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
+  updatePassword,
   updateProfile,
   type User,
 } from 'firebase/auth';
@@ -128,6 +131,24 @@ export async function changeDisplayName(
 
   await update(ref(db), updates); // הכל או כלום
   if (auth.currentUser) await updateProfile(auth.currentUser, { displayName: name });
+}
+
+/**
+ * שינוי סיסמה. Firebase דורש "התחברות טרייה" לפעולה הזו — סשן ישן
+ * נכשל עם auth/requires-recent-login. לכן קודם מאמתים מחדש עם הסיסמה
+ * הנוכחית, ורק אז מחליפים.
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  assertOnline('לשנות סיסמה');
+  const user = auth.currentUser;
+  if (!user?.email) throw new Error('יש להתחבר מחדש כדי לשנות סיסמה');
+
+  const credential = EmailAuthProvider.credential(user.email, currentPassword);
+  await reauthenticateWithCredential(user, credential);
+  await updatePassword(user, newPassword);
 }
 
 export const subscribeToAuth = (cb: (u: User | null) => void) => onAuthStateChanged(auth, cb);

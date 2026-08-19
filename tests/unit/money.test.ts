@@ -145,9 +145,16 @@ describe('computeBalances', () => {
     expect(once).toEqual(twice);
   });
 
-  it('סגירת חשבון מאפסת את החוב', () => {
-    const settlement: Settlement = { from: 'b', to: 'a', amount: 1000, date: 2, confirmedBy: null };
+  it('סגירת חשבון מאושרת מאפסת את החוב', () => {
+    const settlement: Settlement = { from: 'b', to: 'a', amount: 1000, date: 2, confirmedBy: 'a' };
     expect(computeBalances([purchase({})], [settlement], ['a', 'b'])).toEqual({ a: 0, b: 0 });
+  });
+
+  it('סגירת חשבון שטרם אושרה לא משפיעה על המאזן', () => {
+    const settlement: Settlement = { from: 'b', to: 'a', amount: 1000, date: 2, confirmedBy: null };
+    const withUnconfirmed = computeBalances([purchase({})], [settlement], ['a', 'b']);
+    const withoutIt = computeBalances([purchase({})], [], ['a', 'b']);
+    expect(withUnconfirmed).toEqual(withoutIt);
   });
 
   it('קנייה אישית (הקונה לבדו) לא משפיעה על אף אחד', () => {
@@ -186,7 +193,8 @@ describe('computeBalances', () => {
         to,
         amount: Math.floor(Math.random() * 10_000) + 1,
         date: i,
-        confirmedBy: null,
+        // מערבבים מאושר ולא-מאושר — שניהם חייבים לשמור על סכום אפס
+        confirmedBy: Math.random() > 0.5 ? to : null,
       });
     }
 

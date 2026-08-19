@@ -125,11 +125,12 @@ export async function createRoom(
   return code;
 }
 
-/** בדיקה אם קוד חדר קיים. מחזירה את שם החדר, או null. */
-export async function lookupRoom(code: string): Promise<{ name: string } | null> {
+/** בדיקה אם קוד חדר קיים. מחזירה את שם החדר ומזהה המנהל, או null. */
+export async function lookupRoom(code: string): Promise<{ name: string; adminId: string } | null> {
   const snap = await get(ref(db, `roomCodes/${code}`));
   if (!snap.exists()) return null;
-  return { name: (snap.val() as { name: string }).name };
+  const val = snap.val() as { name: string; adminId: string };
+  return { name: val.name, adminId: val.adminId };
 }
 
 export async function requestToJoin(
@@ -160,6 +161,23 @@ export async function requestToJoin(
       respondedAt: null,
       roomName: room.name,
     },
+  });
+
+  /**
+   * המבקש עדיין לא חבר בחדר, ולכן לא יכול לכתוב התראת 'room' רגילה —
+   * חוקי ה-outbox מתירים לו חריג צר: להודיע אך ורק למנהל האמיתי של
+   * החדר הזה, ואך ורק כשהבקשה שלו אכן קיימת ו-pending. ראו database.rules.json.
+   */
+  void enqueueNotification({
+    roomCode: code,
+    title: 'בקשת הצטרפות חדשה',
+    body: `${profile.displayName} מבקש/ת להצטרף ל${room.name}`,
+    url: `/r/${code}/members`,
+    tag: `join-request-${userId}`,
+    priority: 'now',
+    audience: 'user',
+    targetUid: room.adminId,
+    actorUid: userId,
   });
 
   return room.name;
@@ -224,13 +242,29 @@ export async function approveJoinRequest(
   });
 }
 
-export async function rejectJoinRequest(code: string, requestUserId: string): Promise<void> {
+export async function rejectJoinRequest(
+  code: string,
+  adminId: string,
+  requestUserId: string
+): Promise<void> {
   assertOnline('לדחות בקשה');
   await update(ref(db), {
     [`rooms/${code}/pendingRequests/${requestUserId}/status`]: 'rejected',
     [`rooms/${code}/pendingRequests/${requestUserId}/respondedAt`]: serverTimestamp(),
     [`joinRequests/${requestUserId}/${code}/status`]: 'rejected',
     [`joinRequests/${requestUserId}/${code}/respondedAt`]: serverTimestamp(),
+  });
+
+  void enqueueNotification({
+    roomCode: code,
+    title: 'הבקשה שלך נדחתה',
+    body: 'הבקשה שלך להצטרף לחדר לא אושרה על ידי מנהל החדר',
+    url: '/onboarding',
+    tag: `join-${code}`,
+    priority: 'now',
+    audience: 'user',
+    targetUid: requestUserId,
+    actorUid: adminId,
   });
 }
 
@@ -263,6 +297,18 @@ export async function removeMember(
       createdAt: serverTimestamp(),
       readBy: { [adminId]: true },
     },
+  });
+
+  void enqueueNotification({
+    roomCode: code,
+    title: 'הוסרת מהחדר',
+    body: 'הוסרת מהחדר על ידי מנהל החדר',
+    url: '/onboarding',
+    tag: `removed-${code}`,
+    priority: 'now',
+    audience: 'user',
+    targetUid: memberId,
+    actorUid: adminId,
   });
 }
 
@@ -394,5 +440,17 @@ export async function transferAdmin(code: string, from: string, to: string): Pro
     [`rooms/${code}/members/${to}/role`]: 'admin',
     [`rooms/${code}/members/${from}/role`]: 'member',
     [`roomCodes/${code}/adminId`]: to,
+  });
+
+  void enqueueNotification({
+    roomCode: code,
+    title: 'אתם עכשיו מנהלי החדר',
+    body: 'ניהול החדר הועבר אליכם — אתם מאשרים כעת בקשות הצטרפות וחברים חדשים',
+    url: `/r/${code}/members`,
+    tag: `admin-${code}`,
+    priority: 'now',
+    audience: 'user',
+    targetUid: to,
+    actorUid: from,
   });
 }

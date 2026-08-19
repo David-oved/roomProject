@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Sheet } from '../ui/Sheet';
 import { Button } from '../ui/Button';
 import { CheckIcon, ChevronIcon } from '../ui/icons';
+import { AddProductForm } from './AddProductForm';
 import { useCatalog, type RoomProduct } from '../../hooks/useCatalog';
 import { formatILS } from '../../lib/format';
 import {
@@ -39,6 +40,7 @@ export function StaplesPicker({
   const { products, search } = useCatalog();
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState<Category | null>(null);
+  const [addingProduct, setAddingProduct] = useState(false);
 
   const selected = useMemo(() => new Set(value), [value]);
   const searching = query.trim().length > 0;
@@ -122,7 +124,10 @@ export function StaplesPicker({
           <div className="relative">
             <input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setAddingProduct(false);
+              }}
               placeholder="חיפוש מהיר…"
               type="search"
               enterKeyHint="search"
@@ -142,28 +147,57 @@ export function StaplesPicker({
 
         {searching ? (
           /* ── תוצאות חיפוש: רשימה שטוחה, בלי קיפול ── */
-          results.length === 0 ? (
-            <p className="py-8 text-center text-sm text-ink-500">
-              לא נמצאו מוצרים עבור "{query.trim()}"
-            </p>
-          ) : (
-            <div>
-              <p className="mb-1.5 px-1 text-xs text-ink-500">
-                <span className="num">{results.length}</span> תוצאות
-              </p>
-              <ul className="divide-y divide-ink-100 overflow-hidden rounded-xl border border-ink-200 bg-white">
-                {results.map((p) => (
-                  <ProductRow
-                    key={p.id}
-                    product={p}
-                    checked={selected.has(p.id)}
-                    onToggle={() => toggle(p.id)}
-                    showCategory
-                  />
-                ))}
-              </ul>
-            </div>
-          )
+          <div>
+            {addingProduct ? (
+              <AddProductForm
+                initialName={query.trim()}
+                onCancel={() => setAddingProduct(false)}
+                onAdded={({ id, category }) => {
+                  onChange([...new Set([...value, id])]);
+                  setExpanded(category);
+                  setQuery('');
+                  setAddingProduct(false);
+                }}
+              />
+            ) : results.length === 0 ? (
+              <div className="space-y-3 py-4 text-center">
+                <p className="text-sm text-ink-500">לא נמצאו מוצרים עבור "{query.trim()}"</p>
+                <button
+                  type="button"
+                  onClick={() => setAddingProduct(true)}
+                  className="rounded-xl bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-800
+                             transition hover:bg-brand-100"
+                >
+                  ➕ הוספת "{query.trim()}" כמוצר חדש
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="mb-1.5 px-1 text-xs text-ink-500">
+                  <span className="num">{results.length}</span> תוצאות
+                </p>
+                <ul className="divide-y divide-ink-100 overflow-hidden rounded-xl border border-ink-200 bg-white">
+                  {results.map((p) => (
+                    <ProductRow
+                      key={p.id}
+                      product={p}
+                      checked={selected.has(p.id)}
+                      onToggle={() => toggle(p.id)}
+                      showCategory
+                    />
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  onClick={() => setAddingProduct(true)}
+                  className="mt-2 w-full rounded-xl px-3 py-2 text-center text-xs font-semibold
+                             text-brand-700 transition hover:bg-brand-50"
+                >
+                  לא מוצאים את מה שמחפשים? הוספת מוצר חדש
+                </button>
+              </>
+            )}
+          </div>
         ) : (
           /* ── קטגוריות מתקפלות ── */
           <ul className="space-y-2">
