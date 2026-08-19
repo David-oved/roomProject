@@ -25,7 +25,7 @@ export default function ChatConversationPage() {
   const { code, uid: otherUid } = useParams<{ code: string; uid?: string }>();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const { activeMembers, memberName } = useRoom();
+  const { activeMembers, memberName, onlineMemberIds } = useRoom();
   const { isOnline } = useConnection();
   const toast = useToast();
 
@@ -39,6 +39,7 @@ export default function ChatConversationPage() {
 
   const other = !isGeneral ? activeMembers.find((m) => m.id === otherUid) : null;
   const title = isGeneral ? 'כללי' : (other?.name ?? memberName(otherUid ?? ''));
+  const otherOnline = !isGeneral && !!otherUid && onlineMemberIds.has(otherUid);
 
   const recipientIds = isGeneral
     ? activeMembers.map((m) => m.id).filter((id) => id !== myUid)
@@ -133,11 +134,13 @@ export default function ChatConversationPage() {
       } else if (otherUid) {
         await sendDirectMessage(code, user.uid, profile.displayName, otherUid, trimmed);
       }
-    } catch {
+    } catch (err) {
       // השליחה נכשלה בפועל (לא רק "לא נראה מיד") — מחזירים את הטקסט
-      // במקום לאבד אותו בשקט, כדי שהמשתמש יוכל לנסות שוב.
+      // במקום לאבד אותו בשקט, כדי שהמשתמש יוכל לנסות שוב. כוללים את
+      // סיבת הכשל בפועל (למשל permission_denied) כדי שאפשר יהיה לאבחן.
       setText(trimmed);
-      toast.error('שליחת ההודעה נכשלה. נסו שוב');
+      const reason = err instanceof Error ? err.message : String(err);
+      toast.error(`שליחת ההודעה נכשלה: ${reason}`);
     } finally {
       setSending(false);
     }
@@ -165,13 +168,25 @@ export default function ChatConversationPage() {
             <ChatIcon width={17} height={17} />
           </span>
         ) : (
-          <Avatar name={title} uid={otherUid} src={other?.avatar} size="sm" />
+          <div className="relative shrink-0">
+            <Avatar name={title} uid={otherUid} src={other?.avatar} size="sm" />
+            {otherOnline && (
+              <span
+                aria-hidden
+                className="absolute -end-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white"
+              />
+            )}
+          </div>
         )}
 
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-base font-bold leading-tight text-ink-900">{title}</h1>
-          {isGeneral && (
+          {isGeneral ? (
             <p className="truncate text-xs text-ink-500">{activeMembers.length} חברים</p>
+          ) : (
+            <p className={`truncate text-xs ${otherOnline ? 'font-medium text-emerald-600' : 'text-ink-400'}`}>
+              {otherOnline ? 'מחובר/ת עכשיו' : 'לא מחובר/ת'}
+            </p>
           )}
         </div>
       </header>
@@ -198,18 +213,40 @@ export default function ChatConversationPage() {
           </div>
         ) : (
           <ul className="space-y-1.5">
-            {sorted.map((m) => {
+            {sorted.map((m, i) => {
               const mine = m.senderId === myUid;
               const isNew = !animatedIds.current.has(m.id);
               animatedIds.current.add(m.id);
+              // בצ'אט הכללי מציגים שם+תמונה מעל הודעה של מישהו אחר, אבל רק
+              // כשהיא פותחת "רצף" חדש (השולח הקודם היה מישהו אחר) — כמו
+              // בכל אפליקציית צ'אט קבוצתי, כדי לא לחזור על אותו שם שוב ושוב.
+              const showSender = isGeneral && !mine && sorted[i - 1]?.senderId !== m.senderId;
+              const sender = showSender ? activeMembers.find((mem) => mem.id === m.senderId) : undefined;
               return (
                 <li
                   key={m.id}
-                  className={`flex ${mine ? 'justify-end' : 'justify-start'} ${
+                  className={`flex items-end gap-2 ${mine ? 'justify-end' : 'justify-start'} ${
                     isNew ? 'animate-slide-up' : ''
                   }`}
                 >
-                  <Bubble message={m} mine={mine} recipientIds={recipientIds} />
+                  {isGeneral && !mine && (
+                    <div className="w-7 shrink-0 self-end">
+                      {showSender && (
+                        <Avatar
+                          name={sender?.name ?? memberName(m.senderId)}
+                          uid={m.senderId}
+                          src={sender?.avatar}
+                          size="xs"
+                        />
+                      )}
+                    </div>
+                  )}
+                  <Bubble
+                    message={m}
+                    mine={mine}
+                    recipientIds={recipientIds}
+                    senderName={showSender ? (sender?.name ?? memberName(m.senderId)) : undefined}
+                  />
                 </li>
               );
             })}
@@ -264,10 +301,13 @@ function Bubble({
   message,
   mine,
   recipientIds,
+  senderName,
 }: {
   message: WithId<ChatMessage>;
   mine: boolean;
   recipientIds: string[];
+  /** מוצג רק בצ'אט הכללי, בתחילת רצף הודעות של מישהו שאינו אני */
+  senderName?: string;
 }) {
   const tick = mine ? tickFor(message, recipientIds) : null;
 
@@ -280,6 +320,9 @@ function Bubble({
           : 'rounded-es-md border border-ink-100 bg-white text-ink-900',
       ].join(' ')}
     >
+      {senderName && (
+        <p className="mb-0.5 truncate text-xs font-bold text-brand-700">{senderName}</p>
+      )}
       <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">{message.text}</p>
       <div
         className={[

@@ -63,9 +63,9 @@ export async function sendGeneralMessage(
 }
 
 /**
- * שולח הודעה פרטית. יוצר את participants באותה כתיבה אם זו ההודעה
- * הראשונה בין השניים — ‼️ קריאה אחת מקדימה כדי לדעת אם צריך, כי חוקי
- * ה-DB מתירים כתיבת participants רק פעם אחת (לא ניתן "לדרוס" אותה).
+ * שולח הודעה פרטית. אין יותר צומת "participants" נפרד — ההרשאה
+ * מבוססת ישירות על $pairKey (ראו הערה ב-database.rules.json), כך
+ * שאין צורך בקריאה מקדימה לפני כל שליחה.
  */
 export async function sendDirectMessage(
   code: string,
@@ -81,20 +81,13 @@ export async function sendDirectMessage(
   const base = dmBasePath(code, myUid, otherUid);
   const msgId = push(ref(db, `${base}/messages`)).key!;
 
-  const participantsSnap = await get(ref(db, `${base}/participants`));
-
-  const updates: Record<string, unknown> = {
+  await update(ref(db), {
     [`${base}/messages/${msgId}`]: {
       senderId: myUid,
       text: trimmed,
       sentAt: serverTimestamp(),
     },
-  };
-  if (!participantsSnap.exists()) {
-    updates[`${base}/participants`] = { [myUid]: true, [otherUid]: true };
-  }
-
-  await update(ref(db), updates);
+  });
 
   const scope = dmPairKey(myUid, otherUid);
   await notifyAbsent(code, scope, [otherUid], myUid, myName, trimmed, `/r/${code}/chat/dm/${myUid}`);

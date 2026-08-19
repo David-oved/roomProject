@@ -245,6 +245,18 @@
           }
         },
 
+        // ---------- נוכחות כללית ("מחובר לאפליקציה") ----------
+        // נכתב פעם אחת כל עוד RoomProvider מותקן (כלומר כל עוד המשתמש
+        // איפשהו בתוך החדר, לא רק בצ'אט) עם onDisconnect כרשת ביטחון.
+        // בכוונה $uid יחיד ולא לפי מזהה חיבור — כמו chatPresence למטה,
+        // מספיק פשוט לגודל החדרים כאן (כמה חברים, לרוב מכשיר אחד לאיש).
+        "online": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active'",
+            ".validate": "newData.isBoolean() && newData.val() === true"
+          }
+        },
+
         // ---------- בקשות הצטרפות ----------
         "pendingRequests": {
           ".read": "auth != null && root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid",
@@ -500,40 +512,32 @@
     "dms": {
       "$code": {
         "$pairKey": {
-          // ‼️ מבוסס נתיב בלבד — לא "participants/auth.uid קיים" — כי אחרת
-          // פתיחת שיחה חדשה (לפני שנשלחה בה ולו הודעה אחת, ולכן participants
-          // עוד לא נוצר) הייתה נכשלת ב-permission_denied. Firebase לא "מתאזן
-          // מחדש" מאזין שכבר נכשל ברשות גישה — גם אחרי שההודעה הראשונה
-          // נכתבת בהצלחה (יצירת participants+message באותה כתיבה אטומית),
-          // המאזין שכבר מת לא קם לתחייה, וההודעה "נעלמת" למי שכבר פתוח שם.
-          // contains() ולא participants — כי $pairKey עצמו כבר מכיל את שני
-          // המזהים (ראו contains() למטה, אותה הצדקה).
+          // ‼️ מבוסס נתיב בלבד ($pairKey.contains(auth.uid)) — לא על צומת
+          // "participants" נפרד. גרסה קודמת ניסתה להסתמך על "אותה כתיבה
+          // אטומית שיוצרת participants+message — אז זה כבר 'קיים' בזמן
+          // האימות". זו הנחה שגויה: ב-RTDB Rules, root מייצג תמיד את מצב
+          // ה-DB *לפני* הכתיבה, לא אחרי (בדיוק כמו ההערה המתועדת כבר
+          // ב-staples/members ליצירת חדר — "ביצה ותרנגולת"). התוצאה
+          // בפועל: ההודעה הפרטית הראשונה בין כל שני משתמשים נכשלה תמיד
+          // ב-permission_denied, כי participants עוד לא היה קיים לפי
+          // ה-root שהחוק בדק. $pairKey כבר מקודד את שני המשתתפים בעצמו
+          // (ראו contains() למטה) — אין צורך בצומת נפרד בשביל זה.
           ".read": "auth != null && $pairKey.contains(auth.uid) && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active'",
-
-          "participants": {
-            // יצירה בלבד, פעם אחת, ע"י אחד משני המשתתפים. אין עריכה
-            // ואין הוספת משתתף שלישי אחרי היצירה.
-            ".write": "auth != null && !data.exists() && newData.exists() && newData.child(auth.uid).exists()",
-            ".validate": "newData.hasChildren() && $pairKey.matches(/^[A-Za-z0-9]{10,64}_[A-Za-z0-9]{10,64}$/)",
-            "$uid": {
-              // ‼️ contains() ולא התאמה מדויקת — RTDB Rules אין להן פונקציית
-              // פיצול מחרוזת. מזהי Firebase ארוכים ואקראיים מספיק שהתנגשות
-              // תת-מחרוזת בפועל היא לא תרחיש ריאלי.
-              ".validate": "newData.isBoolean() && newData.val() === true && $pairKey.contains($uid) && root.child('rooms/' + $code + '/members/' + $uid + '/status').val() === 'active'"
-            }
-          },
 
           "messages": {
             ".indexOn": ["sentAt"],
             "$msgId": {
-              ".write": "auth != null && root.child('dms/' + $code + '/' + $pairKey + '/participants/' + auth.uid).exists() && ((!data.exists() && newData.exists() && newData.child('senderId').val() === auth.uid) || (data.exists() && newData.exists() && newData.child('senderId').val() === data.child('senderId').val() && newData.child('text').val() === data.child('text').val() && newData.child('sentAt').val() === data.child('sentAt').val()))",
+              ".write": "auth != null && $pairKey.contains(auth.uid) && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && newData.child('senderId').val() === auth.uid) || (data.exists() && newData.exists() && newData.child('senderId').val() === data.child('senderId').val() && newData.child('text').val() === data.child('text').val() && newData.child('sentAt').val() === data.child('sentAt').val()))",
               ".validate": "newData.hasChildren(['senderId', 'text', 'sentAt'])",
-              "senderId":    { ".validate": "root.child('dms/' + $code + '/' + $pairKey + '/participants/' + newData.val()).exists()" },
+              // ‼️ contains() ולא התאמה מדויקת — RTDB Rules אין להן פונקציית
+              // פיצול מחרוזת. מזהי Firebase ארוכים ואקראיים מספיק שהתנגשות
+              // תת-מחרוזת בפועל היא לא תרחיש ריאלי.
+              "senderId":    { ".validate": "$pairKey.contains(newData.val())" },
               "text":        { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 2000" },
               "sentAt":      { ".validate": "newData.isNumber()" },
               // $uid === auth.uid מאותה סיבה כמו בצ'אט הכללי — ראו שם.
-              "deliveredTo": { "$uid": { ".validate": "newData.isBoolean() && newData.val() === true && $uid === auth.uid" } },
-              "readBy":      { "$uid": { ".validate": "newData.isBoolean() && newData.val() === true && $uid === auth.uid" } },
+              "deliveredTo": { "$uid": { ".validate": "newData.isBoolean() && newData.val() === true && $uid === auth.uid && $pairKey.contains($uid)" } },
+              "readBy":      { "$uid": { ".validate": "newData.isBoolean() && newData.val() === true && $uid === auth.uid && $pairKey.contains($uid)" } },
               "$other":      { ".validate": false }
             }
           },

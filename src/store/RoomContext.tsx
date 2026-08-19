@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
+import { onDisconnect, ref, set } from 'firebase/database';
+import { db } from '../config/firebase';
 import { useRtdbList, useRtdbValue } from '../hooks/useRtdb';
 import { useAuth } from './AuthContext';
 import type { Member, RoomMetadata, WithId } from '../types/models';
@@ -16,6 +18,8 @@ interface RoomValue {
   loading: boolean;
   fromCache: boolean;
   memberName: (uid: string) => string;
+  /** מזהי חברים שהאפליקציה פתוחה אצלם *עכשיו* (לא רק בצ'אט — בכל מסך בחדר) */
+  onlineMemberIds: Set<string>;
 }
 
 const Ctx = createContext<RoomValue>({
@@ -28,6 +32,7 @@ const Ctx = createContext<RoomValue>({
   loading: true,
   fromCache: false,
   memberName: () => '—',
+  onlineMemberIds: new Set(),
 });
 
 export const useRoom = () => useContext(Ctx);
@@ -39,6 +44,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
 
   const meta = useRtdbValue<RoomMetadata>(roomCode ? `rooms/${roomCode}/metadata` : null);
   const mem = useRtdbList<Member>(roomCode ? `rooms/${roomCode}/members` : null);
+  const online = useRtdbValue<Record<string, true>>(roomCode ? `rooms/${roomCode}/online` : null);
 
   const value = useMemo<RoomValue>(() => {
     const members = mem.data;
@@ -55,14 +61,42 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       loading: meta.loading || mem.loading,
       fromCache: meta.fromCache || mem.fromCache,
       memberName: (uid: string) => members.find((m) => m.id === uid)?.name ?? 'משתמש שנמחק',
+      onlineMemberIds: new Set(Object.keys(online.data ?? {})),
     };
-  }, [roomCode, meta.data, meta.loading, meta.fromCache, mem.data, mem.loading, mem.fromCache, user]);
+  }, [
+    roomCode,
+    meta.data,
+    meta.loading,
+    meta.fromCache,
+    mem.data,
+    mem.loading,
+    mem.fromCache,
+    online.data,
+    user,
+  ]);
 
   // זוכרים את החדר הפעיל, כדי לחזור אליו ישירות בכניסה הבאה.
   // רק חברות פעילה נשמרת — אין טעם לזכור חדר שהוסרנו ממנו.
   useEffect(() => {
     if (roomCode && value.myMembership?.status === 'active') setLastRoom(roomCode);
   }, [roomCode, value.myMembership?.status]);
+
+  // "מחובר לאפליקציה" — כל עוד ה-provider הזה מותקן, כלומר כל עוד
+  // המשתמש איפשהו בתוך החדר (לא רק במסך הצ'אט). onDisconnect כרשת
+  // ביטחון לניתוק פתאומי (סגירת האפליקציה, אובדן רשת).
+  const myUid = user?.uid;
+  const isActiveMember = value.myMembership?.status === 'active';
+  useEffect(() => {
+    if (!roomCode || !myUid || !isActiveMember) return;
+    const r = ref(db, `rooms/${roomCode}/online/${myUid}`);
+    const disconnectHandle = onDisconnect(r);
+    void set(r, true);
+    void disconnectHandle.remove();
+    return () => {
+      void disconnectHandle.cancel();
+      void set(r, null);
+    };
+  }, [roomCode, myUid, isActiveMember]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

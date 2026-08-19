@@ -17,7 +17,7 @@ import type { ChatMessage } from '../types/models';
  * קומפוננטה נפרדת לכל שורה עם hook קבוע אחד היא בדיוק התבנית הנכונה.
  */
 export default function ChatPage() {
-  const { roomCode, metadata, activeMembers } = useRoom();
+  const { roomCode, metadata, activeMembers, onlineMemberIds } = useRoom();
   const { user } = useAuth();
 
   const others = activeMembers.filter((m) => m.id !== user?.uid);
@@ -44,6 +44,7 @@ export default function ChatPage() {
             myUid={user?.uid ?? ''}
             title={m.name}
             avatar={<Avatar name={m.name} uid={m.id} src={m.avatar} size="md" />}
+            online={onlineMemberIds.has(m.id)}
           />
         ))}
       </div>
@@ -59,6 +60,7 @@ function ConversationRow({
   subtitle,
   icon,
   avatar,
+  online,
 }: {
   to: string;
   path: string;
@@ -67,6 +69,7 @@ function ConversationRow({
   subtitle?: string;
   icon?: React.ReactNode;
   avatar?: React.ReactNode;
+  online?: boolean;
 }) {
   const { data: messages, loading } = useRtdbList<ChatMessage>(path);
 
@@ -79,11 +82,19 @@ function ConversationRow({
       to={to}
       className="card flex items-center gap-3 p-3.5 transition active:scale-[.99] hover:shadow-lifted"
     >
-      {avatar ?? (
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-700">
-          {icon}
-        </span>
-      )}
+      <div className="relative shrink-0">
+        {avatar ?? (
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-brand-50 text-brand-700">
+            {icon}
+          </span>
+        )}
+        {online && (
+          <span
+            aria-hidden
+            className="absolute -end-0.5 -bottom-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white"
+          />
+        )}
+      </div>
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
