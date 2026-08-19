@@ -1,15 +1,28 @@
-import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import { ref, update } from 'firebase/database';
-import { db, storage } from '../config/firebase';
+import { db } from '../config/firebase';
 import { assertOnline } from './guard';
 
 const MAX_DIMENSION = 512;
 const JPEG_QUALITY = 0.85;
 
 /**
+ * ═══════════════════════════════════════════════════════════════════
+ *  תמונות פרופיל — Cloudinary, לא Firebase Storage
+ * ═══════════════════════════════════════════════════════════════════
+ *
+ *  Firebase Storage מצריך כרטיס אשראי (תוכנית Blaze) גם רק כדי להפעיל
+ *  אותו — שינוי מדיניות של גוגל. Cloudinary נותן שכבה חינמית אמיתית
+ *  (25GB/חודש) בלי כרטיס אשראי בכלל, בדיוק בשביל המקרה הזה.
+ *
+ *  "Unsigned upload" — ה-preset (לא סוד, כמו apiKey של Firebase)
+ *  מוגדר בדשבורד של Cloudinary עם הגבלות (תיקייה, גודל, פורמט), ומאפשר
+ *  להעלות ישירות מהדפדפן בלי לחשוף שום מפתח סודי.
+ * ═══════════════════════════════════════════════════════════════════
+ */
+
+/**
  * מכווץ תמונה בצד הלקוח לפני העלאה — בלי זה תמונה מהמצלמה (4-12MB)
- * הייתה חוצה את מגבלת ה-2MB בחוקי ה-Storage, ומעלה נתונים כבדים לחינם
- * לתמונת פרופיל שמוצגת ב-40-60px ממילא.
+ * הייתה נשלחת במלואה לתמונת פרופיל שמוצגת ב-40-60px ממילא.
  */
 function compressImage(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -46,6 +59,33 @@ function compressImage(file: File): Promise<Blob> {
   });
 }
 
+async function uploadToCloudinary(blob: Blob): Promise<string> {
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+  const preset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+  if (!cloudName || !preset) {
+    throw new Error('אחסון תמונות לא הוגדר עדיין באפליקציה');
+  }
+
+  const form = new FormData();
+  form.append('file', blob);
+  form.append('upload_preset', preset);
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: 'POST',
+    body: form,
+  });
+
+  if (!res.ok) {
+    throw new Error('העלאת התמונה נכשלה — נסו שוב');
+  }
+
+  const data = (await res.json()) as { secure_url?: string };
+  if (!data.secure_url) throw new Error('העלאת התמונה נכשלה — נסו שוב');
+
+  return data.secure_url;
+}
+
 /**
  * מעלה תמונת פרופיל ומעדכן אותה בכל מקום שבו היא מופיעה.
  *
@@ -64,11 +104,7 @@ export async function uploadAvatar(
   if (file.size > 15 * 1024 * 1024) throw new Error('הקובץ גדול מדי (עד 15MB)');
 
   const blob = await compressImage(file);
-
-  const path = `avatars/${userId}/${Date.now()}.jpg`;
-  const fileRef = storageRef(storage, path);
-  await uploadBytes(fileRef, blob, { contentType: 'image/jpeg' });
-  const url = await getDownloadURL(fileRef);
+  const url = await uploadToCloudinary(blob);
 
   const updates: Record<string, unknown> = { [`users/${userId}/avatar`]: url };
   for (const code of Object.keys(rooms ?? {})) {

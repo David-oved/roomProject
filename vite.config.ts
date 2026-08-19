@@ -139,7 +139,6 @@ export default defineConfig({
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'firebase-core': ['firebase/app', 'firebase/auth'],
           'firebase-db': ['firebase/database'],
-          'firebase-storage': ['firebase/storage'],
         },
       },
     },

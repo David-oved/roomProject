@@ -44,6 +44,8 @@ jobs:
           VITE_USE_EMULATORS: 'false'
           VITE_VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
           VITE_PUSH_ENDPOINT: ${{ secrets.VITE_PUSH_ENDPOINT }}
+          VITE_CLOUDINARY_CLOUD_NAME: ${{ secrets.VITE_CLOUDINARY_CLOUD_NAME }}
+          VITE_CLOUDINARY_UPLOAD_PRESET: ${{ secrets.VITE_CLOUDINARY_UPLOAD_PRESET }}
 
       - uses: actions/configure-pages@v5
 

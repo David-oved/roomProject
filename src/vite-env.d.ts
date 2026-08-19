@@ -21,6 +21,10 @@ interface ImportMetaEnv {
   readonly VITE_USE_EMULATORS?: string;
   /** כתובת ה-Worker לשליחה מיידית. ריק = רק המשימה המתוזמנת. */
   readonly VITE_PUSH_ENDPOINT?: string;
+  /** Cloudinary — אחסון תמונות פרופיל. אינו סוד, ראו avatarService.ts */
+  readonly VITE_CLOUDINARY_CLOUD_NAME?: string;
+  /** שם ה-unsigned upload preset בחשבון Cloudinary */
+  readonly VITE_CLOUDINARY_UPLOAD_PRESET?: string;
 }
 
 interface ImportMeta {
