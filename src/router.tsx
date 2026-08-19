@@ -18,6 +18,7 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const ItemsPage = lazy(() => import('./pages/ItemsPage'));
 const BalancesPage = lazy(() => import('./pages/BalancesPage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
+const ChatConversationPage = lazy(() => import('./pages/ChatConversationPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const SettingsAccountPage = lazy(() => import('./pages/SettingsAccountPage'));
@@ -63,6 +64,8 @@ export function AppRoutes() {
               <Route path="items" element={<ItemsPage />} />
               <Route path="balances" element={<BalancesPage />} />
               <Route path="chat" element={<ChatPage />} />
+              <Route path="chat/general" element={<ChatConversationPage />} />
+              <Route path="chat/dm/:uid" element={<ChatConversationPage />} />
               <Route path="notifications" element={<NotificationsPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="settings/account" element={<SettingsAccountPage />} />

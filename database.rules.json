@@ -445,7 +445,93 @@
           }
         },
 
+        // ---------- צ'אט כללי של החדר ----------
+        // מקונן תחת rooms/{code} בכוונה — חוק הקריאה של rooms/{code} כבר
+        // מעניק גישה לכל חבר פעיל, וזה בדיוק מה שרוצים לצ'אט כללי (בניגוד
+        // לצ'אט הפרטי, ראו dms למטה, שחייב להיות עצמאי ברמה העליונה
+        // כי חוק read ברמת ההורה אי אפשר לצמצם שוב ברמה עמוקה יותר —
+        // מגבלה מובנית של RTDB Rules).
+        "chat": {
+          ".indexOn": ["sentAt"],
+          "$msgId": {
+            // יצירה: חבר פעיל בלבד, senderId = הוא עצמו.
+            // עדכון: כל חבר פעיל יכול להוסיף את עצמו ל-deliveredTo/readBy —
+            // אבל לא לגעת ב-senderId/text/sentAt אחרי היצירה.
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && newData.child('senderId').val() === auth.uid) || (data.exists() && newData.exists() && newData.child('senderId').val() === data.child('senderId').val() && newData.child('text').val() === data.child('text').val() && newData.child('sentAt').val() === data.child('sentAt').val()))",
+            ".validate": "newData.hasChildren(['senderId', 'text', 'sentAt'])",
+            "senderId":    { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val()).exists()" },
+            "text":        { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 2000" },
+            "sentAt":      { ".validate": "newData.isNumber()" },
+            // ‼️ $uid === auth.uid ב-validate (לא רק write) — כל חבר פעיל
+            // יכול לכתוב איפשהו בהודעה (הרשאת ה-write ברמת ההודעה כללית
+            // מדי מכדי להיסגר עמוק יותר), אבל validate לא "מדלג" ככה —
+            // חייב לעמוד בו בעצמו לכל שדה. בלעדיו חבר אחד היה יכול לסמן
+            // readBy/deliveredTo בשם חבר אחר, ולזייף וי כחול על ההודעות שלו.
+            "deliveredTo": { "$uid": { ".validate": "newData.isBoolean() && newData.val() === true && $uid === auth.uid" } },
+            "readBy":      { "$uid": { ".validate": "newData.isBoolean() && newData.val() === true && $uid === auth.uid" } },
+            "$other":      { ".validate": false }
+          }
+        },
+
+        // ---------- נוכחות בצ'אט ----------
+        // מסך צ'אט פתוח כותב כאן חותמת זמן בכניסה ומוחק ביציאה (עם
+        // onDisconnect כגיבוי לניתוק פתאומי). לפני שליחת פוש, השולח בודק
+        // אם הנמען "נוכח" באותה שיחה ממש — אם כן, מדלגים על הפוש כי הוא
+        // כבר רואה את זה חי. $scope הוא 'general' או pairKey של שיחה פרטית.
+        "chatPresence": {
+          "$scope": {
+            "$uid": {
+              ".write": "auth != null && auth.uid === $uid && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active'",
+              ".validate": "newData.isBoolean() && newData.val() === true"
+            }
+          }
+        },
+
         "$other": { ".validate": false }
+      }
+    },
+
+    // ---------- צ'אט פרטי (DM) ----------
+    // ‼️ עצמאי ברמה העליונה, לא מקונן תחת rooms/{code} — כי חוק ה-read
+    // הרחב של rooms/{code} (כל חבר פעיל) לא ניתן לצמצום שוב בעומק גדול
+    // יותר; RTDB מעניקה גישה במורד העץ ולא ניתן "לשלול" אותה בהמשך.
+    // אילו קיננו dm כאן, כל חבר בחדר היה יכול לקרוא כל שיחה פרטית של
+    // כל שני חברים אחרים. לכן: node עצמאי, עם .read/.write צרים בעצמם.
+    "dms": {
+      "$code": {
+        "$pairKey": {
+          ".read": "auth != null && root.child('dms/' + $code + '/' + $pairKey + '/participants/' + auth.uid).exists()",
+
+          "participants": {
+            // יצירה בלבד, פעם אחת, ע"י אחד משני המשתתפים. אין עריכה
+            // ואין הוספת משתתף שלישי אחרי היצירה.
+            ".write": "auth != null && !data.exists() && newData.exists() && newData.child(auth.uid).exists()",
+            ".validate": "newData.hasChildren() && $pairKey.matches(/^[A-Za-z0-9]{10,64}_[A-Za-z0-9]{10,64}$/)",
+            "$uid": {
+              // ‼️ contains() ולא התאמה מדויקת — RTDB Rules אין להן פונקציית
+              // פיצול מחרוזת. מזהי Firebase ארוכים ואקראיים מספיק שהתנגשות
+              // תת-מחרוזת בפועל היא לא תרחיש ריאלי.
+              ".validate": "newData.isBoolean() && newData.val() === true && $pairKey.contains($uid) && root.child('rooms/' + $code + '/members/' + $uid + '/status').val() === 'active'"
+            }
+          },
+
+          "messages": {
+            ".indexOn": ["sentAt"],
+            "$msgId": {
+              ".write": "auth != null && root.child('dms/' + $code + '/' + $pairKey + '/participants/' + auth.uid).exists() && ((!data.exists() && newData.exists() && newData.child('senderId').val() === auth.uid) || (data.exists() && newData.exists() && newData.child('senderId').val() === data.child('senderId').val() && newData.child('text').val() === data.child('text').val() && newData.child('sentAt').val() === data.child('sentAt').val()))",
+              ".validate": "newData.hasChildren(['senderId', 'text', 'sentAt'])",
+              "senderId":    { ".validate": "root.child('dms/' + $code + '/' + $pairKey + '/participants/' + newData.val()).exists()" },
+              "text":        { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 2000" },
+              "sentAt":      { ".validate": "newData.isNumber()" },
+              // $uid === auth.uid מאותה סיבה כמו בצ'אט הכללי — ראו שם.
+              "deliveredTo": { "$uid": { ".validate": "newData.isBoolean() && newData.val() === true && $uid === auth.uid" } },
+              "readBy":      { "$uid": { ".validate": "newData.isBoolean() && newData.val() === true && $uid === auth.uid" } },
+              "$other":      { ".validate": false }
+            }
+          },
+
+          "$other": { ".validate": false }
+        }
       }
     }
   }

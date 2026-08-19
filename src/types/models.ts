@@ -83,6 +83,21 @@ export interface Settlement {
   confirmedBy: string | null;
 }
 
+/**
+ * הודעת צ'אט — משמשת גם לצ'אט הכללי (rooms/{code}/chat) וגם לצ'אט
+ * הפרטי (dms/{code}/{pairKey}/messages), אותו מבנה בדיוק.
+ *
+ * deliveredTo/readBy הם מפות uid→true, בדיוק כמו readBy בהתראות —
+ * כל צד מסמן את עצמו, אף פעם לא מסמן עבור מישהו אחר.
+ */
+export interface ChatMessage {
+  senderId: string;
+  text: string;
+  sentAt: number;
+  deliveredTo?: Record<string, true>;
+  readBy?: Record<string, true>;
+}
+
 export interface JoinRequest {
   userId: string;
   displayName: string;

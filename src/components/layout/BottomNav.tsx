@@ -16,9 +16,10 @@ interface Tab {
   label: string;
   Icon: typeof HomeIcon;
   end?: boolean;
+  dot?: boolean;
 }
 
-export function BottomNav() {
+export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const { isOnline } = useConnection();
@@ -32,7 +33,7 @@ export function BottomNav() {
   ];
   const right: Tab[] = [
     { to: `${base}/balances`, label: 'חשבון', Icon: WalletIcon },
-    { to: `${base}/chat`, label: "צ'אט", Icon: ChatIcon },
+    { to: `${base}/chat`, label: "צ'אט", Icon: ChatIcon, dot: unreadChat > 0 },
   ];
 
   return (
@@ -76,7 +77,7 @@ export function BottomNav() {
   );
 }
 
-function TabButton({ to, label, Icon, end }: Tab) {
+function TabButton({ to, label, Icon, end, dot }: Tab) {
   return (
     <li className="flex-1 self-stretch">
       <NavLink
@@ -89,7 +90,7 @@ function TabButton({ to, label, Icon, end }: Tab) {
           <>
             <span
               className={[
-                'grid h-8 w-11 place-items-center rounded-full transition-all duration-300 ease-out',
+                'relative grid h-8 w-11 place-items-center rounded-full transition-all duration-300 ease-out',
                 isActive ? 'scale-100 bg-brand-50' : 'scale-90 bg-transparent',
               ].join(' ')}
             >
@@ -102,6 +103,12 @@ function TabButton({ to, label, Icon, end }: Tab) {
                   isActive ? 'text-brand-700' : 'text-ink-400',
                 ].join(' ')}
               />
+              {dot && (
+                <span
+                  aria-hidden
+                  className="absolute end-1.5 top-0.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white"
+                />
+              )}
             </span>
             <span
               className={[

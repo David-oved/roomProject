@@ -56,6 +56,13 @@ export const UsersIcon = (p: IconProps) => (
   </svg>
 );
 
+export const CheckDoubleIcon = (p: IconProps) => (
+  <svg {...base(p)} viewBox="0 0 28 24">
+    <path d="M2 12.5l4.5 4.5L15 8" />
+    <path d="M11 12.5l4.5 4.5L26 6" />
+  </svg>
+);
+
 export const ChatIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8A2.5 2.5 0 0 1 17.5 16H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5v-8Z" />

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { BottomNav } from './BottomNav';
 import { useLiveNotifications } from '../../hooks/useLiveNotifications';
+import { useChatWatcher } from '../../hooks/useChatWatcher';
 import { OfflineBanner } from './OfflineBanner';
 
 /**
@@ -13,6 +14,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   // התראה מיידית כשהאפליקציה ברקע — בלי להמתין לשרת
   useLiveNotifications();
 
+  // עוקב אחרי כל שיחות הצ'אט: מסמן delivered, סופר לא-נקרא, וטוסט מקומי
+  const { unreadTotal } = useChatWatcher();
+
   return (
     <div className="min-h-[100dvh] bg-ink-50">
       <OfflineBanner />
@@ -24,7 +28,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {children}
       </main>
 
-      <BottomNav />
+      <BottomNav unreadChat={unreadTotal} />
     </div>
   );
 }
