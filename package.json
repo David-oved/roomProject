@@ -1,7 +1,7 @@
 {
   "name": "roommate",
   "private": true,
-  "version": "1.9.1",
+  "version": "1.10.0",
   "type": "module",
   "description": "RoomMate — ניהול חכם של חדר משותף במעונות סטודנטים",
   "scripts": {
