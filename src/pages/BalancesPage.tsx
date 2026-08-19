@@ -137,18 +137,18 @@ function SummaryTab({
   const [busy, setBusy] = useState<string | null>(null);
   const { awaitingMyConfirmation, awaitingOthers } = useSettlements();
 
-  if (allTransfers.length === 0 && awaitingMyConfirmation.length === 0) {
-    return (
-      <EmptyState
-        icon="✅"
-        title="הכל מאוזן"
-        body="אין חובות פתוחים בחדר. יפה מאוד."
-      />
-    );
-  }
+  const nothingPending = allTransfers.length === 0 && awaitingMyConfirmation.length === 0;
 
   return (
     <div className="space-y-4">
+      {/* ── הכל מאוזן — לא מחליף את שאר המסך, רק מודיע ── */}
+      {nothingPending && (
+        <div className="card flex items-center gap-2.5 p-4 text-sm text-ink-600">
+          <span aria-hidden>✅</span>
+          אין חובות פתוחים בחדר כרגע
+        </div>
+      )}
+
       {/* ── תשלומים שממתינים לאישור שלי ── */}
       {awaitingMyConfirmation.length > 0 && (
         <section>
@@ -298,8 +298,6 @@ function ContributionsSection() {
   const { activeMembers, memberName } = useRoom();
   const { user } = useAuth();
 
-  if (total === 0) return null;
-
   const average = total / Math.max(activeMembers.length, 1);
 
   const slices = activeMembers.map((m) => ({
@@ -334,44 +332,50 @@ function ContributionsSection() {
         </ul>
       </section>
 
-      {/* ── אחוז מסך העלות שכל אחד נשא ── */}
-      <section>
-        <h2 className="mb-2 px-1 text-sm font-bold text-ink-700">מי נשא בכמה מהעלות</h2>
-        <div className="card p-4">
-          <ContributionChart slices={slices} total={total} />
+      {/* ── אחוז מסך העלות שכל אחד נשא — רק כשיש נתון להראות ── */}
+      {total > 0 ? (
+        <section>
+          <h2 className="mb-2 px-1 text-sm font-bold text-ink-700">מי נשא בכמה מהעלות</h2>
+          <div className="card p-4">
+            <ContributionChart slices={slices} total={total} />
 
-          <div className="mt-4 flex items-center justify-between border-t border-ink-100 pt-3 text-xs">
-            <span className="text-ink-500">
-              סה"כ הוצאות החדר{' '}
-              <span className="num font-semibold text-ink-800">{formatILS(total)}</span>
-            </span>
-            <span
-              className={`num font-semibold ${gap > average * 0.5 ? 'text-amber-700' : 'text-emerald-700'}`}
-            >
-              {gap === 0 ? 'מאוזן לגמרי' : `פער ${formatILS(gap)}`}
-            </span>
-          </div>
-        </div>
-
-        {next && (
-          <div className="mt-2 flex items-start gap-2.5 rounded-card bg-amber-50 px-3.5 py-3">
-            <span aria-hidden className="text-lg">
-              👉
-            </span>
-            <p className="text-sm leading-relaxed text-amber-900">
-              <b>{memberName(next.userId)}</b> נשא ב־
-              <span className="num font-semibold">{formatILS(next.behindBy)}</span> פחות מהממוצע.
-              <span className="mt-0.5 block text-xs opacity-80">
-                הקנייה הבאה עליו — ככה זה נשאר הוגן בלי להתחשבן.
+            <div className="mt-4 flex items-center justify-between border-t border-ink-100 pt-3 text-xs">
+              <span className="text-ink-500">
+                סה"כ הוצאות החדר{' '}
+                <span className="num font-semibold text-ink-800">{formatILS(total)}</span>
               </span>
-            </p>
+              <span
+                className={`num font-semibold ${gap > average * 0.5 ? 'text-amber-700' : 'text-emerald-700'}`}
+              >
+                {gap === 0 ? 'מאוזן לגמרי' : `פער ${formatILS(gap)}`}
+              </span>
+            </div>
           </div>
-        )}
 
-        <p className="mt-2 px-1 text-xs leading-relaxed text-ink-400">
-          כולל קניות שנרשמו כ"לקחתי על עצמי" — הן לא יוצרות חוב, אבל כן נספרות כאן.
+          {next && (
+            <div className="mt-2 flex items-start gap-2.5 rounded-card bg-amber-50 px-3.5 py-3">
+              <span aria-hidden className="text-lg">
+                👉
+              </span>
+              <p className="text-sm leading-relaxed text-amber-900">
+                <b>{memberName(next.userId)}</b> נשא ב־
+                <span className="num font-semibold">{formatILS(next.behindBy)}</span> פחות מהממוצע.
+                <span className="mt-0.5 block text-xs opacity-80">
+                  הקנייה הבאה עליו — ככה זה נשאר הוגן בלי להתחשבן.
+                </span>
+              </p>
+            </div>
+          )}
+
+          <p className="mt-2 px-1 text-xs leading-relaxed text-ink-400">
+            כולל קניות שנרשמו כ"לקחתי על עצמי" — הן לא יוצרות חוב, אבל כן נספרות כאן.
+          </p>
+        </section>
+      ) : (
+        <p className="px-1 text-xs text-ink-400">
+          עדיין אין קניות בחדר — כשיהיו, כאן יופיע מי נשא בכמה מהעלות.
         </p>
-      </section>
+      )}
     </div>
   );
 }
