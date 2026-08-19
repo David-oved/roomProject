@@ -187,7 +187,8 @@ function AvatarPromptStep({
     e.target.value = '';
     if (!file) return;
 
-    setPreview(URL.createObjectURL(file));
+    const previewUrl = URL.createObjectURL(file);
+    setPreview(previewUrl);
     setBusy(true);
     try {
       await uploadAvatar(uid, file, undefined);
@@ -195,6 +196,7 @@ function AvatarPromptStep({
       // לא קריטי — אפשר להוסיף תמונה מאוחר יותר מההגדרות
     } finally {
       setBusy(false);
+      URL.revokeObjectURL(previewUrl); // המסך עומד להתחלף — בלי זה ה-blob דולף
       onDone();
     }
   }

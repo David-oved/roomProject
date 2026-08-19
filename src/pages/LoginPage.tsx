@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, type Location } from 'react-router-dom';
 import { PlainShell } from '../components/layout/AppShell';
 import { Button } from '../components/ui/Button';
 import { Input, PasswordInput } from '../components/ui/Input';
@@ -26,8 +26,12 @@ export default function LoginPage() {
     try {
       await login(email, password);
       setLastEmail(email);
+      // ‼️ from הוא אובייקט Location שלם, לא מחרוזת — String(from) היה
+      // מייצר "[object Object]" ומנווט לכתובת לא תקינה. מרכיבים נתיב
+      // אמיתי מהשדות שלו.
       const from = (location.state as { from?: Location })?.from;
-      navigate(from ? String(from) : '/onboarding', { replace: true });
+      const target = from ? `${from.pathname}${from.search}${from.hash}` : '/onboarding';
+      navigate(target || '/onboarding', { replace: true });
     } catch (err) {
       setError(authErrorMessage(err));
     } finally {

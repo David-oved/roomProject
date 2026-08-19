@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlainShell } from '../components/layout/AppShell';
 import { TopBar } from '../components/layout/TopBar';
@@ -34,6 +34,22 @@ export default function SettingsRoomPage() {
   const [description, setDescription] = useState(metadata?.description ?? '');
   const [busy, setBusy] = useState(false);
   const [confirmText, setConfirmText] = useState('');
+
+  /**
+   * ‼️ בלי זה — סכנת נתונים אמיתית למשתמש שחבר בכמה חדרים.
+   *
+   * React Router לא מרנדר מחדש את הקומפוננטה הזו רק כי ה-:code בכתובת
+   * השתנה (אותו route pattern, פרמטר אחר) — למשל לחיצה על התראה של
+   * חדר אחר בזמן שכבר יושבים בהגדרות של חדר נוכחי. בלי הסנכרון הזה,
+   * name/description היו נשארים מהחדר הישן, וה-state מקומי היה נדרס
+   * מעל הנתונים האמיתיים של החדר החדש בלחיצה על "שמירת שינויים".
+   */
+  useEffect(() => {
+    setName(metadata?.name ?? '');
+    setDescription(metadata?.description ?? '');
+    setConfirmText('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomCode]);
 
   const openDebts = Object.entries(balances).filter(([, v]) => v !== 0);
   const dirty =

@@ -31,9 +31,19 @@
         "lastActiveAt": { ".validate": "newData.isNumber()" },
 
         // מנהל חדר רשאי לכתוב כאן כדי לרשום משתמש שאושר לחדר.
+        //
+        // ‼️ תוקן: המנהל היה יכול לכתוב True כאן לכל uid שהוא מכיר, בלי
+        // שהיעד יהיה חבר פעיל בפועל — "חדר רפאים" ברשימת החדרים של קורבן,
+        // וגרוע מזה: כל כתיבה עתידית מרובת-נתיבים של הקורבן (למשל שינוי
+        // שם/תמונה, שמתפזר לכל rooms שברשימתו) הייתה נכשלת *כולה* כי
+        // הנתיב הפנטום הזה תמיד היה נכשל בחוקי members — מניעת שירות
+        // לצמיתות על קורבן, בלי שהוא עשה כלום. עכשיו: יצירה/הפעלה של
+        // הדגל מותרת למנהל רק כשהיעד כבר חבר פעיל (נכתב יחד באותה
+        // עדכון אטומית ב-approveJoinRequest, ולכן נראה כבר "פעיל" בזמן
+        // האימות) — מחיקה (עזיבה/הסרה) נשארת מותרת תמיד.
         "rooms": {
           "$roomCode": {
-            ".write": "auth != null && (auth.uid === $uid || root.child('rooms/' + $roomCode + '/metadata/adminId').val() === auth.uid)",
+            ".write": "auth != null && (auth.uid === $uid || (root.child('rooms/' + $roomCode + '/metadata/adminId').val() === auth.uid && (!newData.exists() || root.child('rooms/' + $roomCode + '/members/' + $uid + '/status').val() === 'active')))",
             ".validate": "newData.isBoolean() && newData.val() === true"
           }
         },
@@ -74,7 +84,14 @@
         // ו-pending. כך אין דרך להודיע למישהו אחר או על חדר אחר.
         // אין עריכה ואין מחיקה מהלקוח — כדי שאי אפשר יהיה לשנות התראה
         // שכבר בתור.
-        ".write": "auth != null && !data.exists() && newData.exists() && (root.child('rooms/' + newData.child('roomCode').val() + '/members/' + auth.uid + '/status').val() === 'active' || (newData.child('audience').val() === 'user' && newData.child('targetUid').val() === root.child('rooms/' + newData.child('roomCode').val() + '/metadata/adminId').val() && root.child('rooms/' + newData.child('roomCode').val() + '/pendingRequests/' + auth.uid + '/status').val() === 'pending'))",
+        //
+        // ‼️ תוקן: audience='user' דרך הענף הרגיל (כל חבר פעיל בחדר) חייב
+        // שה-targetUid יהיה חבר (גם אם הוסר) של אותו חדר בדיוק, או שהכותב
+        // עצמו יהיה מנהל החדר. בלי זה, כל משתמש מחובר שהוא חבר בחדר כלשהו
+        // (אפילו חדר משלו) יכול היה לשלוח התראת פוש מזויפת לכל uid שהוא
+        // מכיר — כולל למשתמשים בחדרים אחרים לגמרי, פשוט על ידי ידיעת ה-uid
+        // שלהם (שנחשף למשל דרך שדה createdBy בקטלוג הגלובלי).
+        ".write": "auth != null && !data.exists() && newData.exists() && ((root.child('rooms/' + newData.child('roomCode').val() + '/members/' + auth.uid + '/status').val() === 'active' && (newData.child('audience').val() === 'room' || root.child('rooms/' + newData.child('roomCode').val() + '/members/' + newData.child('targetUid').val()).exists() || root.child('rooms/' + newData.child('roomCode').val() + '/metadata/adminId').val() === auth.uid)) || (newData.child('audience').val() === 'user' && newData.child('targetUid').val() === root.child('rooms/' + newData.child('roomCode').val() + '/metadata/adminId').val() && root.child('rooms/' + newData.child('roomCode').val() + '/pendingRequests/' + auth.uid + '/status').val() === 'pending'))",
         ".validate": "newData.hasChildren(['roomCode', 'title', 'body', 'audience', 'priority', 'createdAt'])",
 
         "roomCode":   { ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{6}$/)" },
@@ -122,7 +139,12 @@
     "roomNames": {
       "$slug": {
         ".read": "auth != null",
-        ".write": "auth != null && ((!data.exists() && (!root.child('roomCodes/' + newData.val()).exists() || root.child('roomCodes/' + newData.val() + '/adminId').val() === auth.uid)) || (data.exists() && root.child('rooms/' + data.val() + '/metadata/adminId').val() === auth.uid) || (data.exists() && !root.child('roomCodes/' + data.val()).exists()))",
+        // ‼️ תוקן: תפיסת שם "יתום" (ענף 3) חייבה בעבר שהערך הקודם יהיה
+        // יתום, אבל לא הגבילה בכלל את מה שנכתב במקומו — כל משתמש מחובר
+        // יכול היה לתפוס slug יתום ולהצביע אותו על קוד חדר קיים של מישהו
+        // אחר לגמרי, בלי שום קשר אליו. עכשיו נדרש גם שהיעד החדש יהיה או
+        // לא-קיים (השם המקורי לחדר עתידי שלך) או חדר שאתה כבר מנהל בו.
+        ".write": "auth != null && ((!data.exists() && (!root.child('roomCodes/' + newData.val()).exists() || root.child('roomCodes/' + newData.val() + '/adminId').val() === auth.uid)) || (data.exists() && root.child('rooms/' + data.val() + '/metadata/adminId').val() === auth.uid) || (data.exists() && !root.child('roomCodes/' + data.val()).exists() && (!root.child('roomCodes/' + newData.val()).exists() || root.child('roomCodes/' + newData.val() + '/adminId').val() === auth.uid)))",
         ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{6}$/) && $slug.length >= 2 && $slug.length <= 60"
       }
     },
@@ -193,7 +215,10 @@
           },
           "createdAt": { ".validate": "newData.isNumber() && (!data.exists() || data.val() === newData.val())" },
           "createdBy": { ".validate": "newData.isString() && (!data.exists() || data.val() === newData.val())" },
-          "adminId":   { ".validate": "newData.isString() && newData.val().length > 0" },
+          // ‼️ תוקן: בלי הבדיקה השנייה, המנהל הנוכחי יכול היה (בטעות או
+          // בבאג בלקוח) להצביע adminId על uid שאינו חבר פעיל בכלל —
+          // ונועל את החדר בלי מנהל שיכול לתפעל אותו יותר.
+          "adminId":   { ".validate": "newData.isString() && newData.val().length > 0 && (!data.exists() || newData.val() === data.val() || root.child('rooms/' + $code + '/members/' + newData.val() + '/status').val() === 'active')" },
           "$other":    { ".validate": false }
         },
 
@@ -285,8 +310,11 @@
             // יצירה : חבר פעיל בלבד, reportedBy = הוא עצמו, status מתחיל ב-needed.
             // עדכון : המדווח או המנהל — הכל.  חבר אחר — רק "תפיסת" הפריט,
             //         כלומר name/category/priority/reportedBy/reportedAt חייבים להישאר זהים.
+            //         ‼️ תוקן: assignedTo בענף הזה מותר לשנות רק לעצמך או
+            //         לנקות (בלי זה כל חבר יכול היה "לשייך" קנייה לחבר אחר
+            //         בלי הסכמתו).
             // מחיקה : מנהל בלבד.
-            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && newData.child('reportedBy').val() === auth.uid && newData.child('status').val() === 'needed') || (data.exists() && newData.exists() && (data.child('reportedBy').val() === auth.uid || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid || (newData.child('name').val() === data.child('name').val() && newData.child('category').val() === data.child('category').val() && newData.child('priority').val() === data.child('priority').val() && newData.child('reportedBy').val() === data.child('reportedBy').val() && newData.child('reportedAt').val() === data.child('reportedAt').val()))) || (data.exists() && !newData.exists() && root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid))",
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && newData.child('reportedBy').val() === auth.uid && newData.child('status').val() === 'needed') || (data.exists() && newData.exists() && (data.child('reportedBy').val() === auth.uid || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid || (newData.child('name').val() === data.child('name').val() && newData.child('category').val() === data.child('category').val() && newData.child('priority').val() === data.child('priority').val() && newData.child('reportedBy').val() === data.child('reportedBy').val() && newData.child('reportedAt').val() === data.child('reportedAt').val() && (!newData.hasChild('assignedTo') || newData.child('assignedTo').val() === auth.uid || newData.child('assignedTo').val() === data.child('assignedTo').val())))) || (data.exists() && !newData.exists() && root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid))",
 
             ".validate": "newData.hasChildren(['name', 'category', 'reportedBy', 'reportedAt', 'priority', 'status'])",
             "name":       { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 60" },
@@ -333,9 +361,25 @@
               ".validate": "newData.hasChildren()",
               "$uid": { ".validate": "newData.isBoolean() && newData.val() === true && root.child('rooms/' + $code + '/members/' + $uid).exists()" }
             },
+            // ‼️ מגבלה ידועה של RTDB Rules: אין דרך לוודא כאן ש-sum(shares)
+            // === amount — השפה לא תומכת בסכימה על ילדים דינמיים. חבר
+            // זדוני שכותב ישירות דרך ה-SDK (עוקף את computeShares בקוד,
+            // שהיא הגנת UI בלבד) עדיין יכול לחלק amount קטן ל-shares
+            // שמפלים לרעה משתתף אחד. שתי הגנות שכן אפשר לבטא במפורש:
+            //  1. splitMethod === 'covered' (קונה יחיד): החלק שלו *חייב*
+            //     להיות הסכום המלא — סוגר זיכוי-עצמי מומצא.
+            //  2. כל share בודד חסום ב-amount של הקנייה עצמה — כך גם
+            //     בחלוקה רב-משתתפים אי אפשר לחייב קורבן ביותר ממה
+            //     שהקנייה "מכריזה" שהיא עלתה (ומ-amount יש כבר תקרה
+            //     נפרדת של ₪100,000).
+            // עדיין לא סגור לגמרי: shares יכולים לזקוף הכל לקורבן אחד
+            // בלי לחייב את התוקף בכלל. סגירה מלאה דורשת בדיקת תקינות
+            // מחזורית בצד שרת (יש כבר Cloudflare Worker + GitHub Action
+            // עם הרשאות Admin SDK בפרויקט לצורך כזה) — לא נבנה כאן,
+            // מסומן לדיון מוצרי נפרד.
             "shares": {
-              ".validate": "newData.hasChildren()",
-              "$uid": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0 && newData.parent().parent().child('splitBetween/' + $uid).val() === true" }
+              ".validate": "newData.hasChildren() && (newData.parent().child('splitMethod').val() !== 'covered' || newData.child(newData.parent().child('boughtBy').val()).val() === newData.parent().child('amount').val())",
+              "$uid": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= newData.parent().parent().child('amount').val() && newData.val() % 1 === 0 && newData.parent().parent().child('splitBetween/' + $uid).val() === true" }
             },
 
             "receipt":    { ".validate": "newData.isString() && newData.val().matches(/^https:\\/\\/.+/)" },
@@ -363,11 +407,14 @@
         "settlements": {
           ".indexOn": ["date", "from", "to"],
           "$settlementId": {
-            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && (newData.child('from').val() === auth.uid || newData.child('to').val() === auth.uid)) || (data.exists() && newData.exists() && data.child('to').val() === auth.uid && newData.child('amount').val() === data.child('amount').val() && newData.child('from').val() === data.child('from').val()))",
+            // ‼️ תוקן: to לא היה קפוא בענף העדכון (רק amount/from) — הנמען
+            // שמאשר קבלה יכל תיאורטית להפנות את ה-to למישהו אחר תוך כדי
+            // האישור. עכשיו קפוא גם הוא.
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && (newData.child('from').val() === auth.uid || newData.child('to').val() === auth.uid)) || (data.exists() && newData.exists() && data.child('to').val() === auth.uid && newData.child('amount').val() === data.child('amount').val() && newData.child('from').val() === data.child('from').val() && newData.child('to').val() === data.child('to').val()))",
             ".validate": "newData.hasChildren(['from', 'to', 'amount', 'date'])",
             "from":        { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val()).exists()" },
             "to":          { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val()).exists() && newData.val() !== newData.parent().child('from').val()" },
-            "amount":      { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() % 1 === 0" },
+            "amount":      { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 10000000 && newData.val() % 1 === 0" },
             "date":        { ".validate": "newData.isNumber()" },
             "confirmedBy": { ".validate": "newData.val() === newData.parent().child('to').val()" },
             "$other":      { ".validate": false }

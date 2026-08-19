@@ -489,7 +489,11 @@ export async function checkAccountDeletable(
     const balance = computeBalances(purchases, settlements, memberIds)[uid] ?? 0;
 
     if (balance !== 0) {
-      return { ok: false, reason: `יש לכם חוב פתוח בחדר "${meta.name}" — סגרו אותו קודם` };
+      const reason =
+        balance > 0
+          ? `מגיע לכם כסף בחדר "${meta.name}" — סגרו את החשבון קודם`
+          : `יש לכם חוב פתוח בחדר "${meta.name}" — סגרו אותו קודם`;
+      return { ok: false, reason };
     }
   }
 

@@ -72,7 +72,16 @@ export function useRtdbList<T>(path: string | null): RtdbState<Array<T & { id: s
         void writeCache(path, uid, val); // 3) שיקוף למטמון
       },
       (error) => {
-        setState((s) => (s.fromCache ? s : { ...s, loading: false, error }));
+        // ‼️ אם כבר קיבלנו נתונים חיים, השגיאה כאן כמעט תמיד
+        // permission_denied — למשל מנהל שהסיר את המשתמש מהחדר תוך
+        // כדי שהמסך פתוח אצלו. בלי לנקות את data, החבר שהוסר ממשיך
+        // לראות תמונה קפואה של החדר (חברים, כספים, הכל) לנצח, כי
+        // בדיוק העדכון שהיה מראה לו "הוסרת" הוא זה שנחסם.
+        if (gotLive) {
+          setState({ data: [], loading: false, error, fromCache: false, cachedAt: null });
+        } else {
+          setState((s) => (s.fromCache ? s : { ...s, loading: false, error }));
+        }
       }
     );
 
@@ -134,7 +143,12 @@ export function useRtdbValue<T>(path: string | null): RtdbState<T | null> {
         void writeCache(path, uid, val);
       },
       (error) => {
-        setState((s) => (s.fromCache ? s : { ...s, loading: false, error }));
+        // ראו ההערה המקבילה ב-useRtdbList — אותו תיקון, אותה סיבה.
+        if (gotLive) {
+          setState({ data: null, loading: false, error, fromCache: false, cachedAt: null });
+        } else {
+          setState((s) => (s.fromCache ? s : { ...s, loading: false, error }));
+        }
       }
     );
 

@@ -63,7 +63,8 @@ export function AccountSettings() {
     e.target.value = ''; // מאפשר לבחור שוב את אותו קובץ בפעם הבאה
     if (!file || !user) return;
 
-    setAvatarPreview(URL.createObjectURL(file)); // תצוגה מיידית בזמן ההעלאה
+    const previewUrl = URL.createObjectURL(file); // תצוגה מיידית בזמן ההעלאה
+    setAvatarPreview(previewUrl);
     setUploadingAvatar(true);
     try {
       await uploadAvatar(user.uid, file, profile?.rooms);
@@ -73,6 +74,7 @@ export function AccountSettings() {
     } finally {
       setUploadingAvatar(false);
       setAvatarPreview(null);
+      URL.revokeObjectURL(previewUrl); // בלי זה כל בחירת תמונה מדליפה blob URL לצמיתות
     }
   }
 

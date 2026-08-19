@@ -324,10 +324,14 @@ export default {
         tag: entry.tag || 'roommate',
       };
 
-      const counts = await Promise.all(
+      // ‼️ allSettled ולא all: נמען בודד שנכשל (dbGet תקוע, בעיית רשת
+      // חד-פעמית) לא אמור להפיל את כל הבקשה ולמנוע משאר חברי החדר
+      // לקבל את ההתראה המיידית — הם עדיין יקבלו אותה מה-GitHub Action
+      // תוך 5 דקות, אבל אין סיבה לוותר על המיידיות עבורם רק בגלל אחד.
+      const results = await Promise.allSettled(
         recipients.map((r) => sendToUser(env, r, payload))
       );
-      const sent = counts.reduce((a, b) => a + b, 0);
+      const sent = results.reduce((a, r) => a + (r.status === 'fulfilled' ? r.value : 0), 0);
 
       await dbPatch(env, `outbox/${entryId}`, { sentAt: Date.now() });
 

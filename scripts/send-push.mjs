@@ -176,7 +176,14 @@ async function run() {
   let sent = 0;
   const updates = {};
 
-  /* ── התראות מיידיות ── */
+  /* ── התראות מיידיות ──
+   *
+   * ‼️ כל גוף הלולאה עטוף בניסיון-תפיסה יחיד. בלי זה, כשל לא-צפוי
+   * ב-sendTo (למשל מחיקת מנוי-מת שנכשלת ברשת) היה יוצא מהלולאה,
+   * מפיל את run() כולו, ומאבד את כל ה-updates שכבר נצברו לרשומות
+   * שהצליחו — בריצה הבאה הן היו נשלחות שוב (כפילות), והרשומה
+   * שנכשלה הייתה חוסמת את כל התור מאחוריה בכל ריצה מחדש.
+   */
   for (const entry of immediate) {
     const attempts = (entry.attempts || 0) + 1;
 
@@ -186,28 +193,25 @@ async function run() {
       continue;
     }
 
-    let uids = [];
-    let subs = [];
     try {
-      uids = await recipientsOf(entry);
-      subs = (await Promise.all(uids.map(subscriptionsFor))).flat();
+      const uids = await recipientsOf(entry);
+      const subs = (await Promise.all(uids.map(subscriptionsFor))).flat();
+
+      if (subs.length > 0) {
+        const res = await sendTo(subs, {
+          title: entry.title,
+          body: entry.body,
+          url: entry.url || '/',
+          tag: entry.tag || 'roommate',
+        });
+        sent += res.ok;
+        console.log(`  → "${entry.title}" · ${res.ok} נשלחו${res.gone ? `, ${res.gone} מנויים מתים נוקו` : ''}`);
+      }
+      updates[`outbox/${entry.id}/sentAt`] = now;
     } catch (err) {
       console.warn(`  ⚠️ "${entry.title}" נכשלה (ניסיון ${attempts}): ${err?.message ?? err}`);
       updates[`outbox/${entry.id}/attempts`] = attempts;
-      continue;
     }
-
-    if (subs.length > 0) {
-      const res = await sendTo(subs, {
-        title: entry.title,
-        body: entry.body,
-        url: entry.url || '/',
-        tag: entry.tag || 'roommate',
-      });
-      sent += res.ok;
-      console.log(`  → "${entry.title}" · ${res.ok} נשלחו${res.gone ? `, ${res.gone} מנויים מתים נוקו` : ''}`);
-    }
-    updates[`outbox/${entry.id}/sentAt`] = now;
   }
 
   /* ── תקציר יומי ── */
@@ -222,28 +226,38 @@ async function run() {
     const byUser = new Map();
 
     for (const entry of digest) {
-      for (const uid of await recipientsOf(entry)) {
-        if (!byUser.has(uid)) byUser.set(uid, []);
-        byUser.get(uid).push(entry);
+      try {
+        for (const uid of await recipientsOf(entry)) {
+          if (!byUser.has(uid)) byUser.set(uid, []);
+          byUser.get(uid).push(entry);
+        }
+        updates[`outbox/${entry.id}/sentAt`] = now;
+      } catch (err) {
+        // ‼️ אותה סיבה כמו בלולאה המיידית: רשומה פגומה בודדת לא אמורה
+        // למנוע את התקציר משאר המשתמשים, ולא אמורה לאבד עדכונים שכבר נצברו.
+        console.warn(`  ⚠️ תקציר: "${entry.title}" נכשלה: ${err?.message ?? err}`);
       }
-      updates[`outbox/${entry.id}/sentAt`] = now;
     }
 
     for (const [uid, list] of byUser) {
-      const subs = await subscriptionsFor(uid);
-      if (subs.length === 0) continue;
+      try {
+        const subs = await subscriptionsFor(uid);
+        if (subs.length === 0) continue;
 
-      const first = list[0];
-      const res = await sendTo(subs, {
-        title: 'מה קרה היום בחדר',
-        body:
-          list.length === 1
-            ? first.body
-            : `${first.body} ועוד ${list.length - 1} עדכונים`,
-        url: first.url || '/',
-        tag: 'digest',
-      });
-      sent += res.ok;
+        const first = list[0];
+        const res = await sendTo(subs, {
+          title: 'מה קרה היום בחדר',
+          body:
+            list.length === 1
+              ? first.body
+              : `${first.body} ועוד ${list.length - 1} עדכונים`,
+          url: first.url || '/',
+          tag: 'digest',
+        });
+        sent += res.ok;
+      } catch (err) {
+        console.warn(`  ⚠️ תקציר למשתמש ${uid} נכשל: ${err?.message ?? err}`);
+      }
     }
 
     console.log(`  → תקציר יומי ל-${byUser.size} משתמשים`);
