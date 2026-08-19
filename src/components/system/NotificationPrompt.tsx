@@ -74,8 +74,11 @@ export function NotificationPrompt() {
         <DismissButton onClick={hide} />
 
         <div className="flex items-start gap-3">
-          <span aria-hidden className="text-2xl">
-            📲
+          <span
+            aria-hidden
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700"
+          >
+            <BellIcon width={19} height={19} />
           </span>
           <div className="min-w-0 flex-1 pe-6">
             <h3 className="font-bold text-amber-900">רוצה לקבל התראות לטלפון?</h3>
@@ -101,9 +104,9 @@ export function NotificationPrompt() {
       <div className="flex items-start gap-3">
         <span
           aria-hidden
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-100 text-xl"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700"
         >
-          🔔
+          <BellIcon width={19} height={19} />
         </span>
 
         <div className="min-w-0 flex-1 pe-6">

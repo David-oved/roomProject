@@ -4,7 +4,7 @@
  */
 import type { SVGProps } from 'react';
 
-type IconProps = SVGProps<SVGSVGElement> & { filled?: boolean };
+export type IconProps = SVGProps<SVGSVGElement> & { filled?: boolean };
 
 const base = (p: IconProps) => ({
   width: 24,
@@ -53,6 +53,13 @@ export const UsersIcon = (p: IconProps) => (
     <circle cx="9" cy="8" r="3.2" />
     <path d="M3 20a6 6 0 0 1 12 0" />
     <path d="M16 5.2a3.2 3.2 0 0 1 0 5.6M17.5 20a6 6 0 0 0-2.2-4.6" />
+  </svg>
+);
+
+export const UserIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="8" r="3.6" />
+    <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
   </svg>
 );
 

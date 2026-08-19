@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Sheet } from '../ui/Sheet';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { GlassModal } from '../ui/GlassModal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Avatar } from '../ui/Avatar';
-import { CheckIcon } from '../ui/icons';
+import { CheckIcon, ExchangeIcon, UserIcon, UsersIcon } from '../ui/icons';
 import { useAuth } from '../../store/AuthContext';
 import { useRoom } from '../../store/RoomContext';
 import { useToast } from '../../store/ToastContext';
@@ -206,19 +206,12 @@ export function MarkBoughtSheet({
   const offsetCredit = deltaFor('offset');
 
   return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      title={item ? `קניתי: ${item.name}` : 'רישום קנייה'}
-      footer={
-        <Button size="lg" fullWidth loading={busy} disabled={!canSubmit} onClick={submit}>
-          {amount > 0
-            ? `${mode === 'covered' ? 'רשום על חשבוני' : 'שמור קנייה'} · ${formatILS(amount)}`
-            : 'שמור קנייה'}
-        </Button>
-      }
-    >
-      <div className="space-y-5 pb-2">
+    <GlassModal open={open} onClose={onClose} labelledBy="mark-bought-title">
+      <div className="space-y-5 p-5 pt-4">
+        <h2 id="mark-bought-title" className="pe-8 text-lg font-bold text-ink-900">
+          {item ? `קניתי: ${item.name}` : 'רישום קנייה'}
+        </h2>
+
         <Input
           label="כמה שילמת?"
           type="number"
@@ -247,7 +240,7 @@ export function MarkBoughtSheet({
             <ModeCard
               active={mode === 'covered'}
               onClick={() => setMode('covered')}
-              emoji="🙋"
+              icon={<UserIcon width={16} height={16} />}
               title="על עצמי"
               body="אף אחד לא מחויב"
               delta={0}
@@ -259,7 +252,7 @@ export function MarkBoughtSheet({
               <ModeCard
                 active={mode === 'offset'}
                 onClick={() => setMode('offset')}
-                emoji="⚖️"
+                icon={<ExchangeIcon width={16} height={16} />}
                 title="קיזוז מהחוב"
                 body="השאר על חשבונך"
                 delta={offsetCredit}
@@ -271,7 +264,7 @@ export function MarkBoughtSheet({
             <ModeCard
               active={mode === 'split'}
               onClick={() => setMode('split')}
-              emoji="👥"
+              icon={<UsersIcon width={16} height={16} />}
               title="לחלק"
               body="כל אחד את חלקו"
               delta={deltaFor('split')}
@@ -283,14 +276,14 @@ export function MarkBoughtSheet({
 
         {mode === 'covered' && (
           <p className="rounded-xl bg-emerald-50 px-3.5 py-3 text-sm leading-relaxed text-emerald-900">
-            💚 הקנייה תירשם על שמך ותופיע לכולם, אבל <b>המאזנים לא ישתנו</b>. ככה מתגלגלים
+            הקנייה תירשם על שמך ותופיע לכולם, אבל <b>המאזנים לא ישתנו</b>. ככה מתגלגלים
             בלי התחשבנות על כל דבר קטן.
           </p>
         )}
 
         {mode === 'offset' && amount > 0 && (
           <div className="rounded-xl bg-brand-50 px-3.5 py-3 text-sm leading-relaxed text-brand-900">
-            ⚖️ החוב שלך יקטן ב־<span className="num font-bold">{formatILS(offsetCredit)}</span>
+            החוב שלך יקטן ב־<span className="num font-bold">{formatILS(offsetCredit)}</span>
             {amount - offsetCredit > 0 && (
               <>
                 , ואת השאר (<span className="num">{formatILS(amount - offsetCredit)}</span>) אתה
@@ -445,8 +438,14 @@ export function MarkBoughtSheet({
             ? 'הקנייה תירשם מיד ותופיע בסיכום התרומות.'
             : 'הקנייה תירשם מיד והמאזנים יתעדכנו באותה שנייה.'}
         </p>
+
+        <Button size="lg" fullWidth loading={busy} disabled={!canSubmit} onClick={submit}>
+          {amount > 0
+            ? `${mode === 'covered' ? 'רשום על חשבוני' : 'שמור קנייה'} · ${formatILS(amount)}`
+            : 'שמור קנייה'}
+        </Button>
       </div>
-    </Sheet>
+    </GlassModal>
   );
 }
 
@@ -461,7 +460,7 @@ export function MarkBoughtSheet({
 function ModeCard({
   active,
   onClick,
-  emoji,
+  icon,
   title,
   body,
   delta,
@@ -470,7 +469,7 @@ function ModeCard({
 }: {
   active: boolean;
   onClick: () => void;
-  emoji: string;
+  icon: ReactNode;
   title: string;
   body: string;
   delta: Agorot;
@@ -491,8 +490,13 @@ function ModeCard({
           : 'border-ink-200 bg-white',
       ].join(' ')}
     >
-      <span aria-hidden className="block text-lg">
-        {emoji}
+      <span
+        aria-hidden
+        className={`grid h-7 w-7 place-items-center rounded-lg ${
+          active ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600'
+        }`}
+      >
+        {icon}
       </span>
       <span
         className={`mt-0.5 block text-[13px] font-bold ${

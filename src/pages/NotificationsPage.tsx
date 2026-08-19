@@ -5,6 +5,18 @@ import { TopBar } from '../components/layout/TopBar';
 import { Avatar } from '../components/ui/Avatar';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
+import {
+  CartIcon,
+  CheckIcon,
+  CloseIcon,
+  ExchangeIcon,
+  LogoutIcon,
+  PlusIcon,
+  UserIcon,
+  UsersIcon,
+  WalletIcon,
+  type IconProps,
+} from '../components/ui/icons';
 import { useNotifications } from '../hooks/useRoomData';
 import { useAuth } from '../store/AuthContext';
 import { useRoom } from '../store/RoomContext';
@@ -13,16 +25,22 @@ import { db } from '../config/firebase';
 import { formatRelativeTime } from '../lib/format';
 import type { NotificationType } from '../types/models';
 
-const ICONS: Record<NotificationType, string> = {
-  item_added: '🛒',
-  item_claimed: '🙋',
-  item_bought: '📦',
-  purchase_made: '🧾',
-  purchase_approved: '✅',
-  purchase_rejected: '❌',
-  member_joined: '👋',
-  member_removed: '🚪',
-  settlement: '💸',
+const ICONS: Record<NotificationType, (p: IconProps) => JSX.Element> = {
+  item_added: PlusIcon,
+  item_claimed: UserIcon,
+  item_bought: CartIcon,
+  purchase_made: WalletIcon,
+  purchase_approved: CheckIcon,
+  purchase_rejected: CloseIcon,
+  member_joined: UsersIcon,
+  member_removed: LogoutIcon,
+  settlement: ExchangeIcon,
+};
+
+/** גוון עדין רק לשני הסוגים עם משמעות חד-משמעית — חיובי/שלילי */
+const ICON_TONE: Partial<Record<NotificationType, string>> = {
+  purchase_approved: 'bg-emerald-50 text-emerald-700',
+  purchase_rejected: 'bg-rose-50 text-rose-700',
 };
 
 export default function NotificationsPage() {
@@ -64,6 +82,7 @@ export default function NotificationsPage() {
           <ul className="card divide-y divide-ink-100">
             {notifications.map((n) => {
               const unread = user ? !n.readBy?.[user.uid] : false;
+              const Icon = ICONS[n.type];
               return (
                 <li
                   key={n.id}
@@ -71,9 +90,11 @@ export default function NotificationsPage() {
                 >
                   <span
                     aria-hidden
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ink-100 text-base"
+                    className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${
+                      ICON_TONE[n.type] ?? 'bg-ink-100 text-ink-600'
+                    }`}
                   >
-                    {ICONS[n.type] ?? '🔔'}
+                    <Icon width={17} height={17} />
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm leading-snug text-ink-800">{n.text}</p>
