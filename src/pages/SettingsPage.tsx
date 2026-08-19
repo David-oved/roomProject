@@ -14,6 +14,7 @@ interface SettingsCategory {
 const CATEGORIES: SettingsCategory[] = [
   { key: 'account', label: 'חשבון', description: 'שם, תמונה, סיסמה ומחיקת חשבון', icon: '👤' },
   { key: 'room', label: 'החדר', description: 'פרטי החדר, ניהול וגיבוי', icon: '🏠' },
+  { key: 'members', label: 'חברים', description: 'רשימת חברים ובקשות הצטרפות', icon: '👥' },
   { key: 'notifications', label: 'התראות', description: 'מה ומתי תרצו לקבל התראה', icon: '🔔' },
   { key: 'about', label: 'אודות', description: 'גרסה, עדכונים ומידע נוסף', icon: 'ℹ️' },
 ];

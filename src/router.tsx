@@ -17,11 +17,12 @@ const PendingApprovalPage = lazy(() => import('./pages/PendingApprovalPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const ItemsPage = lazy(() => import('./pages/ItemsPage'));
 const BalancesPage = lazy(() => import('./pages/BalancesPage'));
-const MembersPage = lazy(() => import('./pages/MembersPage'));
+const ChatPage = lazy(() => import('./pages/ChatPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const SettingsAccountPage = lazy(() => import('./pages/SettingsAccountPage'));
 const SettingsRoomPage = lazy(() => import('./pages/SettingsRoomPage'));
+const SettingsMembersPage = lazy(() => import('./pages/SettingsMembersPage'));
 const SettingsNotificationsPage = lazy(() => import('./pages/SettingsNotificationsPage'));
 const SettingsAboutPage = lazy(() => import('./pages/SettingsAboutPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
@@ -61,11 +62,12 @@ export function AppRoutes() {
               <Route index element={<DashboardPage />} />
               <Route path="items" element={<ItemsPage />} />
               <Route path="balances" element={<BalancesPage />} />
-              <Route path="members" element={<MembersPage />} />
+              <Route path="chat" element={<ChatPage />} />
               <Route path="notifications" element={<NotificationsPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="settings/account" element={<SettingsAccountPage />} />
               <Route path="settings/room" element={<SettingsRoomPage />} />
+              <Route path="settings/members" element={<SettingsMembersPage />} />
               <Route path="settings/notifications" element={<SettingsNotificationsPage />} />
               <Route path="settings/about" element={<SettingsAboutPage />} />
             </Route>

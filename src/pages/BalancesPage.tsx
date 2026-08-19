@@ -29,8 +29,20 @@ export default function BalancesPage() {
   const [tab, setTab] = useState<Tab>('summary');
   const { balances, myBalance, isConsistent, loading } = useBalances();
   const { purchases, pendingApproval } = usePurchases();
-  const { members, memberName, isAdmin } = useRoom();
+  const { members, activeMembers, memberName, isAdmin } = useRoom();
   const { user } = useAuth();
+
+  /**
+   * חברים שהוסרו מהחדר לא אמורים לבלגן את הרשימה לנצח — אבל אם עדיין
+   * יש להם חוב פתוח, הוא לא נעלם ולא אמור להיעלם. אז: פעילים תמיד,
+   * מוסרים רק אם המאזן שלהם התאפס.
+   */
+  const visibleMemberIds = useMemo(() => {
+    const activeIds = new Set(activeMembers.map((m) => m.id));
+    return members
+      .filter((m) => activeIds.has(m.id) || (balances[m.id] ?? 0) !== 0)
+      .map((m) => m.id);
+  }, [members, activeMembers, balances]);
 
   const transfers = useMemo(() => simplifyDebts(balances), [balances]);
   const myTransfers = useMemo(
@@ -100,7 +112,7 @@ export default function BalancesPage() {
               transfers={myTransfers}
               allTransfers={transfers}
               balances={balances}
-              memberIds={members.map((m) => m.id)}
+              memberIds={visibleMemberIds}
               memberName={memberName}
             />
           ) : tab === 'pending' ? (

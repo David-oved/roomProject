@@ -243,7 +243,7 @@ export default function DashboardPage() {
 
             {isAdmin && requests.length > 0 && (
               <Link
-                to={`/r/${roomCode}/members`}
+                to={`/r/${roomCode}/settings/members`}
                 className="flex items-center gap-3 border-b border-ink-100 p-4 transition last:border-b-0 hover:bg-ink-50"
               >
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-sky-50 text-sky-700">
