@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { CloseIcon } from './icons';
+import { useVisualViewportBounds } from '../../hooks/useVisualViewportBounds';
 
 /**
  * מודאל זכוכית מרכזי — לא Bottom Sheet.
@@ -20,6 +21,12 @@ export function GlassModal({
   labelledBy?: string;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  // ‼️ אותה סיבה בדיוק כמו ChatConversationPage: max-h-[88dvh] + fixed
+  // inset-0 "קופצים" ברגע שהמקלדת נפתחת (ובמיוחד כשמחליפים בין שדה
+  // טקסט לשדה מספרי — מקלדות בגבהים שונים), כי בברירת המחדל של רוב
+  // דפדפני אנדרואיד/כרום ה-layout viewport עצמו מתכווץ עם המקלדת.
+  // אותו פתרון: קושרים את הגובה ל-visual viewport האמיתי, לא מנחשים.
+  const viewport = useVisualViewportBounds();
 
   useEffect(() => {
     if (!open) return;
@@ -44,7 +51,10 @@ export function GlassModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] grid place-items-center p-4">
+    <div
+      className="fixed inset-x-0 z-[80] grid place-items-center p-4"
+      style={{ top: viewport.top, height: viewport.height }}
+    >
       <div
         className="absolute inset-0 animate-fade-in bg-ink-900/50 backdrop-blur-sm"
         onClick={onClose}
@@ -57,7 +67,8 @@ export function GlassModal({
         aria-modal="true"
         aria-labelledby={labelledBy}
         tabIndex={-1}
-        className="relative flex max-h-[88dvh] w-full max-w-sm animate-glass-in flex-col
+        style={{ maxHeight: viewport.height * 0.88 }}
+        className="relative flex w-full max-w-sm animate-glass-in flex-col
                    overflow-hidden rounded-[2rem] border border-white/60 bg-white/90
                    shadow-lifted outline-none backdrop-blur-2xl"
       >
