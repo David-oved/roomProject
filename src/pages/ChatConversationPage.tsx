@@ -52,9 +52,49 @@ export default function ChatConversationPage() {
 
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [composeHeight, setComposeHeight] = useState(72);
   const listRef = useRef<HTMLDivElement>(null);
+  const composeRef = useRef<HTMLDivElement>(null);
   const isFirstRender = useRef(true);
   const animatedIds = useRef<Set<string>>(new Set());
+
+  function scrollToBottom(behavior: ScrollBehavior) {
+    listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior });
+  }
+
+  // גובה שורת הכתיבה בפועל — כדי שהודעות אחרונות לא ייעלמו מתחתיה
+  useEffect(() => {
+    const el = composeRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => setComposeHeight(entries[0].contentRect.height));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // ‼️ המסך כולו לא זז/מצטמצם כשהמקלדת נפתחת — רק שורת הכתיבה עולה מעליה.
+  // 100dvh על הקונטיינר הראשי היה גורם לכל הפריסה (כותרת + הודעות) להצטמצם
+  // מחדש בכל פתיחת מקלדת. פתרון: הקונטיינר קבוע (fixed inset-0, לא תלוי
+  // ב-dvh), ושורת הכתיבה עצמה fixed בנפרד ומוזזת ב-JS לפי visualViewport —
+  // ההפרש בין גובה חלון הפריסה לגובה ה-visual viewport הוא בדיוק גובה המקלדת.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const compose = composeRef.current;
+    if (!vv || !compose) return;
+
+    function reposition() {
+      const overlap = Math.max(0, window.innerHeight - vv!.height - vv!.offsetTop);
+      compose!.style.transform = overlap > 0 ? `translateY(-${overlap}px)` : '';
+    }
+
+    vv.addEventListener('resize', reposition);
+    vv.addEventListener('scroll', reposition);
+    reposition();
+
+    return () => {
+      vv.removeEventListener('resize', reposition);
+      vv.removeEventListener('scroll', reposition);
+    };
+  }, []);
 
   // נוכחות — "כאן" כל עוד המסך הזה פתוח, כדי שהשולח בצד השני ידע לא לשלוח פוש
   useEffect(() => {
@@ -70,8 +110,7 @@ export default function ChatConversationPage() {
 
   // גלילה לתחתית: מיידית בכניסה, חלקה על כל הודעה חדשה אחר כך
   useEffect(() => {
-    const behavior = isFirstRender.current ? 'auto' : 'smooth';
-    listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior });
+    scrollToBottom(isFirstRender.current ? 'auto' : 'smooth');
     isFirstRender.current = false;
   }, [sorted.length]);
 
@@ -98,7 +137,7 @@ export default function ChatConversationPage() {
   }
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-ink-50">
+    <div className="fixed inset-0 flex flex-col bg-ink-50">
       {/* ── כותרת ── */}
       <header
         className="sticky top-0 z-10 flex shrink-0 items-center gap-2.5 border-b border-ink-200/70
@@ -131,7 +170,11 @@ export default function ChatConversationPage() {
       </header>
 
       {/* ── הודעות ── */}
-      <div ref={listRef} className="scroll-area min-h-0 flex-1 overflow-y-auto px-3 py-3 safe-x">
+      <div
+        ref={listRef}
+        className="scroll-area min-h-0 flex-1 overflow-y-auto px-3 pt-3 safe-x"
+        style={{ paddingBottom: `calc(0.75rem + ${composeHeight}px)` }}
+      >
         {sorted.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
             <span className="grid h-12 w-12 place-items-center rounded-2xl bg-ink-100 text-ink-400">
@@ -160,15 +203,19 @@ export default function ChatConversationPage() {
         )}
       </div>
 
-      {/* ── שורת כתיבה — לא fixed, כך שהיא נשארת מעל המקלדת ── */}
+      {/* ── שורת כתיבה — fixed בנפרד, מוזזת ב-JS לפי visualViewport כדי
+          שרק היא תעלה מעל המקלדת; שאר המסך לא זז ── */}
       <div
-        className="shrink-0 border-t border-ink-200/70 bg-white px-3 py-2.5 safe-x"
+        ref={composeRef}
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-ink-200/70 bg-white px-3 py-2.5
+                   safe-x transition-transform duration-100 ease-out"
         style={{ paddingBottom: 'calc(var(--safe-bottom) + 0.625rem)' }}
       >
         <div className="flex items-end gap-2">
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onFocus={() => scrollToBottom('smooth')}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();

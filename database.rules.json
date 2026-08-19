@@ -500,7 +500,15 @@
     "dms": {
       "$code": {
         "$pairKey": {
-          ".read": "auth != null && root.child('dms/' + $code + '/' + $pairKey + '/participants/' + auth.uid).exists()",
+          // ‼️ מבוסס נתיב בלבד — לא "participants/auth.uid קיים" — כי אחרת
+          // פתיחת שיחה חדשה (לפני שנשלחה בה ולו הודעה אחת, ולכן participants
+          // עוד לא נוצר) הייתה נכשלת ב-permission_denied. Firebase לא "מתאזן
+          // מחדש" מאזין שכבר נכשל ברשות גישה — גם אחרי שההודעה הראשונה
+          // נכתבת בהצלחה (יצירת participants+message באותה כתיבה אטומית),
+          // המאזין שכבר מת לא קם לתחייה, וההודעה "נעלמת" למי שכבר פתוח שם.
+          // contains() ולא participants — כי $pairKey עצמו כבר מכיל את שני
+          // המזהים (ראו contains() למטה, אותה הצדקה).
+          ".read": "auth != null && $pairKey.contains(auth.uid) && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active'",
 
           "participants": {
             // יצירה בלבד, פעם אחת, ע"י אחד משני המשתתפים. אין עריכה
