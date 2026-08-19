@@ -46,7 +46,7 @@ const ICON_TONE: Partial<Record<NotificationType, string>> = {
 export default function NotificationsPage() {
   const { notifications, loading } = useNotifications();
   const { user } = useAuth();
-  const { roomCode } = useRoom();
+  const { roomCode, memberAvatar } = useRoom();
   const { isOnline } = useConnection();
 
   // סימון כנקרא בכניסה למסך. כל אחד כותב רק ל-readBy של עצמו.
@@ -105,7 +105,7 @@ export default function NotificationsPage() {
                       )}
                     </p>
                   </div>
-                  <Avatar name={n.actorName} uid={n.actorId} size="xs" />
+                  <Avatar name={n.actorName} uid={n.actorId} src={memberAvatar(n.actorId)} size="xs" />
                 </li>
               );
             })}

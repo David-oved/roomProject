@@ -18,6 +18,8 @@ interface RoomValue {
   loading: boolean;
   fromCache: boolean;
   memberName: (uid: string) => string;
+  /** תמונת הפרופיל של חבר, אם יש לו — לשימוש בכל מקום שמציג Avatar */
+  memberAvatar: (uid: string) => string | null;
   /** מזהי חברים שהאפליקציה פתוחה אצלם *עכשיו* (לא רק בצ'אט — בכל מסך בחדר) */
   onlineMemberIds: Set<string>;
 }
@@ -32,6 +34,7 @@ const Ctx = createContext<RoomValue>({
   loading: true,
   fromCache: false,
   memberName: () => '—',
+  memberAvatar: () => null,
   onlineMemberIds: new Set(),
 });
 
@@ -61,6 +64,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       loading: meta.loading || mem.loading,
       fromCache: meta.fromCache || mem.fromCache,
       memberName: (uid: string) => members.find((m) => m.id === uid)?.name ?? 'משתמש שנמחק',
+      memberAvatar: (uid: string) => members.find((m) => m.id === uid)?.avatar ?? null,
       onlineMemberIds: new Set(Object.keys(online.data ?? {})),
     };
   }, [

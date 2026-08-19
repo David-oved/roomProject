@@ -29,7 +29,7 @@ export default function BalancesPage() {
   const [tab, setTab] = useState<Tab>('summary');
   const { balances, myBalance, isConsistent, loading } = useBalances();
   const { purchases, pendingApproval } = usePurchases();
-  const { members, activeMembers, memberName, isAdmin } = useRoom();
+  const { members, activeMembers, memberName, memberAvatar, isAdmin } = useRoom();
   const { user } = useAuth();
 
   /**
@@ -114,11 +114,12 @@ export default function BalancesPage() {
               balances={balances}
               memberIds={visibleMemberIds}
               memberName={memberName}
+              memberAvatar={memberAvatar}
             />
           ) : tab === 'pending' ? (
             <PendingTab isAdmin={isAdmin} />
           ) : (
-            <HistoryTab purchases={purchases} memberName={memberName} />
+            <HistoryTab purchases={purchases} memberName={memberName} memberAvatar={memberAvatar} />
           )}
         </div>
       </div>
@@ -134,15 +135,17 @@ function SummaryTab({
   balances,
   memberIds,
   memberName,
+  memberAvatar,
 }: {
   transfers: { from: string; to: string; amount: number }[];
   allTransfers: { from: string; to: string; amount: number }[];
   balances: Record<string, number>;
   memberIds: string[];
   memberName: (uid: string) => string;
+  memberAvatar: (uid: string) => string | null;
 }) {
   const { user, profile } = useAuth();
-  const { roomCode, memberName: roomMemberName } = useRoom();
+  const { roomCode, memberName: roomMemberName, memberAvatar: roomMemberAvatar } = useRoom();
   const { isOnline } = useConnection();
   const toast = useToast();
   const confirm = useConfirm();
@@ -173,7 +176,7 @@ function SummaryTab({
                 key={s.id}
                 className="card flex items-center gap-3 border-amber-200 bg-amber-50/60 p-4"
               >
-                <Avatar name={roomMemberName(s.from)} uid={s.from} size="sm" />
+                <Avatar name={roomMemberName(s.from)} uid={s.from} src={roomMemberAvatar(s.from)} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-ink-900">
                     {roomMemberName(s.from)} מסמן/ת שהעביר/ה לך
@@ -218,7 +221,7 @@ function SummaryTab({
               const alreadySent = awaitingOthers.some((s) => s.from === t.from && s.to === t.to);
               return (
                 <li key={key} className="card flex items-center gap-3 p-4">
-                  <Avatar name={memberName(other)} uid={other} size="sm" />
+                  <Avatar name={memberName(other)} uid={other} src={memberAvatar(other)} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-ink-900">
                       {iOwe ? `אתה חייב ל${memberName(other)}` : `${memberName(other)} חייב לך`}
@@ -275,7 +278,7 @@ function SummaryTab({
             const v = balances[id] ?? 0;
             return (
               <li key={id} className="flex items-center gap-3 px-4 py-3">
-                <Avatar name={memberName(id)} uid={id} size="xs" />
+                <Avatar name={memberName(id)} uid={id} src={memberAvatar(id)} size="xs" />
                 <span className="flex-1 truncate text-sm text-ink-800">{memberName(id)}</span>
                 <span
                   className={`num text-sm font-bold ${
@@ -307,7 +310,7 @@ function SummaryTab({
  */
 function ContributionsSection() {
   const { borne, paidOut, total, gap, next } = useContributions();
-  const { activeMembers, memberName } = useRoom();
+  const { activeMembers, memberName, memberAvatar } = useRoom();
   const { user } = useAuth();
 
   const average = total / Math.max(activeMembers.length, 1);
@@ -330,7 +333,7 @@ function ContributionsSection() {
               const isMe = m.id === user?.uid;
               return (
                 <li key={m.id} className="flex items-center gap-3 px-4 py-3">
-                  <Avatar name={memberName(m.id)} uid={m.id} size="xs" />
+                  <Avatar name={memberName(m.id)} uid={m.id} src={memberAvatar(m.id)} size="xs" />
                   <span className={`flex-1 truncate text-sm ${isMe ? 'font-bold text-ink-900' : 'text-ink-800'}`}>
                     {memberName(m.id)}
                     {isMe && <span className="text-xs font-normal text-ink-400"> (אתה)</span>}
@@ -396,7 +399,7 @@ function ContributionsSection() {
 
 function PendingTab({ isAdmin }: { isAdmin: boolean }) {
   const { pendingApproval } = usePurchases();
-  const { roomCode, memberName } = useRoom();
+  const { roomCode, memberName, memberAvatar } = useRoom();
   const { profile } = useAuth();
   const { user } = useAuth();
   const { isOnline } = useConnection();
@@ -413,7 +416,7 @@ function PendingTab({ isAdmin }: { isAdmin: boolean }) {
       {pendingApproval.map((p) => (
         <li key={p.id} className="card p-4">
           <div className="flex items-start gap-3">
-            <Avatar name={memberName(p.boughtBy)} uid={p.boughtBy} size="sm" />
+            <Avatar name={memberName(p.boughtBy)} uid={p.boughtBy} src={memberAvatar(p.boughtBy)} size="sm" />
             <div className="min-w-0 flex-1">
               <h3 className="flex items-center gap-1.5 truncate font-bold text-ink-900">
                 {p.title}
@@ -491,9 +494,11 @@ function PendingTab({ isAdmin }: { isAdmin: boolean }) {
 function HistoryTab({
   purchases,
   memberName,
+  memberAvatar,
 }: {
   purchases: ReturnType<typeof usePurchases>['purchases'];
   memberName: (uid: string) => string;
+  memberAvatar: (uid: string) => string | null;
 }) {
   const done = purchases.filter((p) => p.status !== 'pending');
 
@@ -515,7 +520,7 @@ function HistoryTab({
       <ul className="card divide-y divide-ink-100">
         {done.map((p) => (
           <li key={p.id} className="flex items-center gap-3 px-4 py-3">
-            <Avatar name={memberName(p.boughtBy)} uid={p.boughtBy} size="xs" />
+            <Avatar name={memberName(p.boughtBy)} uid={p.boughtBy} src={memberAvatar(p.boughtBy)} size="xs" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-ink-900">{p.title}</p>
               <p className="text-xs text-ink-500">

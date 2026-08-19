@@ -93,14 +93,19 @@ export default function DashboardPage() {
             <Link
               to={`/r/${roomCode}/notifications`}
               aria-label={`התראות${unreadCount ? `, ${unreadCount} חדשות` : ''}`}
-              className="tap relative grid place-items-center rounded-full text-ink-500
-                         transition hover:bg-ink-100 hover:text-ink-800"
+              className={[
+                'tap relative grid place-items-center rounded-full transition-all duration-200 active:scale-90',
+                unreadCount > 0
+                  ? 'bg-brand-50 text-brand-700 hover:bg-brand-100'
+                  : 'bg-ink-50 text-ink-500 hover:bg-ink-100 hover:text-ink-800',
+              ].join(' ')}
             >
-              <BellIcon width={21} height={21} />
+              <BellIcon width={19} height={19} filled={unreadCount > 0} />
               {unreadCount > 0 && (
                 <span
-                  className="absolute end-1.5 top-1.5 grid h-4 min-w-4 place-items-center
-                             rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white"
+                  className="animate-check-pop absolute -end-1 -top-1 grid h-5 min-w-5 place-items-center
+                             rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white
+                             ring-2 ring-white"
                 >
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
@@ -109,10 +114,10 @@ export default function DashboardPage() {
             <Link
               to={`/r/${roomCode}/settings`}
               aria-label="הגדרות"
-              className="tap grid place-items-center rounded-full text-ink-500
-                         transition hover:bg-ink-100 hover:text-ink-800"
+              className="tap grid place-items-center rounded-full bg-ink-50 text-ink-500
+                         transition-all duration-200 hover:bg-ink-100 hover:text-ink-800 active:scale-90"
             >
-              <SettingsIcon width={20} height={20} />
+              <SettingsIcon width={19} height={19} />
             </Link>
           </>
         }

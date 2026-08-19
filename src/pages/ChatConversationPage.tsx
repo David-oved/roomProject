@@ -65,6 +65,17 @@ export default function ChatConversationPage() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior });
   }
 
+  // ‼️ מעבר בין שתי שיחות פרטיות (dm/:uid1 ← dm/:uid2) לא ממחזר את
+  // הקומפוננטה — אותו תבנית-נתיב, רק פרמטר משתנה (בדיוק כמו הבאג שכבר
+  // תוקן ב-SettingsRoomPage). בלי האיפוס הזה: טקסט שהתחלת להקליד לחבר
+  // אחד נשלח בטעות לחבר השני, וההודעות של השיחה החדשה "נדבקות" לרצף
+  // האנימציה/הגלילה של הקודמת.
+  useEffect(() => {
+    setText('');
+    isFirstRender.current = true;
+    animatedIds.current = new Set();
+  }, [path]);
+
   // גובה שורת הכתיבה בפועל — כדי שהודעות אחרונות לא ייעלמו מתחתיה
   useEffect(() => {
     const el = composeRef.current;
@@ -74,11 +85,26 @@ export default function ChatConversationPage() {
     return () => ro.disconnect();
   }, []);
 
-  // ‼️ המסך כולו לא זז/מצטמצם כשהמקלדת נפתחת — רק שורת הכתיבה עולה מעליה.
-  // 100dvh על הקונטיינר הראשי היה גורם לכל הפריסה (כותרת + הודעות) להצטמצם
-  // מחדש בכל פתיחת מקלדת. פתרון: הקונטיינר קבוע (fixed inset-0, לא תלוי
-  // ב-dvh), ושורת הכתיבה עצמה fixed בנפרד ומוזזת ב-JS לפי visualViewport —
-  // ההפרש בין גובה חלון הפריסה לגובה ה-visual viewport הוא בדיוק גובה המקלדת.
+  // ‼️ קריטי: בלי זה, בדפדפני כרום/אנדרואיד (וכל דפדפן שברירת המחדל שלו
+  // "resizes-content") המקלדת מכווצת את ה-layout viewport עצמו — ואיתו כל
+  // fixed inset-0, לא משנה איך בונים אותו. זו הייתה הסיבה שהמסך "התרחב"
+  // (בעצם התכווץ) גם אחרי המעבר ל-fixed. ה-API הזה אומר לדפדפן: אל תזיז
+  // ואל תכווץ שום דבר בשביל המקלדת — אני כבר מטפל בזה לבד. קיים רק
+  // בדפדפני Chromium; בספארי לא צריך אותו כי ה-layout viewport שם ממילא
+  // לא מתכווץ עבור המקלדת (ולכן הקוד למטה כבר עבד שם).
+  useEffect(() => {
+    const vk = navigator.virtualKeyboard;
+    if (!vk) return;
+    vk.overlaysContent = true;
+    return () => {
+      vk.overlaysContent = false;
+    };
+  }, []);
+
+  // המסך כולו לא זז/מצטמצם כשהמקלדת נפתחת — רק שורת הכתיבה עולה מעליה.
+  // הקונטיינר קבוע (fixed inset-0), ושורת הכתיבה עצמה fixed בנפרד ומוזזת
+  // ב-JS לפי visualViewport — הנוסחה הסטנדרטית לגובה המקלדת: ההפרש בין
+  // גובה חלון הפריסה לגובה ה-visual viewport, פחות היסט הפאן שלו.
   useEffect(() => {
     const vv = window.visualViewport;
     const compose = composeRef.current;
