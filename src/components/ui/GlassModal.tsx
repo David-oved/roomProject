@@ -1,6 +1,6 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CloseIcon } from './icons';
-import { useVisualViewportBounds } from '../../hooks/useVisualViewportBounds';
+import { readVisualViewportBounds } from '../../hooks/useVisualViewportBounds';
 
 /**
  * מודאל זכוכית מרכזי — לא Bottom Sheet.
@@ -21,15 +21,24 @@ export function GlassModal({
   labelledBy?: string;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
-  // ‼️ אותה סיבה בדיוק כמו ChatConversationPage: max-h-[88dvh] + fixed
-  // inset-0 "קופצים" ברגע שהמקלדת נפתחת (ובמיוחד כשמחליפים בין שדה
-  // טקסט לשדה מספרי — מקלדות בגבהים שונים), כי בברירת המחדל של רוב
-  // דפדפני אנדרואיד/כרום ה-layout viewport עצמו מתכווץ עם המקלדת.
-  // אותו פתרון: קושרים את הגובה ל-visual viewport האמיתי, לא מנחשים.
-  const viewport = useVisualViewportBounds();
+
+  /**
+   * ‼️ בכוונה *לא* עוקבים חי אחרי visualViewport כמו ב-ChatConversationPage.
+   * שם זה נכון כי שדה קלט צריך "לעלות" ולהישאר מעל המקלדת. במודאל מרכזי
+   * זה הפוך: מעקב חי הוא בדיוק מה שגרם ל"קפיצה" — כל מעבר בין שדות עם
+   * מקלדות בגבהים שונים (למשל טקסט מול מספרי, ב-AddTaskSheet) שינה את
+   * visualViewport.height וגרר עוד ועוד שינוי גודל של המודאל עצמו.
+   * מודאל לא צריך לעקוב אחרי המקלדת — רק לא לזוז. לכן: תופסים את הגודל
+   * *פעם אחת* ברגע שהמודאל נפתח (לפני שהמקלדת בכלל עלתה), ולא נוגעים
+   * בו יותר כל עוד הוא פתוח. אם המקלדת מכסה חלק ממנו — זה תפקיד הגלילה
+   * הפנימית (scroll-area), לא של שינוי גודל חיצוני.
+   */
+  const [viewport, setViewport] = useState(readVisualViewportBounds);
 
   useEffect(() => {
     if (!open) return;
+
+    setViewport(readVisualViewportBounds());
 
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
