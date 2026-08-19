@@ -149,6 +149,46 @@ export const CameraIcon = (p: IconProps) => (
   </svg>
 );
 
+export const ExchangeIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M7 10 3 6l4-4" />
+    <path d="M3 6h12a4 4 0 0 1 4 4" />
+    <path d="M17 14l4 4-4 4" />
+    <path d="M21 18H9a4 4 0 0 1-4-4" />
+  </svg>
+);
+
+/** אייקוני קטגוריה — קו דק, לשימוש במקומות שמבקשים חלופה לאימוג'י (למשל לוח הבית) */
+export const KitchenIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 3s.5 5.5 4.5 5.5S13 3 13 3" />
+    <path d="M8.5 8.5V21" />
+    <path d="M17 3v8a3 3 0 0 0 6 0V3M20 3v18" />
+  </svg>
+);
+
+export const BathroomIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M7 21V9a5 5 0 0 1 10 0v12" />
+    <path d="M7 14h10" />
+  </svg>
+);
+
+export const CleaningIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M3 3s1 6 5 6 5-6 5-6" />
+    <path d="M8 9v12" />
+    <path d="M17 3v18M14 3v6a3 3 0 0 0 6 0V3" />
+  </svg>
+);
+
+export const BoxIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="4" y="8" width="16" height="12" rx="1.5" />
+    <path d="M8 8V6a4 4 0 0 1 8 0v2" />
+  </svg>
+);
+
 export const TrashIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M4 7h16" />

@@ -31,6 +31,8 @@ export default {
       },
       fontFamily: {
         sans: ['Assistant', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+        // לספרות בכרטיס היתרה — מראה "מסמך פיננסי" ולא רק טקסט מודגש
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Consolas', 'monospace'],
       },
       borderRadius: {
         card: '1.125rem',
