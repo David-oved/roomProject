@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import { useBalances, useContributions, usePurchases, useSettlements } from '../hooks/useRoomData';
+import { ContributionChart } from '../components/balances/ContributionChart';
 import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
 import { useConnection } from '../store/ConnectionContext';
@@ -293,79 +294,85 @@ function SummaryTab({
  * אפס — ואז אי אפשר לראות שאחד קונה כל שבוע והשני אף פעם. כאן זה גלוי.
  */
 function ContributionsSection() {
-  const { borne, total, gap, next } = useContributions();
+  const { borne, paidOut, total, gap, next } = useContributions();
   const { activeMembers, memberName } = useRoom();
   const { user } = useAuth();
 
   if (total === 0) return null;
 
-  const max = Math.max(...activeMembers.map((m) => borne[m.id] ?? 0), 1);
   const average = total / Math.max(activeMembers.length, 1);
 
-  return (
-    <section>
-      <h2 className="mb-2 px-1 text-sm font-bold text-ink-700">מי נשא בכמה</h2>
+  const slices = activeMembers.map((m) => ({
+    uid: m.id,
+    name: memberName(m.id) + (m.id === user?.uid ? ' (אתה)' : ''),
+    value: borne[m.id] ?? 0,
+  }));
 
-      <div className="card p-4">
-        <ul className="space-y-3">
+  return (
+    <div className="space-y-4">
+      {/* ── כמה כל אחד הוציא בפועל מהכיס ── */}
+      <section>
+        <h2 className="mb-2 px-1 text-sm font-bold text-ink-700">כמה כל אחד הוציא</h2>
+        <ul className="card divide-y divide-ink-100">
           {[...activeMembers]
-            .sort((a, b) => (borne[b.id] ?? 0) - (borne[a.id] ?? 0))
+            .sort((a, b) => (paidOut[b.id] ?? 0) - (paidOut[a.id] ?? 0))
             .map((m) => {
-              const value = borne[m.id] ?? 0;
               const isMe = m.id === user?.uid;
               return (
-                <li key={m.id}>
-                  <div className="flex items-baseline justify-between text-sm">
-                    <span className={isMe ? 'font-bold text-ink-900' : 'text-ink-700'}>
-                      {memberName(m.id)}
-                      {isMe && <span className="text-xs font-normal text-ink-400"> (אתה)</span>}
-                    </span>
-                    <span className="num font-semibold text-ink-900">{formatILS(value)}</span>
-                  </div>
-                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-ink-100">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        value >= average ? 'bg-brand-600' : 'bg-amber-400'
-                      }`}
-                      style={{ width: `${Math.round((value / max) * 100)}%` }}
-                    />
-                  </div>
+                <li key={m.id} className="flex items-center gap-3 px-4 py-3">
+                  <Avatar name={memberName(m.id)} uid={m.id} size="xs" />
+                  <span className={`flex-1 truncate text-sm ${isMe ? 'font-bold text-ink-900' : 'text-ink-800'}`}>
+                    {memberName(m.id)}
+                    {isMe && <span className="text-xs font-normal text-ink-400"> (אתה)</span>}
+                  </span>
+                  <span className="num text-sm font-bold text-ink-900">
+                    {formatILS(paidOut[m.id] ?? 0)}
+                  </span>
                 </li>
               );
             })}
         </ul>
+      </section>
 
-        <div className="mt-4 flex items-center justify-between border-t border-ink-100 pt-3 text-xs">
-          <span className="text-ink-500">
-            סה"כ הוצאות החדר <span className="num font-semibold text-ink-800">{formatILS(total)}</span>
-          </span>
-          <span
-            className={`num font-semibold ${gap > average * 0.5 ? 'text-amber-700' : 'text-emerald-700'}`}
-          >
-            {gap === 0 ? 'מאוזן לגמרי' : `פער ${formatILS(gap)}`}
-          </span>
-        </div>
-      </div>
+      {/* ── אחוז מסך העלות שכל אחד נשא ── */}
+      <section>
+        <h2 className="mb-2 px-1 text-sm font-bold text-ink-700">מי נשא בכמה מהעלות</h2>
+        <div className="card p-4">
+          <ContributionChart slices={slices} total={total} />
 
-      {next && (
-        <div className="mt-2 flex items-start gap-2.5 rounded-card bg-amber-50 px-3.5 py-3">
-          <span aria-hidden className="text-lg">
-            👉
-          </span>
-          <p className="text-sm leading-relaxed text-amber-900">
-            <b>{memberName(next.userId)}</b> נשא ב־
-            <span className="num font-semibold">{formatILS(next.behindBy)}</span> פחות מהממוצע.
-            <span className="mt-0.5 block text-xs opacity-80">
-              הקנייה הבאה עליו — ככה זה נשאר הוגן בלי להתחשבן.
+          <div className="mt-4 flex items-center justify-between border-t border-ink-100 pt-3 text-xs">
+            <span className="text-ink-500">
+              סה"כ הוצאות החדר{' '}
+              <span className="num font-semibold text-ink-800">{formatILS(total)}</span>
             </span>
-          </p>
+            <span
+              className={`num font-semibold ${gap > average * 0.5 ? 'text-amber-700' : 'text-emerald-700'}`}
+            >
+              {gap === 0 ? 'מאוזן לגמרי' : `פער ${formatILS(gap)}`}
+            </span>
+          </div>
         </div>
-      )}
 
-      <p className="mt-2 px-1 text-xs leading-relaxed text-ink-400">
-        כולל קניות שנרשמו כ"לקחתי על עצמי" — הן לא יוצרות חוב, אבל כן נספרות כאן.
-      </p>
-    </section>
+        {next && (
+          <div className="mt-2 flex items-start gap-2.5 rounded-card bg-amber-50 px-3.5 py-3">
+            <span aria-hidden className="text-lg">
+              👉
+            </span>
+            <p className="text-sm leading-relaxed text-amber-900">
+              <b>{memberName(next.userId)}</b> נשא ב־
+              <span className="num font-semibold">{formatILS(next.behindBy)}</span> פחות מהממוצע.
+              <span className="mt-0.5 block text-xs opacity-80">
+                הקנייה הבאה עליו — ככה זה נשאר הוגן בלי להתחשבן.
+              </span>
+            </p>
+          </div>
+        )}
+
+        <p className="mt-2 px-1 text-xs leading-relaxed text-ink-400">
+          כולל קניות שנרשמו כ"לקחתי על עצמי" — הן לא יוצרות חוב, אבל כן נספרות כאן.
+        </p>
+      </section>
+    </div>
   );
 }
 

@@ -204,7 +204,10 @@
             // 1) המנהל מנהל את כל החברים.
             // 2) יוצר החדר מוסיף את עצמו כמנהל בזמן היצירה (עדיין אין metadata).
             // 3) חבר רגיל יכול רק לעזוב: מחיקה, או שינוי status ל-removed בלי לגעת ב-role.
-            ".write": "auth != null && (root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid || (!root.child('rooms/' + $code + '/metadata').exists() && $uid === auth.uid && newData.child('role').val() === 'admin') || ($uid === auth.uid && data.exists() && root.child('rooms/' + $code + '/metadata/adminId').val() !== auth.uid && (!newData.exists() || (newData.child('status').val() === 'removed' && newData.child('role').val() === data.child('role').val()))))",
+            // 4) חבר רגיל יכול לעדכן את שם/תמונת הפרופיל של עצמו — role/status/
+            //    joinedAt/email קפואים, כדי שלא יוכל לקדם את עצמו למנהל או
+            //    לבטל הסרה. בלעדי הסעיף הזה שינוי שם/תמונה נכשל לכל מי שאינו מנהל.
+            ".write": "auth != null && (root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid || (!root.child('rooms/' + $code + '/metadata').exists() && $uid === auth.uid && newData.child('role').val() === 'admin') || ($uid === auth.uid && data.exists() && root.child('rooms/' + $code + '/metadata/adminId').val() !== auth.uid && (!newData.exists() || (newData.child('status').val() === 'removed' && newData.child('role').val() === data.child('role').val()) || (newData.child('role').val() === data.child('role').val() && newData.child('status').val() === data.child('status').val() && newData.child('joinedAt').val() === data.child('joinedAt').val() && newData.child('email').val() === data.child('email').val()))))",
 
             ".validate": "newData.hasChildren(['name', 'email', 'joinedAt', 'status', 'role'])",
             "name":     { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 40" },

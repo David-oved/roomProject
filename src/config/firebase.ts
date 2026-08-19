@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator, type Auth } from 'firebase/auth';
 import { getDatabase, connectDatabaseEmulator, type Database } from 'firebase/database';
+import { getStorage, connectStorageEmulator, type FirebaseStorage } from 'firebase/storage';
 
 /**
  * שימו לב: apiKey של Firebase אינו סוד. הוא מזהה פרויקט ציבורי שנועד
@@ -52,12 +53,14 @@ const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
  */
 export const auth = (app ? getAuth(app) : null) as Auth;
 export const db = (app ? getDatabase(app) : null) as Database;
+export const storage = (app ? getStorage(app) : null) as FirebaseStorage;
 
 if (app && env.VITE_USE_EMULATORS === 'true') {
   // 127.0.0.1 ולא localhost — localhost נפתר ל-IPv6 בחלק מהסביבות
   // בעוד האמולטור מאזין ל-IPv4 בלבד.
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
   connectDatabaseEmulator(db, '127.0.0.1', 9000);
+  connectStorageEmulator(storage, '127.0.0.1', 9199);
   console.info('🔧 מחובר לאמולטורים המקומיים');
 }
 

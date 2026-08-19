@@ -4,7 +4,8 @@ import { generateRoomCode, slugifyRoomName } from '../lib/roomCode';
 import { assertOnline } from './guard';
 import { staplesMap } from './catalogService';
 import { enqueueNotification } from './outboxService';
-import type { Category, JoinRequest, UserProfile } from '../types/models';
+import { computeBalances } from '../lib/money';
+import type { Category, JoinRequest, Purchase, Settlement, UserProfile } from '../types/models';
 
 export class RoomNameTakenError extends Error {
   constructor(name: string) {
@@ -453,4 +454,59 @@ export async function transferAdmin(code: string, from: string, to: string): Pro
     targetUid: to,
     actorUid: from,
   });
+}
+
+/**
+ * בודקת שאפשר למחוק את החשבון בבטחה — בלי לגעת בכלום.
+ *
+ * שתי סיבות לחסום:
+ *  1. חוב פתוח בחדר כלשהו — מחיקת החשבון לא יכולה למחוק חוב אמיתי.
+ *  2. ניהול חדר — חדר בלי מנהל הוא חדר תקוע. חייבים להעביר ניהול
+ *     או למחוק את החדר קודם, בדיוק כמו שדורשים לפני מחיקת חדר.
+ */
+export async function checkAccountDeletable(
+  uid: string,
+  rooms: Record<string, true> | undefined
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  for (const code of Object.keys(rooms ?? {})) {
+    const [metaSnap, membersSnap, purchasesSnap, settlementsSnap] = await Promise.all([
+      get(ref(db, `rooms/${code}/metadata`)),
+      get(ref(db, `rooms/${code}/members`)),
+      get(ref(db, `rooms/${code}/purchases`)),
+      get(ref(db, `rooms/${code}/settlements`)),
+    ]);
+    if (!metaSnap.exists()) continue; // חדר שכבר נמחק — לא רלוונטי
+
+    const meta = metaSnap.val() as { name: string; adminId: string };
+    if (meta.adminId === uid) {
+      return { ok: false, reason: `אתם מנהלי החדר "${meta.name}" — העבירו ניהול או מחקו את החדר קודם` };
+    }
+
+    const members = (membersSnap.val() ?? {}) as Record<string, { status: string }>;
+    const memberIds = Object.keys(members);
+    const purchases = Object.values((purchasesSnap.val() ?? {}) as Record<string, Purchase>);
+    const settlements = Object.values((settlementsSnap.val() ?? {}) as Record<string, Settlement>);
+    const balance = computeBalances(purchases, settlements, memberIds)[uid] ?? 0;
+
+    if (balance !== 0) {
+      return { ok: false, reason: `יש לכם חוב פתוח בחדר "${meta.name}" — סגרו אותו קודם` };
+    }
+  }
+
+  return { ok: true };
+}
+
+/** עוזב את כל החדרים שהמשתמש חבר בהם — צעד הכנה למחיקת חשבון. */
+export async function leaveAllRooms(
+  uid: string,
+  rooms: Record<string, true> | undefined
+): Promise<void> {
+  const updates: Record<string, unknown> = {};
+  for (const code of Object.keys(rooms ?? {})) {
+    updates[`rooms/${code}/members/${uid}/status`] = 'removed';
+    updates[`users/${uid}/rooms/${code}`] = null;
+    updates[`joinRequests/${uid}/${code}`] = null;
+    updates[`rooms/${code}/pendingRequests/${uid}`] = null;
+  }
+  if (Object.keys(updates).length > 0) await update(ref(db), updates);
 }

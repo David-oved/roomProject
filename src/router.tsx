@@ -20,6 +20,10 @@ const BalancesPage = lazy(() => import('./pages/BalancesPage'));
 const MembersPage = lazy(() => import('./pages/MembersPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const SettingsAccountPage = lazy(() => import('./pages/SettingsAccountPage'));
+const SettingsRoomPage = lazy(() => import('./pages/SettingsRoomPage'));
+const SettingsNotificationsPage = lazy(() => import('./pages/SettingsNotificationsPage'));
+const SettingsAboutPage = lazy(() => import('./pages/SettingsAboutPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
@@ -60,6 +64,10 @@ export function AppRoutes() {
               <Route path="members" element={<MembersPage />} />
               <Route path="notifications" element={<NotificationsPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="settings/account" element={<SettingsAccountPage />} />
+              <Route path="settings/room" element={<SettingsRoomPage />} />
+              <Route path="settings/notifications" element={<SettingsNotificationsPage />} />
+              <Route path="settings/about" element={<SettingsAboutPage />} />
             </Route>
           </Route>
         </Route>

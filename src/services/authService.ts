@@ -1,5 +1,6 @@
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   EmailAuthProvider,
   onAuthStateChanged,
   reauthenticateWithCredential,
@@ -10,12 +11,13 @@ import {
   updateProfile,
   type User,
 } from 'firebase/auth';
-import { ref, serverTimestamp, set, update } from 'firebase/database';
+import { get, ref, remove, serverTimestamp, set, update } from 'firebase/database';
 import { auth, db } from '../config/firebase';
 import { clearAllCache } from '../lib/cache';
 import { clearPrefs } from '../lib/prefs';
 import { unsubscribeFromPush } from './pushService';
 import { assertOnline } from './guard';
+import { checkAccountDeletable, leaveAllRooms } from './roomService';
 
 const AUTH_MESSAGES: Record<string, string> = {
   'auth/email-already-in-use': 'כתובת האימייל הזו כבר רשומה במערכת.',
@@ -149,6 +151,36 @@ export async function changePassword(
   const credential = EmailAuthProvider.credential(user.email, currentPassword);
   await reauthenticateWithCredential(user, credential);
   await updatePassword(user, newPassword);
+}
+
+/**
+ * מחיקת חשבון — בלתי הפיכה.
+ *
+ * סדר הפעולות חשוב: קודם בודקים שאפשר בכלל (בלי לגעת בכלום), אחר כך
+ * עוזבים חדרים ומוחקים את הפרופיל, ורק בסוף מוחקים את משתמש ה-Auth —
+ * כי ברגע שזה קורה אין יותר הרשאה לכתוב ל-RTDB בכלל.
+ */
+export async function deleteAccount(currentPassword: string): Promise<void> {
+  assertOnline('למחוק חשבון');
+  const user = auth.currentUser;
+  if (!user?.email) throw new Error('יש להתחבר מחדש כדי למחוק את החשבון');
+
+  const credential = EmailAuthProvider.credential(user.email, currentPassword);
+  await reauthenticateWithCredential(user, credential);
+
+  const roomsSnap = await get(ref(db, `users/${user.uid}/rooms`));
+  const rooms = (roomsSnap.val() ?? undefined) as Record<string, true> | undefined;
+
+  const check = await checkAccountDeletable(user.uid, rooms);
+  if (!check.ok) throw new Error(check.reason);
+
+  await leaveAllRooms(user.uid, rooms);
+  await unsubscribeFromPush(user.uid).catch(() => undefined);
+  await remove(ref(db, `users/${user.uid}`));
+
+  await deleteUser(user);
+  await clearAllCache();
+  clearPrefs();
 }
 
 export const subscribeToAuth = (cb: (u: User | null) => void) => onAuthStateChanged(auth, cb);

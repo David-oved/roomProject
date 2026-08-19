@@ -53,6 +53,15 @@ export default {
           from: { transform: 'translateY(100%)' },
           to: { transform: 'translateY(0)' },
         },
+        'glass-in': {
+          from: { transform: 'scale(.94) translateY(8px)', opacity: '0' },
+          to: { transform: 'scale(1) translateY(0)', opacity: '1' },
+        },
+        'check-pop': {
+          '0%': { transform: 'scale(0)', opacity: '0' },
+          '60%': { transform: 'scale(1.15)', opacity: '1' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
         shimmer: {
           '100%': { transform: 'translateX(-100%)' },
         },
@@ -61,6 +70,8 @@ export default {
         'slide-up': 'slide-up .28s cubic-bezier(.22,1,.36,1)',
         'fade-in': 'fade-in .18s ease-out',
         'sheet-in': 'sheet-in .3s cubic-bezier(.22,1,.36,1)',
+        'glass-in': 'glass-in .32s cubic-bezier(.22,1,.36,1)',
+        'check-pop': 'check-pop .45s cubic-bezier(.34,1.56,.64,1)',
       },
     },
   },

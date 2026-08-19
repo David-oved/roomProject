@@ -1,11 +1,20 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { Input, PasswordInput } from '../ui/Input';
+import { CameraIcon, TrashIcon } from '../ui/icons';
 import { useAuth } from '../../store/AuthContext';
 import { useConnection } from '../../store/ConnectionContext';
 import { useToast } from '../../store/ToastContext';
-import { authErrorMessage, changeDisplayName, changePassword } from '../../services/authService';
+import { useConfirm } from '../../store/ConfirmContext';
+import {
+  authErrorMessage,
+  changeDisplayName,
+  changePassword,
+  deleteAccount,
+} from '../../services/authService';
+import { uploadAvatar } from '../../services/avatarService';
 
 /**
  * פרטים אישיים — שם תצוגה וסיסמה.
@@ -17,9 +26,14 @@ export function AccountSettings() {
   const { user, profile } = useAuth();
   const { isOnline } = useConnection();
   const toast = useToast();
+  const confirm = useConfirm();
+  const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState(profile?.displayName ?? '');
   const [busyName, setBusyName] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -27,6 +41,11 @@ export function AccountSettings() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [busyPassword, setBusyPassword] = useState(false);
+
+  const [showDeleteForm, setShowDeleteForm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [busyDelete, setBusyDelete] = useState(false);
 
   const dirty = name.trim() !== profile?.displayName && name.trim().length >= 2;
   const passwordValid = newPassword.length >= 6 && newPassword === confirmPassword;
@@ -37,6 +56,24 @@ export function AccountSettings() {
     const res = await toast.run(() => changeDisplayName(user.uid, name, profile?.rooms));
     if (res !== null) toast.success('השם עודכן בכל החדרים');
     setBusyName(false);
+  }
+
+  async function onPickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // מאפשר לבחור שוב את אותו קובץ בפעם הבאה
+    if (!file || !user) return;
+
+    setAvatarPreview(URL.createObjectURL(file)); // תצוגה מיידית בזמן ההעלאה
+    setUploadingAvatar(true);
+    try {
+      await uploadAvatar(user.uid, file, profile?.rooms);
+      toast.success('תמונת הפרופיל עודכנה');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'העלאת התמונה נכשלה');
+    } finally {
+      setUploadingAvatar(false);
+      setAvatarPreview(null);
+    }
   }
 
   async function savePassword() {
@@ -60,21 +97,71 @@ export function AccountSettings() {
     }
   }
 
+  async function confirmDeleteAccount() {
+    const ok = await confirm({
+      title: 'מחיקת חשבון',
+      body: 'הפעולה בלתי הפיכה. כל הנתונים האישיים שלכם יימחקו לצמיתות. קניות והיסטוריה בחדרים שהייתם חברים בהם יישארו לשאר החברים.',
+      danger: true,
+      requireTyping: 'מחק את החשבון שלי',
+      confirmLabel: 'המשך למחיקה',
+    });
+    if (ok) setShowDeleteForm(true);
+  }
+
+  async function doDeleteAccount() {
+    setDeleteError('');
+    setBusyDelete(true);
+    try {
+      await deleteAccount(deletePassword);
+      navigate('/login', { replace: true });
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : authErrorMessage(err));
+    } finally {
+      setBusyDelete(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* פרופיל */}
       <section className="flex flex-col items-center gap-3">
-        <Avatar
-          name={profile?.displayName ?? '?'}
-          uid={user?.uid}
-          src={profile?.avatar}
-          size="lg"
-        />
+        <div className="relative">
+          <Avatar
+            name={profile?.displayName ?? '?'}
+            uid={user?.uid}
+            src={avatarPreview ?? profile?.avatar}
+            size="lg"
+            className={uploadingAvatar ? 'opacity-50' : ''}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!isOnline || uploadingAvatar}
+            aria-label="החלפת תמונת פרופיל"
+            className="tap absolute -bottom-1 -end-1 grid h-7 w-7 place-items-center
+                       rounded-full bg-brand-700 text-white shadow-card transition
+                       hover:bg-brand-800 disabled:opacity-60"
+          >
+            <CameraIcon width={14} height={14} />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={onPickAvatar}
+          />
+        </div>
         <div className="text-center">
           <p className="font-bold text-ink-900">{profile?.displayName}</p>
           <p className="num text-sm text-ink-500" dir="ltr">
             {profile?.email}
           </p>
+          {profile?.createdAt && (
+            <p className="mt-0.5 text-xs text-ink-400">
+              חברים מאז {new Date(profile.createdAt).toLocaleDateString('he-IL')}
+            </p>
+          )}
         </div>
       </section>
 
@@ -146,6 +233,58 @@ export function AccountSettings() {
                   setCurrentPassword('');
                   setNewPassword('');
                   setConfirmPassword('');
+                }}
+              >
+                ביטול
+              </Button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* מחיקת חשבון */}
+      <section className="rounded-card border border-rose-200 bg-rose-50/40 p-4">
+        <h2 className="text-sm font-bold text-rose-800">מחיקת חשבון</h2>
+        <p className="mt-1 text-xs leading-relaxed text-ink-600">
+          מחיקה לצמיתות. לא ניתן למחוק כשיש חוב פתוח, או כשאתם מנהלי חדר עם חברים נוספים.
+        </p>
+
+        {!showDeleteForm ? (
+          <Button
+            variant="danger"
+            fullWidth
+            className="mt-3"
+            disabled={!isOnline}
+            icon={<TrashIcon width={16} height={16} />}
+            onClick={confirmDeleteAccount}
+          >
+            מחיקת חשבון
+          </Button>
+        ) : (
+          <div className="mt-3 space-y-3">
+            <PasswordInput
+              label="אימות סיסמה"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              autoComplete="current-password"
+              error={deleteError || undefined}
+            />
+            <div className="flex gap-2">
+              <Button
+                variant="danger"
+                fullWidth
+                loading={busyDelete}
+                disabled={!isOnline || deletePassword.length === 0}
+                onClick={doDeleteAccount}
+              >
+                מחיקה סופית
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowDeleteForm(false);
+                  setDeletePassword('');
+                  setDeleteError('');
                 }}
               >
                 ביטול
