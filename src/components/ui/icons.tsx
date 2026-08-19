@@ -218,3 +218,19 @@ export const TrashIcon = (p: IconProps) => (
     <path d="M10 11v6M14 11v6" />
   </svg>
 );
+
+export const ChecklistIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M9 6h11M9 12h11M9 18h11" />
+    <path d="M4 6l1.3 1.3L7.5 5" />
+    <path d="M4 12l1.3 1.3 2.2-2.3" />
+    <path d="M4 18l1.3 1.3 2.2-2.3" />
+  </svg>
+);
+
+export const MegaphoneIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M3 10v4a1 1 0 0 0 1 1h2l1 5h2l-1-5h1l9 4V6l-9 4H4a1 1 0 0 0-1 1v0Z" />
+    <path d="M19 9.5a3.5 3.5 0 0 1 0 5" />
+  </svg>
+);

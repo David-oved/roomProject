@@ -98,6 +98,56 @@ export interface ChatMessage {
   readBy?: Record<string, true>;
 }
 
+/**
+ * מטלה קבועה — סבב אוטומטי בין participants.
+ *
+ * ‼️ אין currentIndex נפרד — currentAssignee הוא תמיד ה-uid שאחראי
+ * *בפועל* כרגע (גם אחרי העברה). כשמסמנים "בוצע", הבא בתפקיד נגזר
+ * מהמיקום של currentAssignee בתוך participants — כך שהרוטציה תמיד
+ * ממשיכה מאיפה שהמטלה נמצאת עכשיו, בלי צורך במונה נפרד.
+ */
+export interface Task {
+  name: string;
+  category: Category;
+  /** כל כמה ימים המטלה חוזרת */
+  intervalDays: number;
+  /** סדר הסבב הקבוע — גם מגדיר מי משתתף */
+  participants: string[];
+  /** מי אחראי כרגע בפועל */
+  currentAssignee: string;
+  dueAt: number;
+  createdBy: string;
+  createdAt: number;
+}
+
+/** יומן ביצוע — מקור האמת להוגנות ("מי עשה כמה"), בדיוק כמו purchases לכסף */
+export interface TaskCompletion {
+  taskId: string;
+  taskName: string;
+  completedBy: string;
+  completedAt: number;
+}
+
+export type TaskTransferStatus = 'pending' | 'approved' | 'rejected';
+
+/** בקשת העברת תור במטלה בין שני משתתפים */
+export interface TaskTransfer {
+  taskId: string;
+  taskName: string;
+  fromUid: string;
+  toUid: string;
+  status: TaskTransferStatus;
+  createdAt: number;
+  respondedAt: number | null;
+}
+
+/** הודעת שידור מהמנהל — רק המנהל כותב, כל החברים קוראים */
+export interface Announcement {
+  senderId: string;
+  text: string;
+  sentAt: number;
+}
+
 export interface JoinRequest {
   userId: string;
   displayName: string;
@@ -117,7 +167,10 @@ export type NotificationType =
   | 'purchase_rejected'
   | 'member_joined'
   | 'member_removed'
-  | 'settlement';
+  | 'settlement'
+  | 'task_added'
+  | 'task_assigned'
+  | 'task_transfer';
 
 export interface AppNotification {
   type: NotificationType;

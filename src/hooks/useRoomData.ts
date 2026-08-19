@@ -4,12 +4,16 @@ import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
 import { computeBalances, computeContributions, whoIsNext } from '../lib/money';
 import type {
+  Announcement,
   AppNotification,
   Item,
   ItemStatus,
   JoinRequest,
   Purchase,
   Settlement,
+  Task,
+  TaskCompletion,
+  TaskTransfer,
   WithId,
 } from '../types/models';
 
@@ -160,6 +164,77 @@ export function useNotifications() {
   );
 
   return { ...state, notifications, unreadCount };
+}
+
+/** מטלות קבועות, ממוינות לפי תאריך יעד — הקרוב ביותר ראשון. */
+export function useTasks() {
+  const { roomCode } = useRoom();
+  const { user } = useAuth();
+  const state = useRtdbList<Task>(roomCode ? `rooms/${roomCode}/tasks` : null);
+
+  const tasks = useMemo(
+    () => [...state.data].sort((a, b) => (a.dueAt ?? 0) - (b.dueAt ?? 0)),
+    [state.data]
+  );
+
+  /** המטלות שהתור שלי בהן עכשיו */
+  const myTasks = useMemo(
+    () => tasks.filter((t) => t.currentAssignee === user?.uid),
+    [tasks, user]
+  );
+
+  return { ...state, tasks, myTasks };
+}
+
+/** בקשות העברת תור במטלה, ממתינות בלבד. */
+export function useTaskTransfers() {
+  const { roomCode } = useRoom();
+  const { user } = useAuth();
+  const state = useRtdbList<TaskTransfer>(roomCode ? `rooms/${roomCode}/taskTransfers` : null);
+
+  /** בקשות שממתינות לתשובה שלי */
+  const incoming = useMemo(
+    () => state.data.filter((t) => t.status === 'pending' && t.toUid === user?.uid),
+    [state.data, user]
+  );
+  /** בקשות ששלחתי ועדיין ממתינות לתשובת הצד השני */
+  const outgoing = useMemo(
+    () => state.data.filter((t) => t.status === 'pending' && t.fromUid === user?.uid),
+    [state.data, user]
+  );
+
+  return { ...state, incoming, outgoing };
+}
+
+/** כמה מטלות כל אחד השלים ב-30 הימים האחרונים — להצגת הוגנות. */
+export function useTaskFairness() {
+  const { roomCode } = useRoom();
+  const state = useRtdbList<TaskCompletion>(roomCode ? `rooms/${roomCode}/taskCompletions` : null);
+
+  const counts = useMemo(() => {
+    const since = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const map: Record<string, number> = {};
+    for (const c of state.data) {
+      if ((c.completedAt ?? 0) < since) continue;
+      map[c.completedBy] = (map[c.completedBy] ?? 0) + 1;
+    }
+    return map;
+  }, [state.data]);
+
+  return { counts, loading: state.loading };
+}
+
+/** הודעות שידור מהמנהל, החדשה ביותר ראשונה. */
+export function useAnnouncements() {
+  const { roomCode } = useRoom();
+  const state = useRtdbList<Announcement>(roomCode ? `rooms/${roomCode}/announcements` : null);
+
+  const announcements = useMemo(
+    () => [...state.data].sort((a, b) => (b.sentAt ?? 0) - (a.sentAt ?? 0)),
+    [state.data]
+  );
+
+  return { ...state, announcements };
 }
 
 /** בקשות הצטרפות ממתינות — קריא למנהל בלבד (נאכף ב-Rules). */

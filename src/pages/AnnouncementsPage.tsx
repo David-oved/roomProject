@@ -1,0 +1,147 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../store/AuthContext';
+import { useRoom } from '../store/RoomContext';
+import { useConnection } from '../store/ConnectionContext';
+import { useToast } from '../store/ToastContext';
+import { useVisualViewportBounds } from '../hooks/useVisualViewportBounds';
+import { useAnnouncements } from '../hooks/useRoomData';
+import { sendAnnouncement } from '../services/announcementService';
+import { MegaphoneIcon, ChevronIcon } from '../components/ui/icons';
+import { formatSmartDate } from '../lib/format';
+
+/**
+ * הודעות שידור מהמנהל — כל חבר קורא, רק המנהל כותב. אותו דפוס פריסה
+ * כמו ChatConversationPage (ראו useVisualViewportBounds), בלי הצורך
+ * בוי"ים/נוכחות שבצ'אט הרגיל — זה פיד, לא שיחה.
+ */
+export default function AnnouncementsPage() {
+  const navigate = useNavigate();
+  const { roomCode, isAdmin, memberName } = useRoom();
+  const { user, profile } = useAuth();
+  const { isOnline } = useConnection();
+  const toast = useToast();
+
+  const { announcements, loading } = useAnnouncements();
+  const sorted = useMemo(() => [...announcements].reverse(), [announcements]);
+
+  const viewport = useVisualViewportBounds();
+  const listRef = useRef<HTMLDivElement>(null);
+  const isFirstRender = useRef(true);
+
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    listRef.current?.scrollTo({
+      top: listRef.current.scrollHeight,
+      behavior: isFirstRender.current ? 'auto' : 'smooth',
+    });
+    isFirstRender.current = false;
+  }, [sorted.length]);
+
+  async function submit() {
+    const trimmed = text.trim();
+    if (!trimmed || !user || !profile || !roomCode || sending) return;
+    setText('');
+    setSending(true);
+    const res = await toast.run(() => sendAnnouncement(roomCode, user.uid, profile.displayName, trimmed));
+    setSending(false);
+    if (res === null) setText(trimmed);
+  }
+
+  return (
+    <div className="fixed inset-x-0 flex flex-col bg-ink-50" style={{ top: viewport.top, height: viewport.height }}>
+      <header
+        className="sticky top-0 z-10 flex shrink-0 items-center gap-2.5 border-b border-ink-200/70
+                   bg-white/90 px-2 backdrop-blur-xl safe-x"
+        style={{ paddingTop: 'var(--safe-top)', height: 'calc(var(--header-height) + var(--safe-top))' }}
+      >
+        <button
+          onClick={() => navigate(`/r/${roomCode}`)}
+          aria-label="חזרה"
+          className="tap grid shrink-0 place-items-center rounded-full text-ink-500
+                     transition hover:bg-ink-100 hover:text-ink-800"
+        >
+          <ChevronIcon width={22} height={22} className="rotate-180" />
+        </button>
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-700">
+          <MegaphoneIcon width={17} height={17} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-base font-bold leading-tight text-ink-900">הודעות מהמנהל</h1>
+          <p className="truncate text-xs text-ink-500">
+            {isAdmin ? 'כל החברים רואים את מה שתשלח כאן' : 'רק המנהל יכול לשלוח כאן'}
+          </p>
+        </div>
+      </header>
+
+      <div ref={listRef} className="scroll-area min-h-0 flex-1 overflow-y-auto px-3 py-3 safe-x">
+        {sorted.length === 0 && loading ? (
+          <div className="flex h-full items-center justify-center">
+            <span className="h-6 w-6 animate-spin rounded-full border-2 border-ink-200 border-t-brand-500" />
+          </div>
+        ) : sorted.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-ink-100 text-ink-400">
+              <MegaphoneIcon width={22} height={22} />
+            </span>
+            <p className="text-sm text-ink-500">
+              {isAdmin ? 'עוד לא שלחת הודעה לחברי החדר' : 'המנהל עדיין לא שלח הודעות'}
+            </p>
+          </div>
+        ) : (
+          <ul className="space-y-2.5">
+            {sorted.map((a) => (
+              <li key={a.id} className="card p-3.5">
+                <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-ink-900">
+                  {a.text}
+                </p>
+                <p className="mt-1.5 text-xs text-ink-400">
+                  {memberName(a.senderId)} · {a.sentAt ? formatSmartDate(a.sentAt) : ''}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {isAdmin && (
+        <div
+          className="shrink-0 border-t border-ink-200/70 bg-white px-3 py-2.5 safe-x"
+          style={{ paddingBottom: 'calc(var(--safe-bottom) + 0.625rem)' }}
+        >
+          <div className="flex items-end gap-2">
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  void submit();
+                }
+              }}
+              placeholder="הודעה לכל חברי החדר…"
+              disabled={!isOnline}
+              className="h-11 flex-1 rounded-full border border-ink-200 bg-ink-50 px-4 text-[15px]
+                         placeholder:text-ink-400 focus:border-brand-400 focus:bg-white
+                         focus:outline-none focus:ring-2 focus:ring-brand-500/25"
+            />
+            <button
+              type="button"
+              onClick={() => void submit()}
+              disabled={!isOnline || text.trim().length === 0}
+              aria-label="שליחה"
+              className="tap grid h-11 w-11 shrink-0 place-items-center rounded-full text-white
+                         transition-transform duration-150 active:scale-90
+                         bg-gradient-to-br from-brand-500 to-brand-700
+                         disabled:from-ink-300 disabled:to-ink-300"
+            >
+              <MegaphoneIcon width={18} height={18} />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

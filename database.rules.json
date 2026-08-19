@@ -441,7 +441,7 @@
           "$notificationId": {
             ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && (!data.exists() || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid)",
             ".validate": "newData.hasChildren(['type', 'actorId', 'text', 'createdAt'])",
-            "type":      { ".validate": "newData.val().matches(/^(item_added|item_claimed|item_bought|purchase_made|purchase_approved|purchase_rejected|member_joined|member_removed|settlement)$/)" },
+            "type":      { ".validate": "newData.val().matches(/^(item_added|item_claimed|item_bought|purchase_made|purchase_approved|purchase_rejected|member_joined|member_removed|settlement|task_added|task_assigned|task_transfer)$/)" },
             "actorId":   { ".validate": "newData.val() === auth.uid || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid" },
             "actorName": { ".validate": "newData.isString() && newData.val().length <= 40" },
             "text":      { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200" },
@@ -454,6 +454,82 @@
               }
             },
             "$other": { ".validate": false }
+          }
+        },
+
+        // ---------- מטלות קבועות ----------
+        // סבב אוטומטי: currentAssignee הוא מי שאחראי *בפועל* עכשיו (אין
+        // currentIndex נפרד — ראו הערה על Task ב-types/models.ts). היצירה
+        // והמחיקה רק למנהל; העדכון (השלמה/רוטציה, או קבלת העברה) מותר
+        // גם למי שהיה אחראי (data) וגם למי שהופך לאחראי (newData) — כך
+        // מכסים גם "סימנתי שבוצע, התור עבר הלאה" וגם "קיבלתי העברה".
+        // שאר השדות (שם/קטגוריה/תדירות/participants/createdBy/createdAt)
+        // קפואים לנצח אחרי היצירה — לשנות אותם צריך למחוק וליצור מחדש.
+        "tasks": {
+          ".indexOn": ["dueAt"],
+          "$taskId": {
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && (((!data.exists() || !newData.exists()) && root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid) || (data.exists() && newData.exists() && (data.child('currentAssignee').val() === auth.uid || newData.child('currentAssignee').val() === auth.uid) && newData.child('name').val() === data.child('name').val() && newData.child('category').val() === data.child('category').val() && newData.child('intervalDays').val() === data.child('intervalDays').val() && newData.child('createdBy').val() === data.child('createdBy').val() && newData.child('createdAt').val() === data.child('createdAt').val()))",
+            ".validate": "newData.hasChildren(['name', 'category', 'intervalDays', 'participants', 'currentAssignee', 'dueAt', 'createdBy', 'createdAt'])",
+            "name":            { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 60" },
+            "category":        { ".validate": "newData.val().matches(/^(kitchen|bathroom|cleaning|other)$/)" },
+            "intervalDays":    { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 365" },
+            "participants":    { ".validate": "newData.hasChildren()" },
+            "currentAssignee": { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val()).exists()" },
+            "dueAt":           { ".validate": "newData.isNumber()" },
+            "createdBy":       { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val()).exists() && (!data.exists() || newData.val() === data.val())" },
+            "createdAt":       { ".validate": "newData.isNumber() && (!data.exists() || newData.val() === data.val())" },
+            "$other":          { ".validate": false }
+          }
+        },
+
+        // ---------- יומן ביצוע מטלות ----------
+        // מקור האמת להוגנות ("מי עשה כמה") — בדיוק כמו purchases לכסף.
+        // הוספה בלבד, אף פעם לא נערך/נמחק.
+        "taskCompletions": {
+          ".indexOn": ["completedAt"],
+          "$completionId": {
+            ".write": "auth != null && !data.exists() && newData.exists() && newData.child('completedBy').val() === auth.uid && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active'",
+            ".validate": "newData.hasChildren(['taskId', 'taskName', 'completedBy', 'completedAt'])",
+            "taskId":      { ".validate": "newData.isString()" },
+            "taskName":    { ".validate": "newData.isString() && newData.val().length <= 60" },
+            "completedBy": { ".validate": "newData.val() === auth.uid" },
+            "completedAt": { ".validate": "newData.isNumber()" },
+            "$other":      { ".validate": false }
+          }
+        },
+
+        // ---------- בקשות העברת תור במטלה ----------
+        // אותו דפוס בדיוק כמו settlements: יצירה ע"י המבקש (fromUid, וגם
+        // חייב להיות האחראי הנוכחי בפועל על המטלה), אישור/דחייה רק ע"י
+        // מי שהתבקש (toUid) — סכום/צדדים קפואים בשלב האישור.
+        "taskTransfers": {
+          ".indexOn": ["status"],
+          "$transferId": {
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && newData.child('fromUid').val() === auth.uid && newData.child('status').val() === 'pending' && newData.child('toUid').val() !== auth.uid && root.child('rooms/' + $code + '/members/' + newData.child('toUid').val() + '/status').val() === 'active' && root.child('rooms/' + $code + '/tasks/' + newData.child('taskId').val() + '/currentAssignee').val() === auth.uid) || (data.exists() && newData.exists() && data.child('toUid').val() === auth.uid && data.child('status').val() === 'pending' && (newData.child('status').val() === 'approved' || newData.child('status').val() === 'rejected') && newData.child('taskId').val() === data.child('taskId').val() && newData.child('taskName').val() === data.child('taskName').val() && newData.child('fromUid').val() === data.child('fromUid').val() && newData.child('toUid').val() === data.child('toUid').val() && newData.child('createdAt').val() === data.child('createdAt').val()))",
+            ".validate": "newData.hasChildren(['taskId', 'taskName', 'fromUid', 'toUid', 'status', 'createdAt'])",
+            "taskId":      { ".validate": "newData.isString()" },
+            "taskName":    { ".validate": "newData.isString() && newData.val().length <= 60" },
+            "fromUid":     { ".validate": "newData.isString()" },
+            "toUid":       { ".validate": "newData.isString()" },
+            "status":      { ".validate": "newData.val().matches(/^(pending|approved|rejected)$/)" },
+            "createdAt":   { ".validate": "newData.isNumber()" },
+            "respondedAt": { ".validate": "newData.isNumber()" },
+            "$other":      { ".validate": false }
+          }
+        },
+
+        // ---------- הודעות שידור מהמנהל ----------
+        // רק המנהל כותב (יצירה בלבד, בלי עריכה — הודעה שנשלחה נשארת
+        // כמו שהיא), כל חבר פעיל קורא (יורש מ-.read של rooms/{code}).
+        "announcements": {
+          ".indexOn": ["sentAt"],
+          "$msgId": {
+            ".write": "auth != null && !data.exists() && newData.exists() && root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid && newData.child('senderId').val() === auth.uid",
+            ".validate": "newData.hasChildren(['senderId', 'text', 'sentAt'])",
+            "senderId": { ".validate": "newData.val() === root.child('rooms/' + $code + '/metadata/adminId').val()" },
+            "text":     { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 1000" },
+            "sentAt":   { ".validate": "newData.isNumber()" },
+            "$other":   { ".validate": false }
           }
         },
 

@@ -7,6 +7,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import {
   CartIcon,
+  ChecklistIcon,
   CheckIcon,
   CloseIcon,
   ExchangeIcon,
@@ -35,6 +36,9 @@ const ICONS: Record<NotificationType, (p: IconProps) => JSX.Element> = {
   member_joined: UsersIcon,
   member_removed: LogoutIcon,
   settlement: ExchangeIcon,
+  task_added: ChecklistIcon,
+  task_assigned: ChecklistIcon,
+  task_transfer: ExchangeIcon,
 };
 
 /** גוון עדין רק לשני הסוגים עם משמעות חד-משמעית — חיובי/שלילי */

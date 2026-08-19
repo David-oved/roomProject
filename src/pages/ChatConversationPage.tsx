@@ -5,6 +5,7 @@ import { useRoom } from '../store/RoomContext';
 import { useConnection } from '../store/ConnectionContext';
 import { useToast } from '../store/ToastContext';
 import { useRtdbList } from '../hooks/useRtdb';
+import { useVisualViewportBounds } from '../hooks/useVisualViewportBounds';
 import {
   GENERAL_SCOPE,
   dmBasePath,
@@ -74,50 +75,9 @@ export default function ChatConversationPage() {
     animatedIds.current = new Set();
   }, [path]);
 
-  /**
-   * ═══════════════════════════════════════════════════════════════
-   *  גובה המסך = גובה ה-visual viewport בפועל, ממש עכשיו — לא fixed
-   *  inset-0, לא 100dvh, בלי לנחש כמה גבוהה המקלדת.
-   * ═══════════════════════════════════════════════════════════════
-   *  הניסיון הקודם (fixed inset-0 + שורת כתיבה fixed נפרדת שמוזזת
-   *  ב-transform) הסתמך על ההנחה ש-window.innerHeight (ה-layout
-   *  viewport) לא זז כשהמקלדת נפתחת. ‼️ ההנחה הזו לא נכונה בברירת
-   *  המחדל של רוב דפדפני אנדרואיד/כרום ("resizes-content") — שם
-   *  ה-layout viewport עצמו מתכווץ, ואיתו כל fixed. בפועל זה הרגיש
-   *  בדיוק כמו שהמשתמש תיאר: "בועת הכתיבה מרגישה חלק מהרקע — כשהיא
-   *  עולה הכל עולה איתה", כי שניהם זזו יחד באותו אלמנט fixed.
-   *
-   *  הפתרון החזק והפשוט באמת: לא נלחמים בדפדפן, פשוט קוראים כל הזמן
-   *  את הגודל האמיתי שהוא כבר נותן (visualViewport.height/offsetTop —
-   *  זה תמיד משקף את השטח הנראה בפועל, בלי קשר לאיזה מצב הדפדפן
-   *  נמצא בו) ומצמידים את הקונטיינר בדיוק אליו. בתוך קונטיינר שגודלו
-   *  תמיד נכון, שורת הכתיבה היא ילד flex רגיל (לא fixed, לא transform,
-   *  בלי שום "שכבה נפרדת") — היא פשוט תמיד בתחתית הקונטיינר, וכותרת
-   *  ה-header נשארת קבועה למעלה כי רק אזור ההודעות (flex-1) הוא מה
-   *  שמתכווץ. זה בדיוק "רק הבועה עולה" — כי מבחינת ה-DOM זה באמת ככה.
-   */
-  const [viewport, setViewport] = useState(() => ({
-    height: window.visualViewport?.height ?? window.innerHeight,
-    top: window.visualViewport?.offsetTop ?? 0,
-  }));
-
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    function sync() {
-      setViewport({ height: vv!.height, top: vv!.offsetTop });
-    }
-
-    vv.addEventListener('resize', sync);
-    vv.addEventListener('scroll', sync);
-    sync();
-
-    return () => {
-      vv.removeEventListener('resize', sync);
-      vv.removeEventListener('scroll', sync);
-    };
-  }, []);
+  // גובה המסך צמוד ל-visual viewport האמיתי, לא מנוחש — ראו ההסבר המלא
+  // ב-useVisualViewportBounds. שורת הכתיבה למטה היא ילד flex רגיל.
+  const viewport = useVisualViewportBounds();
 
   // נוכחות — "כאן" כל עוד המסך הזה פתוח, כדי שהשולח בצד השני ידע לא לשלוח פוש
   useEffect(() => {

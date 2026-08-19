@@ -26,7 +26,7 @@ const CATEGORIES: SettingsCategory[] = [
  * לא state מקומי.
  */
 export default function SettingsPage() {
-  const { roomCode } = useRoom();
+  const { roomCode, isAdmin } = useRoom();
 
   return (
     <>
@@ -53,6 +53,27 @@ export default function SettingsPage() {
               </Link>
             </li>
           ))}
+
+          {isAdmin && (
+            <li>
+              <Link
+                to={`/r/${roomCode}/announcements`}
+                className="card flex items-center gap-3.5 p-4 transition active:scale-[.99] hover:shadow-lifted"
+              >
+                <span
+                  aria-hidden
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-ink-50 text-xl"
+                >
+                  📢
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold text-ink-900">הודעה לחברי החדר</span>
+                  <span className="block truncate text-xs text-ink-500">שליחת הודעת שידור לכל החברים</span>
+                </span>
+                <ChevronIcon width={18} height={18} className="shrink-0 rotate-180 text-ink-300" />
+              </Link>
+            </li>
+          )}
         </ul>
       </PlainShell>
     </>

@@ -13,24 +13,32 @@ import {
   CleaningIcon,
   ExchangeIcon,
   KitchenIcon,
+  MegaphoneIcon,
   PlusIcon,
   SettingsIcon,
 } from '../components/ui/icons';
 import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
 import {
+  useAnnouncements,
   useBalances,
   useItems,
   useJoinRequests,
   useNotifications,
   usePurchases,
   useSettlements,
+  useTasks,
+  useTaskTransfers,
 } from '../hooks/useRoomData';
-import { formatAmount, formatILS, formatRelativeTime } from '../lib/format';
-import { type Category } from '../types/models';
+import { formatAmount, formatILS, formatRelativeTime, formatSmartDate } from '../lib/format';
+import { CATEGORY_EMOJI, type Category } from '../types/models';
 import { RoomCodeCard } from '../components/rooms/RoomCodeCard';
 import { NotificationPrompt } from '../components/system/NotificationPrompt';
 import { ReportItemSheet } from '../components/items/ReportItemSheet';
+import { AddTaskSheet } from '../components/tasks/AddTaskSheet';
+import { completeTask } from '../services/taskService';
+import { useToast } from '../store/ToastContext';
+import { useConnection } from '../store/ConnectionContext';
 
 const CATEGORY_ICON: Record<Category, typeof KitchenIcon> = {
   kitchen: KitchenIcon,
@@ -42,14 +50,22 @@ const CATEGORY_ICON: Record<Category, typeof KitchenIcon> = {
 export default function DashboardPage() {
   const [params, setParams] = useSearchParams();
   const [reportOpen, setReportOpen] = useState(false);
+  const [addTaskOpen, setAddTaskOpen] = useState(false);
+  const [busyTaskId, setBusyTaskId] = useState<string | null>(null);
   const { metadata, roomCode, isAdmin, memberName, loading } = useRoom();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { isOnline } = useConnection();
+  const toast = useToast();
   const { items } = useItems('open');
   const { purchases, pendingApproval } = usePurchases();
   const { myBalance, isConsistent } = useBalances();
   const { requests } = useJoinRequests();
   const { unreadCount } = useNotifications();
   const { awaitingMyConfirmation } = useSettlements();
+  const { myTasks } = useTasks();
+  const { incoming: incomingTaskTransfers } = useTaskTransfers();
+  const { announcements } = useAnnouncements();
+  const latestAnnouncement = announcements[0];
 
   const justCreated = params.get('created') === '1';
 
@@ -70,7 +86,8 @@ export default function DashboardPage() {
 
   const hasAttentionItems =
     (isAdmin && (requests.length > 0 || pendingApproval.length > 0)) ||
-    awaitingMyConfirmation.length > 0;
+    awaitingMyConfirmation.length > 0 ||
+    incomingTaskTransfers.length > 0;
 
   if (loading) {
     return (
@@ -246,6 +263,26 @@ export default function DashboardPage() {
               </Link>
             )}
 
+            {incomingTaskTransfers.length > 0 && (
+              <Link
+                to={`/r/${roomCode}/tasks`}
+                className="flex items-center gap-3 border-b border-ink-100 p-4 transition last:border-b-0 hover:bg-ink-50"
+              >
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-50 text-amber-700">
+                  <ExchangeIcon width={16} height={16} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-ink-900">
+                    {incomingTaskTransfers.length === 1
+                      ? `${memberName(incomingTaskTransfers[0].fromUid)} מבקש/ת להעביר לך מטלה`
+                      : `${incomingTaskTransfers.length} בקשות העברת מטלה`}
+                  </span>
+                  <span className="text-xs text-ink-500">אישור או דחייה</span>
+                </span>
+                <Badge tone="warning">{incomingTaskTransfers.length}</Badge>
+              </Link>
+            )}
+
             {isAdmin && requests.length > 0 && (
               <Link
                 to={`/r/${roomCode}/settings/members`}
@@ -345,6 +382,88 @@ export default function DashboardPage() {
           )}
         </section>
 
+        {/* ── המטלות שלי ── */}
+        <section>
+          <div className="mb-2 flex items-center justify-between px-1">
+            <h2 className="text-sm font-bold text-ink-700">המטלות שלי</h2>
+            <div className="flex items-center gap-3">
+              {isAdmin && (
+                <button
+                  onClick={() => setAddTaskOpen(true)}
+                  disabled={!isOnline}
+                  className="text-xs font-semibold text-brand-700 disabled:text-ink-300"
+                >
+                  + מטלה
+                </button>
+              )}
+              <Link to={`/r/${roomCode}/tasks`} className="text-xs font-semibold text-brand-700">
+                הצג הכל
+              </Link>
+            </div>
+          </div>
+
+          {myTasks.length === 0 ? (
+            <div className="rounded-card border border-ink-200/70 bg-white px-4 py-8 text-center">
+              <p className="text-sm font-semibold text-ink-800">אין לך מטלות ממתינות</p>
+              <p className="mt-0.5 text-xs text-ink-500">
+                {isAdmin ? 'אפשר להוסיף מטלה קבועה חדשה.' : 'תורך יופיע כאן כשיגיע.'}
+              </p>
+            </div>
+          ) : (
+            <ul className="overflow-hidden rounded-card border border-ink-200/70 bg-white shadow-card">
+              {myTasks.slice(0, 4).map((t) => {
+                const overdue = (t.dueAt ?? 0) < Date.now();
+                return (
+                  <li key={t.id} className="flex items-center gap-3 border-b border-ink-100 p-3.5 last:border-b-0">
+                    <span aria-hidden className="text-xl">
+                      {CATEGORY_EMOJI[t.category]}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-ink-900">{t.name}</span>
+                      <span className={`text-xs ${overdue ? 'font-semibold text-rose-600' : 'text-ink-500'}`}>
+                        {overdue ? 'באיחור · ' : ''}
+                        {t.dueAt ? formatSmartDate(t.dueAt) : ''}
+                      </span>
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={!isOnline || busyTaskId === t.id}
+                      loading={busyTaskId === t.id}
+                      onClick={async () => {
+                        setBusyTaskId(t.id);
+                        await toast.run(() => completeTask(roomCode!, t, user!.uid, profile?.displayName ?? ''));
+                        setBusyTaskId(null);
+                      }}
+                    >
+                      בוצע
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        {/* ── הודעות מהמנהל ── */}
+        {latestAnnouncement && (
+          <Link
+            to={`/r/${roomCode}/announcements`}
+            className="card flex items-center gap-3 p-3.5 transition hover:shadow-lifted"
+          >
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-700">
+              <MegaphoneIcon width={16} height={16} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-xs font-semibold text-ink-500">הודעה מהמנהל</span>
+              <span className="block truncate text-sm text-ink-900">{latestAnnouncement.text}</span>
+            </span>
+            <span className="shrink-0 text-xs text-ink-400">
+              {latestAnnouncement.sentAt ? formatSmartDate(latestAnnouncement.sentAt) : ''}
+            </span>
+          </Link>
+        )}
+
         {roomCode && !justCreated && (
           <details className="overflow-hidden rounded-card border border-ink-200/70 bg-white">
             <summary className="cursor-pointer list-none px-4 py-3.5 text-sm font-semibold text-ink-700">
@@ -366,6 +485,7 @@ export default function DashboardPage() {
       </div>
 
       <ReportItemSheet open={reportOpen} onClose={() => setReportOpen(false)} />
+      <AddTaskSheet open={addTaskOpen} onClose={() => setAddTaskOpen(false)} />
     </AppShell>
   );
 }

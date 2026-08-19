@@ -17,6 +17,8 @@ const PendingApprovalPage = lazy(() => import('./pages/PendingApprovalPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const ItemsPage = lazy(() => import('./pages/ItemsPage'));
 const BalancesPage = lazy(() => import('./pages/BalancesPage'));
+const TasksPage = lazy(() => import('./pages/TasksPage'));
+const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
 const ChatConversationPage = lazy(() => import('./pages/ChatConversationPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
@@ -63,6 +65,8 @@ export function AppRoutes() {
               <Route index element={<DashboardPage />} />
               <Route path="items" element={<ItemsPage />} />
               <Route path="balances" element={<BalancesPage />} />
+              <Route path="tasks" element={<TasksPage />} />
+              <Route path="announcements" element={<AnnouncementsPage />} />
               <Route path="chat" element={<ChatPage />} />
               <Route path="chat/general" element={<ChatConversationPage />} />
               <Route path="chat/dm/:uid" element={<ChatConversationPage />} />
