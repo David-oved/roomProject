@@ -22,7 +22,7 @@ export function Spinner({ size = 20, className = '' }: { size?: number; classNam
 
 export function FullPageSpinner({ label = 'טוען…' }: { label?: string }) {
   return (
-    <div className="flex min-h-[60dvh] flex-col items-center justify-center gap-3 text-ink-400">
+    <div className="flex min-h-[60dvh] flex-col items-center justify-center gap-3 text-ink-500">
       <Spinner size={28} />
       <p className="text-sm">{label}</p>
     </div>

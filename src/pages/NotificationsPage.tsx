@@ -3,7 +3,7 @@ import { ref, update } from 'firebase/database';
 import { AppShell } from '../components/layout/AppShell';
 import { TopBar } from '../components/layout/TopBar';
 import { Avatar } from '../components/ui/Avatar';
-import { EmptyState } from '../components/ui/EmptyState';
+import { EmptyState, ErrorState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import {
   CartIcon,
@@ -24,6 +24,7 @@ import { useRoom } from '../store/RoomContext';
 import { useConnection } from '../store/ConnectionContext';
 import { db } from '../config/firebase';
 import { formatRelativeTime } from '../lib/format';
+import { friendlyError } from '../lib/errors';
 import type { NotificationType } from '../types/models';
 
 const ICONS: Record<NotificationType, (p: IconProps) => JSX.Element> = {
@@ -48,7 +49,7 @@ const ICON_TONE: Partial<Record<NotificationType, string>> = {
 };
 
 export default function NotificationsPage() {
-  const { notifications, loading } = useNotifications();
+  const { notifications, loading, error, fromCache } = useNotifications();
   const { user } = useAuth();
   const { roomCode, memberAvatar } = useRoom();
   const { isOnline } = useConnection();
@@ -76,6 +77,8 @@ export default function NotificationsPage() {
       <div className="pt-4">
         {loading ? (
           <ListSkeleton rows={5} />
+        ) : error && !fromCache ? (
+          <ErrorState message={friendlyError(error)} onRetry={() => location.reload()} />
         ) : notifications.length === 0 ? (
           <EmptyState
             icon="🔔"
@@ -102,10 +105,17 @@ export default function NotificationsPage() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm leading-snug text-ink-800">{n.text}</p>
-                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-400">
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-500">
                       {n.createdAt ? formatRelativeTime(n.createdAt) : ''}
                       {unread && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-brand-600" aria-label="חדש" />
+                        /* ‼️ aria-label על ספן ריק בלי role נזרק ברוב
+                           קוראי המסך (אין לו role מובנה שתומך בשם), ולכן
+                           הנקודה שמסמנת "לא נקרא" לא הועברה כלל. */
+                        <span
+                          role="img"
+                          aria-label="חדש"
+                          className="h-1.5 w-1.5 rounded-full bg-brand-600"
+                        />
                       )}
                     </p>
                   </div>

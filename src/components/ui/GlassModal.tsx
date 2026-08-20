@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CloseIcon } from './icons';
 import { readVisualViewportBounds } from '../../hooks/useVisualViewportBounds';
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 
 /**
  * מודאל זכוכית מרכזי — לא Bottom Sheet.
@@ -35,27 +36,19 @@ export function GlassModal({
    */
   const [viewport, setViewport] = useState(readVisualViewportBounds);
 
+  /**
+   * ‼️ [open] בלבד ב-deps — זו כל המשמעות של "פעם אחת בפתיחה".
+   * כשהיה כאן [open, onClose], כל רינדור של ההורה (onClose הוא פונקציית
+   * חץ טרייה בכל אתרי הקריאה) הריץ את השורה הזו מחדש ומדד את ה-viewport
+   * שוב — כלומר בדיוק בזמן שהמקלדת נפתחה. זה היה השורש של "המודאל קופץ".
+   */
   useEffect(() => {
     if (!open) return;
-
     setViewport(readVisualViewportBounds());
+  }, [open]);
 
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-
-    const t = window.setTimeout(() => panelRef.current?.focus(), 50);
-
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      document.removeEventListener('keydown', onKey);
-      window.clearTimeout(t);
-    };
-  }, [open, onClose]);
+  // גלילה, Escape, מיקוד ומלכודת Tab — ראו useModalBehavior
+  useModalBehavior(open, onClose, panelRef);
 
   if (!open) return null;
 
@@ -84,7 +77,7 @@ export function GlassModal({
         <button
           onClick={onClose}
           aria-label="סגור"
-          className="tap absolute end-3 top-3 z-10 grid h-8 w-8 place-items-center
+          className="tap-area absolute end-3 top-3 z-10 grid h-8 w-8 place-items-center
                      rounded-full bg-white/70 text-ink-500 backdrop-blur transition
                      hover:bg-white hover:text-ink-800"
         >

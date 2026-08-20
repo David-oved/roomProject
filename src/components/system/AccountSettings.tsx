@@ -140,7 +140,7 @@ export function AccountSettings() {
             onClick={() => fileInputRef.current?.click()}
             disabled={!isOnline || uploadingAvatar}
             aria-label="החלפת תמונת פרופיל"
-            className="tap absolute -bottom-1 -end-1 grid h-7 w-7 place-items-center
+            className="tap-area absolute -bottom-1 -end-1 grid h-7 w-7 place-items-center
                        rounded-full bg-brand-700 text-white shadow-card transition
                        hover:bg-brand-800 disabled:opacity-60"
           >
@@ -160,7 +160,7 @@ export function AccountSettings() {
             {profile?.email}
           </p>
           {profile?.createdAt && (
-            <p className="mt-0.5 text-xs text-ink-400">
+            <p className="mt-0.5 text-xs text-ink-500">
               חברים מאז {new Date(profile.createdAt).toLocaleDateString('he-IL')}
             </p>
           )}
@@ -189,7 +189,7 @@ export function AccountSettings() {
             <button
               type="button"
               onClick={() => setShowPasswordForm(true)}
-              className="text-xs font-semibold text-brand-700 hover:underline"
+              className="tap-area text-xs font-semibold text-brand-700 hover:underline"
             >
               שינוי סיסמה
             </button>

@@ -4,6 +4,7 @@ import { AppShell } from '../components/layout/AppShell';
 import { TopBar } from '../components/layout/TopBar';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { ErrorState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import {
   BathroomIcon,
@@ -31,6 +32,7 @@ import {
   useTaskTransfers,
 } from '../hooks/useRoomData';
 import { formatAmount, formatILS, formatRelativeTime, formatSmartDate } from '../lib/format';
+import { friendlyError } from '../lib/errors';
 import { CATEGORY_EMOJI, type Category } from '../types/models';
 import { RoomCodeCard } from '../components/rooms/RoomCodeCard';
 import { NotificationPrompt } from '../components/system/NotificationPrompt';
@@ -52,13 +54,13 @@ export default function DashboardPage() {
   const [reportOpen, setReportOpen] = useState(false);
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const [busyTaskId, setBusyTaskId] = useState<string | null>(null);
-  const { metadata, roomCode, isAdmin, memberName, loading } = useRoom();
+  const { metadata, roomCode, isAdmin, memberName, loading, error: roomError, fromCache } = useRoom();
   const { user, profile } = useAuth();
   const { isOnline } = useConnection();
   const toast = useToast();
-  const { items } = useItems('open');
+  const { items, error: itemsError } = useItems('open');
   const { purchases, pendingApproval } = usePurchases();
-  const { myBalance, isConsistent } = useBalances();
+  const { myBalance, isConsistent, error: balancesError } = useBalances();
   const { requests } = useJoinRequests();
   const { unreadCount } = useNotifications();
   const { awaitingMyConfirmation } = useSettlements();
@@ -96,6 +98,19 @@ export default function DashboardPage() {
         <div className="pt-4">
           <ListSkeleton rows={3} />
         </div>
+      </AppShell>
+    );
+  }
+
+  // ‼️ הדשבורד מציג יתרה, מוצרים ומטלות — כל אחד מהם נראה תקין גם כשהוא
+  // ריק. בלי הבדיקה הזו, כשל הרשאה (למשל הסרה מהחדר תוך כדי צפייה)
+  // מוצג כ"₪0.00, אין מוצרים חסרים, אין לך מטלות" — מסך שקרי לחלוטין.
+  const fatalError = roomError ?? itemsError ?? balancesError;
+  if (fatalError && !fromCache) {
+    return (
+      <AppShell>
+        <TopBar title={metadata?.name ?? 'החדר שלי'} />
+        <ErrorState message={friendlyError(fatalError)} onRetry={() => location.reload()} />
       </AppShell>
     );
   }
@@ -150,7 +165,7 @@ export default function DashboardPage() {
               <p className="text-sm font-semibold text-ink-800">החדר נוצר! שתפו את הקוד</p>
               <button
                 onClick={() => setParams({}, { replace: true })}
-                className="ms-auto text-xs text-ink-400 hover:underline"
+                className="tap-area ms-auto text-xs text-ink-500 hover:underline"
               >
                 הבנתי
               </button>
@@ -174,7 +189,7 @@ export default function DashboardPage() {
               myBalance === 0 ? 'text-ink-900' : myBalance > 0 ? 'text-emerald-700' : 'text-rose-700',
             ].join(' ')}
           >
-            <span className="me-0.5 text-2xl font-semibold text-ink-400">₪</span>
+            <span className="me-0.5 text-2xl font-semibold text-ink-500">₪</span>
             {formatAmount(myBalance)}
           </p>
 
@@ -332,7 +347,10 @@ export default function DashboardPage() {
         <section>
           <div className="mb-2 flex items-center justify-between px-1">
             <h2 className="text-sm font-bold text-ink-700">מוצרים חסרים</h2>
-            <Link to={`/r/${roomCode}/items`} className="text-xs font-semibold text-brand-700">
+            <Link
+              to={`/r/${roomCode}/items`}
+              className="tap-area text-xs font-semibold text-brand-700"
+            >
               הצג הכל
             </Link>
           </div>
@@ -391,12 +409,15 @@ export default function DashboardPage() {
                 <button
                   onClick={() => setAddTaskOpen(true)}
                   disabled={!isOnline}
-                  className="text-xs font-semibold text-brand-700 disabled:text-ink-300"
+                  className="tap-area text-xs font-semibold text-brand-700 disabled:text-ink-300"
                 >
                   + מטלה
                 </button>
               )}
-              <Link to={`/r/${roomCode}/tasks`} className="text-xs font-semibold text-brand-700">
+              <Link
+                to={`/r/${roomCode}/tasks`}
+                className="tap-area text-xs font-semibold text-brand-700"
+              >
                 הצג הכל
               </Link>
             </div>
@@ -458,7 +479,7 @@ export default function DashboardPage() {
               <span className="block text-xs font-semibold text-ink-500">הודעה מהמנהל</span>
               <span className="block truncate text-sm text-ink-900">{latestAnnouncement.text}</span>
             </span>
-            <span className="shrink-0 text-xs text-ink-400">
+            <span className="shrink-0 text-xs text-ink-500">
               {latestAnnouncement.sentAt ? formatSmartDate(latestAnnouncement.sentAt) : ''}
             </span>
           </Link>
@@ -476,10 +497,17 @@ export default function DashboardPage() {
         )}
 
         <div className="pt-2 text-center">
-          <Link to={`/r/${roomCode}/settings`}>
-            <Button variant="ghost" size="sm">
-              הגדרות
-            </Button>
+          {/* ‼️ אלמנט אחד ולא <Link> שעוטף <Button>: קינון כזה אינו HTML
+              חוקי, יוצר שתי תחנות Tab על אותו יעד, וקורא מסך מכריז עליו
+              "קישור, כפתור". הסגנון זהה ל-Button variant="ghost" size="sm". */}
+          <Link
+            to={`/r/${roomCode}/settings`}
+            className="inline-flex min-h-[44px] h-11 select-none items-center justify-center
+                       gap-1.5 rounded-xl px-3.5 text-sm font-semibold text-ink-600
+                       transition-[background-color,transform] duration-150
+                       hover:bg-ink-100 active:bg-ink-200 active:scale-[.98]"
+          >
+            הגדרות
           </Link>
         </div>
       </div>

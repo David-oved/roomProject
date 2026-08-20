@@ -37,10 +37,15 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
   ];
 
   return (
+    // ‼️ bg-white/95 ולא /80: ב-80% הרקע האפקטיבי של הסרגל תלוי במה
+    // שנגלל מתחתיו. מעל כרטיס היתרה הצבעוני תווית לשונית לא-פעילה ירדה
+    // ל-2.14:1 — כלומר קריאוּת הניווט השתנתה לפי מיקום הגלילה.
+    // (95 ולא 92: 92 אינו בסולם האטימות של Tailwind ולא מייצר כלל CSS
+    //  כלל — כלומר הסרגל היה נשאר בלי שום רקע.)
     <nav
       aria-label="ניווט ראשי"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-ink-200/70
-                 bg-white/80 shadow-[0_-8px_24px_-16px_rgba(15,23,42,.15)]
+                 bg-white/95 shadow-[0_-8px_24px_-16px_rgba(15,23,42,.15)]
                  backdrop-blur-xl backdrop-saturate-150"
       style={{ paddingBottom: 'var(--safe-bottom)' }}
     >
@@ -84,7 +89,7 @@ function TabButton({ to, label, Icon, end, dot }: Tab) {
         to={to}
         end={end}
         className="tap flex h-full flex-col items-center justify-center gap-1
-                   text-[11px] font-semibold outline-none"
+                   text-xs font-semibold outline-none"
       >
         {({ isActive }) => (
           <>
@@ -100,7 +105,7 @@ function TabButton({ to, label, Icon, end, dot }: Tab) {
                 filled={isActive}
                 className={[
                   'transition-colors duration-200',
-                  isActive ? 'text-brand-700' : 'text-ink-400',
+                  isActive ? 'text-brand-700' : 'text-ink-500',
                 ].join(' ')}
               />
               {dot && (
@@ -110,10 +115,12 @@ function TabButton({ to, label, Icon, end, dot }: Tab) {
                 />
               )}
             </span>
+            {/* ‼️ ink-400 = 2.56:1 מול לבן — כשל ניגודיות בטקסט הניווט
+                הראשי של האפליקציה. ink-500 = 4.76:1. */}
             <span
               className={[
                 'transition-colors duration-200',
-                isActive ? 'text-brand-700' : 'text-ink-400',
+                isActive ? 'text-brand-700' : 'text-ink-500',
               ].join(' ')}
             >
               {label}

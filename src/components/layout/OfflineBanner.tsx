@@ -25,7 +25,7 @@ export function OfflineBanner() {
       <span className="text-sm font-semibold">אין חיבור לאינטרנט</span>
       <span className="text-sm text-ink-300">· צפייה בלבד</span>
       {lastSyncAt && (
-        <span className="ms-auto shrink-0 text-[11px] text-ink-400">
+        <span className="ms-auto shrink-0 text-[11px] text-ink-500">
           עודכן {formatRelativeTime(lastSyncAt)}
         </span>
       )}

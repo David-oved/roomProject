@@ -16,11 +16,17 @@ interface FieldProps {
   suffix?: ReactNode;
 }
 
+/**
+ * ‼️ טבעת המיקוד הייתה brand-500 באטימות 40% — 1.46:1 מול לבן, כלומר
+ * כמעט בלתי נראית, ומחוון ממשק חייב 3:1. הוסרה האטימות והועלה הגוון:
+ * brand-600 מלא = 3.74:1. אותו טיפול לגרסת השגיאה (rose-500/30 = 1.50:1
+ * → rose-600 מלא = 4.70:1).
+ */
 const fieldBase =
   'w-full rounded-xl border bg-white px-3.5 text-[16px] text-ink-900 ' +
-  'placeholder:text-ink-400 transition-colors ' +
-  'focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 ' +
-  'disabled:bg-ink-50 disabled:text-ink-400';
+  'placeholder:text-ink-500 transition-colors ' +
+  'focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600 ' +
+  'disabled:bg-ink-50 disabled:text-ink-500';
 
 export const Input = forwardRef<
   HTMLInputElement,
@@ -46,13 +52,13 @@ export const Input = forwardRef<
             fieldBase,
             'h-12',
             suffix ? 'pe-11' : '',
-            error ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/30' : 'border-ink-200',
+            error ? 'border-rose-400 focus:border-rose-600 focus:ring-rose-600' : 'border-ink-200',
             className,
           ].join(' ')}
           {...rest}
         />
         {suffix && (
-          <span className="pointer-events-none absolute inset-y-0 end-3 grid place-items-center text-ink-400">
+          <span className="pointer-events-none absolute inset-y-0 end-3 grid place-items-center text-ink-500">
             {suffix}
           </span>
         )}
@@ -101,7 +107,7 @@ export const PasswordInput = forwardRef<
             fieldBase,
             'h-12 pe-12',
             error
-              ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/30'
+              ? 'border-rose-400 focus:border-rose-600 focus:ring-rose-600'
               : 'border-ink-200',
             className,
           ].join(' ')}
@@ -114,7 +120,7 @@ export const PasswordInput = forwardRef<
           aria-pressed={visible}
           tabIndex={-1}
           className="tap absolute inset-y-0 end-0 grid w-12 place-items-center
-                     rounded-e-xl text-ink-400 transition hover:text-ink-600"
+                     rounded-e-xl text-ink-500 transition hover:text-ink-600"
         >
           {visible ? <EyeOffIcon width={19} height={19} /> : <EyeIcon width={19} height={19} />}
         </button>

@@ -1,5 +1,6 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { CloseIcon } from './icons';
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 
 /**
  * גיליון תחתון (Bottom Sheet) — דפוס המובייל המקובל לטפסים.
@@ -20,27 +21,9 @@ export function Sheet({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // נעילת גלילת הרקע + סגירה ב-Escape
-  useEffect(() => {
-    if (!open) return;
-
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-
-    // מיקוד לתוך הגיליון, לנגישות
-    const t = window.setTimeout(() => panelRef.current?.focus(), 50);
-
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      document.removeEventListener('keydown', onKey);
-      window.clearTimeout(t);
-    };
-  }, [open, onClose]);
+  // נעילת גלילת הרקע, Escape, מיקוד התחלתי, מלכודת Tab והחזרת מיקוד
+  // בסגירה — הכל ב-useModalBehavior, כולל ההסבר למה onClose ב-ref.
+  useModalBehavior(open, onClose, panelRef);
 
   if (!open) return null;
 
@@ -72,8 +55,8 @@ export function Sheet({
           <button
             onClick={onClose}
             aria-label="סגור"
-            className="tap grid place-items-center rounded-full text-ink-400
-                       transition hover:bg-ink-100 hover:text-ink-600"
+            className="tap grid place-items-center rounded-full text-ink-500
+                       transition hover:bg-ink-100 hover:text-ink-800"
           >
             <CloseIcon width={20} height={20} />
           </button>

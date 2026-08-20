@@ -208,7 +208,7 @@ export function MarkBoughtSheet({
   return (
     <GlassModal open={open} onClose={onClose} labelledBy="mark-bought-title">
       <div className="space-y-5 p-5 pt-4">
-        <h2 id="mark-bought-title" className="pe-8 text-lg font-bold text-ink-900">
+        <h2 id="mark-bought-title" className="pe-12 text-lg font-bold text-ink-900">
           {item ? `קניתי: ${item.name}` : 'רישום קנייה'}
         </h2>
 
@@ -359,7 +359,7 @@ export function MarkBoughtSheet({
                         <span className="truncate text-sm font-medium text-ink-800">
                           {m.name}
                           {m.id === user?.uid && (
-                            <span className="text-xs text-ink-400"> (אתה)</span>
+                            <span className="text-xs text-ink-500"> (אתה)</span>
                           )}
                         </span>
                       </button>
@@ -510,11 +510,14 @@ function ModeCard({
       {show && (
         <span className="num mt-1.5 block border-t border-ink-100 pt-1.5 text-[11px] leading-tight">
           {delta === 0 ? (
-            <span className="text-ink-400">ללא שינוי</span>
+            <span className="text-ink-500">ללא שינוי</span>
           ) : (
             <>
-              <span className="text-ink-400">{formatILS(balance)}</span>
-              <span className="mx-0.5 text-ink-300">←</span>
+              <span className="text-ink-500">{formatILS(balance)}</span>
+              {/* ‼️ → ולא ←: הספן העוטף הוא .num, כלומר direction: ltr.
+                  הסדר הוויזואלי שם הוא "מאזן נוכחי, חץ, מאזן אחרי" משמאל
+                  לימין — וחץ שמאלה הצביע בדיוק הפוך לכיוון הקריאה. */}
+              <span className="mx-0.5 text-ink-400">→</span>
               <span
                 className={
                   after >= 0 ? 'font-bold text-emerald-700' : 'font-bold text-rose-700'

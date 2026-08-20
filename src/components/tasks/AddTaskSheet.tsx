@@ -66,7 +66,7 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
   return (
     <GlassModal open={open} onClose={onClose} labelledBy="add-task-title">
       <div className="p-5 pt-4">
-        <h2 id="add-task-title" className="pe-8 text-lg font-bold text-ink-900">
+        <h2 id="add-task-title" className="pe-12 text-lg font-bold text-ink-900">
           מטלה קבועה חדשה
         </h2>
 
@@ -171,7 +171,7 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
                     <Avatar name={m.name} uid={m.id} src={m.avatar} size="xs" />
                     <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink-800">
                       {m.name}
-                      {m.id === user?.uid && <span className="text-xs text-ink-400"> (אתה)</span>}
+                      {m.id === user?.uid && <span className="text-xs text-ink-500"> (אתה)</span>}
                     </span>
                     {on && (
                       <span className="num shrink-0 text-xs font-bold text-brand-700">#{idx + 1}</span>

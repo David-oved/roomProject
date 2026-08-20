@@ -56,7 +56,7 @@ export function AboutSettings() {
         )}
       </div>
 
-      <p className="mt-2 text-[11px] leading-relaxed text-ink-400">
+      <p className="mt-2 text-[11px] leading-relaxed text-ink-500">
         האפליקציה בודקת עדכונים אוטומטית בכל כניסה. עדכון מוריד מחדש את כל קבצי האפליקציה.
       </p>
     </section>

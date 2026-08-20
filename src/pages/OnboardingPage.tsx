@@ -135,7 +135,7 @@ function RoomOption({ code, isLast }: { code: string; isLast: boolean }) {
           {isLast && <Badge tone="brand">אחרון</Badge>}
         </span>
         <span
-          className="num mt-0.5 block font-mono text-xs tracking-wider text-ink-400"
+          className="num mt-0.5 block font-mono text-xs tracking-wider text-ink-500"
           style={{ direction: 'ltr' }}
         >
           {code}

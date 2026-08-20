@@ -50,7 +50,17 @@ export function ContributionChart({ slices, total }: { slices: Slice[]; total: n
   return (
     <div className="flex items-center gap-5">
       <div className="relative shrink-0">
-        <svg width="140" height="140" viewBox="0 0 140 140" className="-rotate-90">
+        {/* ‼️ aria-hidden: הרשימה שליד הגרף מוסרת בדיוק את אותם נתונים
+            בטקסט. בלי זה קורא מסך נכנס לתוך ה-SVG ומקריא רשימת <circle>
+            חסרת משמעות לפני שהוא מגיע לנתונים עצמם. */}
+        <svg
+          width="140"
+          height="140"
+          viewBox="0 0 140 140"
+          className="-rotate-90"
+          aria-hidden
+          focusable="false"
+        >
           <circle cx="70" cy="70" r={R} fill="none" stroke="#f1f2ee" strokeWidth="16" />
           {arcs.map((a) => (
             <circle

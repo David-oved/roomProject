@@ -17,6 +17,13 @@ interface RoomValue {
   isAdmin: boolean;
   loading: boolean;
   fromCache: boolean;
+  /**
+   * ‼️ שגיאת קריאה של החדר עצמו (מטא-דאטה או רשימת החברים).
+   * useRtdbList מנקה בכוונה את data ל-[] כשמגיע permission_denied אחרי
+   * חיבור חי — ולכן בלי החשיפה הזו "הוסרת מהחדר" נראה על המסך בדיוק
+   * כמו "החדר ריק". המסכים מציגים ErrorState על בסיס הערך הזה.
+   */
+  error: Error | null;
   memberName: (uid: string) => string;
   /** תמונת הפרופיל של חבר, אם יש לו — לשימוש בכל מקום שמציג Avatar */
   memberAvatar: (uid: string) => string | null;
@@ -33,6 +40,7 @@ const Ctx = createContext<RoomValue>({
   isAdmin: false,
   loading: true,
   fromCache: false,
+  error: null,
   memberName: () => '—',
   memberAvatar: () => null,
   onlineMemberIds: new Set(),
@@ -63,6 +71,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       isAdmin: !!user && meta.data?.adminId === user.uid,
       loading: meta.loading || mem.loading,
       fromCache: meta.fromCache || mem.fromCache,
+      error: meta.error ?? mem.error,
       memberName: (uid: string) => members.find((m) => m.id === uid)?.name ?? 'משתמש שנמחק',
       memberAvatar: (uid: string) => members.find((m) => m.id === uid)?.avatar ?? null,
       onlineMemberIds: new Set(Object.keys(online.data ?? {})),
@@ -72,9 +81,11 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     meta.data,
     meta.loading,
     meta.fromCache,
+    meta.error,
     mem.data,
     mem.loading,
     mem.fromCache,
+    mem.error,
     online.data,
     user,
   ]);

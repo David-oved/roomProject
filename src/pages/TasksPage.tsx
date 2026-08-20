@@ -4,7 +4,7 @@ import { TopBar } from '../components/layout/TopBar';
 import { Avatar } from '../components/ui/Avatar';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
-import { EmptyState } from '../components/ui/EmptyState';
+import { EmptyState, ErrorState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import { ExchangeIcon } from '../components/ui/icons';
 import { AddTaskSheet } from '../components/tasks/AddTaskSheet';
@@ -17,13 +17,14 @@ import { useToast } from '../store/ToastContext';
 import { useConfirm } from '../store/ConfirmContext';
 import { completeTask, deleteTask, respondTaskTransfer } from '../services/taskService';
 import { formatSmartDate } from '../lib/format';
+import { friendlyError } from '../lib/errors';
 import { CATEGORY_EMOJI, CATEGORY_LABELS, type Task, type TaskTransfer, type WithId } from '../types/models';
 
 export default function TasksPage() {
   const { roomCode, isAdmin, memberName, activeMembers } = useRoom();
   const { user, profile } = useAuth();
   const { isOnline } = useConnection();
-  const { tasks, loading } = useTasks();
+  const { tasks, loading, error, fromCache } = useTasks();
   const { incoming } = useTaskTransfers();
   const { counts: fairness } = useTaskFairness();
   const toast = useToast();
@@ -99,6 +100,11 @@ export default function TasksPage() {
 
           {loading ? (
             <ListSkeleton rows={3} />
+          ) : error && !fromCache ? (
+            // ‼️ לפני הבדיקה הזו, משתמש שהוסר מהחדר ראה "עדיין אין מטלות
+            // קבועות": useRtdbList מנקה את data ל-[] ב-permission_denied,
+            // וזה נראה בדיוק כמו חדר בלי מטלות.
+            <ErrorState message={friendlyError(error)} onRetry={() => location.reload()} />
           ) : tasks.length === 0 ? (
             <EmptyState
               icon="🧹"
@@ -200,7 +206,7 @@ export default function TasksPage() {
                     <Avatar name={m.name} uid={m.id} src={m.avatar} size="xs" />
                     <span className="flex-1 truncate text-sm text-ink-800">{m.name}</span>
                     <span className="num text-sm font-bold text-ink-900">
-                      {fairness[m.id] ?? 0} <span className="font-normal text-ink-400">מטלות</span>
+                      {fairness[m.id] ?? 0} <span className="font-normal text-ink-500">מטלות</span>
                     </span>
                   </li>
                 ))}

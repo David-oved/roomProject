@@ -70,8 +70,10 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* ‼️ brand-500 על לבן = 2.49:1 — מתחת לסף 3:1 של מחוון ממשק, כלומר
+     טבעת המיקוד עצמה לא הייתה נראית למי שצריך אותה. brand-700 = 5.47:1. */
   :focus-visible {
-    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-white;
+    @apply outline-none ring-2 ring-brand-700 ring-offset-2 ring-offset-white;
   }
 
   ::selection {
@@ -86,6 +88,32 @@
   /* יעד מגע מינימלי לפי הנחיות נגישות (44×44) */
   .tap {
     @apply min-h-[44px] min-w-[44px];
+  }
+
+  /*
+   * יעד מגע 44×44 *בלי* לשנות את הגודל הנראה.
+   *
+   * ‼️ למה זה נחוץ בנוסף ל-.tap: min-height מנצח height ב-CSS, ולכן
+   * .tap מנפח כל אלמנט שעוצב קטן בכוונה. שני מקרים אמיתיים באפליקציה:
+   * כפתור הסגירה של GlassModal הוגדר h-8 w-8 ורונדר 44×44 — והתנגש
+   * בכותרות של ארבעת הגיליונות; ותג המצלמה ב-AccountSettings הוגדר
+   * h-7 w-7 ורונדר 44×44 מעל אווטאר של 64px, כלומר כיסה את רובו.
+   *
+   * כאן האזור הלחיץ מורחב בפסאודו-אלמנט שקוף שממורכז על הכפתור,
+   * והגודל הוויזואלי נשאר בדיוק כפי שעוצב.
+   */
+  .tap-area {
+    position: relative;
+  }
+  .tap-area::after {
+    content: '';
+    position: absolute;
+    /* מיקום פיזי בכוונה — מרכוז זהה ב-RTL וב-LTR */
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
   }
 
   .card {
@@ -187,10 +215,17 @@
 /* ═══════════════════════════════════════════════════════════
    העדפת תנועה מופחתת
    ═══════════════════════════════════════════════════════════ */
+/*
+ * ‼️ .animate-spin ו-.animate-pulse מוחרגים בכוונה.
+ * הכלל הגורף כאן קיצר כל אנימציה ל-0.01ms והגביל אותה למחזור אחד —
+ * כולל מחווני הטעינה. התוצאה למי שביקש תנועה מופחתת: ספינר קפוא
+ * ושלד טעינה קפוא, שנראים כמו אפליקציה תקועה במקום כמו טעינה.
+ * סיבוב אחיד ודופק עדין אינם התנועה שההעדפה הזו באה למנוע.
+ */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *:not(.animate-spin):not(.animate-pulse),
+  *:not(.animate-spin):not(.animate-pulse)::before,
+  *:not(.animate-spin):not(.animate-pulse)::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

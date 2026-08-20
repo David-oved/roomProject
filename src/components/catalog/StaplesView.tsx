@@ -101,7 +101,7 @@ export function StaplesView() {
             <h3 className="mb-1.5 flex items-center gap-1.5 px-1 text-xs font-bold text-ink-500">
               <span aria-hidden>{CATEGORY_EMOJI[category]}</span>
               {CATEGORY_LABELS[category]}
-              <span className="num font-normal text-ink-400">({list.length})</span>
+              <span className="num font-normal text-ink-500">({list.length})</span>
             </h3>
 
             <ul className="card divide-y divide-ink-100">
@@ -158,7 +158,7 @@ function StapleRow({
     <li className="flex items-center gap-3 px-3.5 py-2.5">
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-ink-900">{product.name}</p>
-        {product.unit && <p className="text-xs text-ink-400">{product.unit}</p>}
+        {product.unit && <p className="text-xs text-ink-500">{product.unit}</p>}
       </div>
 
       {editing ? (
@@ -169,7 +169,7 @@ function StapleRow({
             onClick={() => setEditing(true)}
             disabled={!isOnline}
             aria-label={`שינוי מחיר עבור ${product.name}`}
-            className="num shrink-0 rounded-lg px-2 py-1 text-sm text-ink-600
+            className="tap-area num shrink-0 rounded-lg px-2 py-1 text-sm text-ink-600
                        transition hover:bg-ink-100 disabled:hover:bg-transparent"
           >
             {formatILS(product.price)}
@@ -265,7 +265,7 @@ function PriceEditor({ product, onDone }: { product: RoomProduct; onDone: () => 
           disabled={busy}
           aria-label="חזרה למחיר ברירת המחדל"
           title="חזרה למחיר ברירת המחדל"
-          className="tap grid place-items-center rounded-lg text-ink-400 hover:bg-ink-100"
+          className="tap grid place-items-center rounded-lg text-ink-500 hover:bg-ink-100"
         >
           ↺
         </button>
@@ -273,7 +273,7 @@ function PriceEditor({ product, onDone }: { product: RoomProduct; onDone: () => 
         <button
           onClick={onDone}
           aria-label="ביטול"
-          className="tap grid place-items-center rounded-lg text-ink-400 hover:bg-ink-100"
+          className="tap grid place-items-center rounded-lg text-ink-500 hover:bg-ink-100"
         >
           <CloseIcon width={18} height={18} />
         </button>

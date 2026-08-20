@@ -88,8 +88,18 @@ export function useSettlements() {
 export function useBalances() {
   const { activeMembers, members } = useRoom();
   const { user } = useAuth();
-  const { purchases, loading: pLoading } = usePurchases();
-  const { data: settlements, loading: sLoading } = useSettlements();
+  const {
+    purchases,
+    loading: pLoading,
+    error: pError,
+    fromCache: pFromCache,
+  } = usePurchases();
+  const {
+    data: settlements,
+    loading: sLoading,
+    error: sError,
+    fromCache: sFromCache,
+  } = useSettlements();
 
   const balances = useMemo(() => {
     // כוללים גם חברים שהוסרו — החובות שלהם לא נעלמים
@@ -111,6 +121,11 @@ export function useBalances() {
     isConsistent,
     activeMembers,
     loading: pLoading || sLoading,
+    // ‼️ בלי החשיפה הזו המסך לא יכול להבחין בין "אין חובות" לבין
+    // "אין הרשאה לקרוא את הקניות" — useRtdbList מנקה את data ל-[]
+    // כשמסירים את המשתמש מהחדר, וזה נראה בדיוק כמו חדר מאוזן.
+    error: pError ?? sError,
+    fromCache: pFromCache || sFromCache,
   };
 }
 
@@ -120,7 +135,7 @@ export function useBalances() {
  */
 export function useContributions() {
   const { members, activeMembers } = useRoom();
-  const { purchases, loading } = usePurchases();
+  const { purchases, loading, error, fromCache } = usePurchases();
 
   const data = useMemo(
     () => computeContributions(purchases, members.map((m) => m.id)),
@@ -140,7 +155,7 @@ export function useContributions() {
     [data.borne, activeMembers]
   );
 
-  return { ...data, gap, next, loading };
+  return { ...data, gap, next, loading, error, fromCache };
 }
 
 export function useNotifications() {
@@ -221,7 +236,7 @@ export function useTaskFairness() {
     return map;
   }, [state.data]);
 
-  return { counts, loading: state.loading };
+  return { counts, loading: state.loading, error: state.error, fromCache: state.fromCache };
 }
 
 /** הודעות שידור מהמנהל, החדשה ביותר ראשונה. */
@@ -241,6 +256,8 @@ export function useAnnouncements() {
 export function useJoinRequests(): {
   requests: WithId<JoinRequest>[];
   loading: boolean;
+  error: Error | null;
+  fromCache: boolean;
 } {
   const { roomCode, isAdmin } = useRoom();
   const state = useRtdbList<JoinRequest>(
@@ -255,5 +272,5 @@ export function useJoinRequests(): {
     [state.data]
   );
 
-  return { requests, loading: state.loading };
+  return { requests, loading: state.loading, error: state.error, fromCache: state.fromCache };
 }

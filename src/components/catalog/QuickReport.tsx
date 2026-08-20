@@ -71,7 +71,7 @@ export function QuickReport() {
         </h2>
         <Link
           to={`/r/${roomCode}/items?tab=staples`}
-          className="text-xs font-semibold text-brand-700"
+          className="tap-area text-xs font-semibold text-brand-700"
         >
           הצג הכל
         </Link>

@@ -4,7 +4,7 @@ import { TopBar } from '../components/layout/TopBar';
 import { Avatar } from '../components/ui/Avatar';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
-import { EmptyState } from '../components/ui/EmptyState';
+import { EmptyState, ErrorState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import { useBalances, useContributions, usePurchases, useSettlements } from '../hooks/useRoomData';
 import { ContributionChart } from '../components/balances/ContributionChart';
@@ -21,13 +21,14 @@ import {
 } from '../services/purchaseService';
 import { simplifyDebts } from '../lib/money';
 import { formatAmount, formatILS, formatSmartDate } from '../lib/format';
+import { friendlyError } from '../lib/errors';
 import { PURCHASE_STATUS_LABELS } from '../types/models';
 
 type Tab = 'summary' | 'pending' | 'history';
 
 export default function BalancesPage() {
   const [tab, setTab] = useState<Tab>('summary');
-  const { balances, myBalance, isConsistent, loading } = useBalances();
+  const { balances, myBalance, isConsistent, loading, error, fromCache } = useBalances();
   const { purchases, pendingApproval } = usePurchases();
   const { members, activeMembers, memberName, memberAvatar, isAdmin } = useRoom();
   const { user } = useAuth();
@@ -107,6 +108,10 @@ export default function BalancesPage() {
         <div className="pt-4">
           {loading ? (
             <ListSkeleton rows={3} />
+          ) : error && !fromCache ? (
+            // בלי זה, כשל קריאה של הקניות/התשלומים מוצג כ"אין חובות
+            // פתוחים בחדר" — כלומר בדיוק ההפך ממה שקרה.
+            <ErrorState message={friendlyError(error)} onRetry={() => location.reload()} />
           ) : tab === 'summary' ? (
             <SummaryTab
               transfers={myTransfers}
@@ -226,7 +231,7 @@ function SummaryTab({
                     <p className="text-sm font-semibold text-ink-900">
                       {iOwe ? `אתה חייב ל${memberName(other)}` : `${memberName(other)} חייב לך`}
                     </p>
-                    <p className={`num text-lg font-bold ${iOwe ? 'text-rose-600' : 'text-emerald-600'}`}>
+                    <p className={`num text-lg font-bold ${iOwe ? 'text-rose-600' : 'text-emerald-700'}`}>
                       {formatILS(t.amount)}
                     </p>
                   </div>
@@ -282,7 +287,7 @@ function SummaryTab({
                 <span className="flex-1 truncate text-sm text-ink-800">{memberName(id)}</span>
                 <span
                   className={`num text-sm font-bold ${
-                    v > 0 ? 'text-emerald-600' : v < 0 ? 'text-rose-600' : 'text-ink-400'
+                    v > 0 ? 'text-emerald-700' : v < 0 ? 'text-rose-600' : 'text-ink-500'
                   }`}
                 >
                   {v > 0 ? '↑ ' : v < 0 ? '↓ ' : ''}
@@ -292,7 +297,7 @@ function SummaryTab({
             );
           })}
         </ul>
-        <p className="mt-2 px-1 text-xs text-ink-400">
+        <p className="mt-2 px-1 text-xs text-ink-500">
           ↑ מגיע לו · ↓ הוא חייב
         </p>
       </section>
@@ -336,7 +341,7 @@ function ContributionsSection() {
                   <Avatar name={memberName(m.id)} uid={m.id} src={memberAvatar(m.id)} size="xs" />
                   <span className={`flex-1 truncate text-sm ${isMe ? 'font-bold text-ink-900' : 'text-ink-800'}`}>
                     {memberName(m.id)}
-                    {isMe && <span className="text-xs font-normal text-ink-400"> (אתה)</span>}
+                    {isMe && <span className="text-xs font-normal text-ink-500"> (אתה)</span>}
                   </span>
                   <span className="num text-sm font-bold text-ink-900">
                     {formatILS(paidOut[m.id] ?? 0)}
@@ -382,12 +387,12 @@ function ContributionsSection() {
             </div>
           )}
 
-          <p className="mt-2 px-1 text-xs leading-relaxed text-ink-400">
+          <p className="mt-2 px-1 text-xs leading-relaxed text-ink-500">
             כולל קניות שנרשמו כ"לקחתי על עצמי" — הן לא יוצרות חוב, אבל כן נספרות כאן.
           </p>
         </section>
       ) : (
-        <p className="px-1 text-xs text-ink-400">
+        <p className="px-1 text-xs text-ink-500">
           עדיין אין קניות בחדר — כשיהיו, כאן יופיע מי נשא בכמה מהעלות.
         </p>
       )}
@@ -529,7 +534,7 @@ function HistoryTab({
             </div>
             <div className="shrink-0 text-end">
               <p className="num text-sm font-bold text-ink-900">{formatILS(p.amount)}</p>
-              <p className="text-[11px] text-ink-400">
+              <p className="text-[11px] text-ink-500">
                 {p.splitMethod === 'covered' ? '🙋 על חשבונו' : PURCHASE_STATUS_LABELS[p.status]}
               </p>
             </div>

@@ -16,6 +16,7 @@ import {
   sendDirectMessage,
   sendGeneralMessage,
   tickFor,
+  type MessageTick,
 } from '../services/chatService';
 import { Avatar } from '../components/ui/Avatar';
 import { ChatIcon, CheckDoubleIcon, CheckIcon, ChevronIcon } from '../components/ui/icons';
@@ -140,8 +141,15 @@ export default function ChatConversationPage() {
 
   return (
     <div
-      className="fixed inset-x-0 flex flex-col bg-ink-50"
-      style={{ top: viewport.top, height: viewport.height }}
+      className="fixed flex flex-col bg-ink-50"
+      // ‼️ left/width ולא inset-x-0 — ראו את ההסבר על זום-צביטה
+      // ב-useVisualViewportBounds.
+      style={{
+        top: viewport.top,
+        left: viewport.left,
+        height: viewport.height,
+        width: viewport.width,
+      }}
     >
       {/* ── כותרת ── */}
       <header
@@ -179,7 +187,7 @@ export default function ChatConversationPage() {
           {isGeneral ? (
             <p className="truncate text-xs text-ink-500">{activeMembers.length} חברים</p>
           ) : (
-            <p className={`truncate text-xs ${otherOnline ? 'font-medium text-emerald-600' : 'text-ink-400'}`}>
+            <p className={`truncate text-xs ${otherOnline ? 'font-medium text-emerald-700' : 'text-ink-500'}`}>
               {otherOnline ? 'מחובר/ת עכשיו' : 'לא מחובר/ת'}
             </p>
           )}
@@ -206,7 +214,17 @@ export default function ChatConversationPage() {
             <p className="text-sm text-ink-500">עדיין אין הודעות. תתחילו את השיחה!</p>
           </div>
         ) : (
-          <ul className="space-y-1.5">
+          /* ‼️ aria-live: בלעדיו הודעה נכנסת פשוט לא קיימת עבור קורא מסך —
+             המשתמש היה צריך לנווט ידנית לסוף הרשימה כדי לגלות שהגיע משהו.
+             aria-relevant="additions" כדי שרק ההודעה החדשה תוקרא ולא כל
+             ההיסטוריה מחדש בכל עדכון. */
+          <ul
+            className="space-y-1.5"
+            aria-live="polite"
+            aria-relevant="additions"
+            aria-atomic="false"
+            aria-label="הודעות בשיחה"
+          >
             {sorted.map((m, i) => {
               const mine = m.senderId === myUid;
               const isNew = !animatedIds.current.has(m.id);
@@ -315,7 +333,7 @@ const Composer = memo(function Composer({
         placeholder="הודעה…"
         disabled={!isOnline}
         className="h-11 flex-1 rounded-full border border-ink-200 bg-ink-50 px-4 text-[15px]
-                   placeholder:text-ink-400 focus:border-brand-400 focus:bg-white
+                   placeholder:text-ink-500 focus:border-brand-400 focus:bg-white
                    focus:outline-none focus:ring-2 focus:ring-brand-500/25"
       />
       <button
@@ -333,6 +351,13 @@ const Composer = memo(function Composer({
     </div>
   );
 });
+
+/** מצב המסירה במילים — האייקון לבדו אינו נגיש, ראו ההערה בשימוש. */
+const TICK_LABELS: Record<MessageTick, string> = {
+  sent: 'נשלח',
+  delivered: 'נמסר',
+  read: 'נקרא',
+};
 
 /** ‼️ memo — אחרת כל רינדור של הדף (נוכחות, גובה viewport/מקלדת) מרנדר
  *  מחדש את כל הבועות ברשימה. */
@@ -366,12 +391,22 @@ const Bubble = memo(function Bubble({
       <div
         className={[
           'mt-0.5 flex items-center justify-end gap-1 text-[10px]',
-          mine ? 'text-white/75' : 'text-ink-400',
+          // white/75 על הבועה = 2.76:1 בקצה הבהיר של הגרדיאנט. /90 = 3.32:1.
+          mine ? 'text-white/90' : 'text-ink-500',
         ].join(' ')}
       >
         <span className="num">{message.sentAt ? formatTime(message.sentAt) : ''}</span>
         {mine && tick && (
-          <span className={tick === 'read' ? 'text-sky-300' : ''}>
+          /* ‼️ הווי היה בלתי נגיש לחלוטין: האייקון עצמו aria-hidden
+             (כך מוגדרים כל האייקונים ב-icons.tsx) והספן העוטף היה ריק
+             מטקסט — כלומר "נמסר" מול "נקרא" לא הועבר בשום צורה לקורא
+             מסך. בנוסף, ההבדל היחיד בין השניים היה צבע (sky-300 =
+             3.28:1 בלבד). כאן: תווית מפורשת + sky-100 = 4.77:1. */
+          <span
+            role="img"
+            aria-label={TICK_LABELS[tick]}
+            className={tick === 'read' ? 'text-sky-100' : ''}
+          >
             {tick === 'sent' ? (
               <CheckIcon width={13} height={13} />
             ) : (

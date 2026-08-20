@@ -157,7 +157,7 @@ export function NotificationSettings() {
         )}
       </div>
 
-      <p className="mt-2 text-[11px] leading-relaxed text-ink-400">
+      <p className="mt-2 text-[11px] leading-relaxed text-ink-500">
         אירועים דחופים מגיעים מיד. כל השאר מגיע כתקציר אחד ביום ב-18:00, כדי שלא
         תוצפו בהתראות.
       </p>

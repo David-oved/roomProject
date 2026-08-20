@@ -137,7 +137,7 @@ function DismissButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       aria-label="סגירה"
       className="tap absolute end-1 top-1 grid place-items-center rounded-full
-                 text-ink-400 transition hover:bg-black/5 hover:text-ink-600"
+                 text-ink-500 transition hover:bg-black/5 hover:text-ink-600"
     >
       <CloseIcon width={17} height={17} />
     </button>

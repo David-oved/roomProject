@@ -9,7 +9,7 @@ export default function SettingsAboutPage() {
   return (
     <>
       <TopBar title="אודות" back={`/r/${roomCode}/settings`} />
-      <PlainShell>
+      <PlainShell hasTopBar>
         <div className="py-4">
           <AboutSettings />
         </div>

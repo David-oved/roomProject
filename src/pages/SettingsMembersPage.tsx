@@ -4,6 +4,7 @@ import { TopBar } from '../components/layout/TopBar';
 import { Avatar } from '../components/ui/Avatar';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { ErrorState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import { RoomCodeCard } from '../components/rooms/RoomCodeCard';
 import { useJoinRequests } from '../hooks/useRoomData';
@@ -14,10 +15,11 @@ import { useToast } from '../store/ToastContext';
 import { useConfirm } from '../store/ConfirmContext';
 import { approveJoinRequest, rejectJoinRequest, removeMember } from '../services/roomService';
 import { formatFullDate, formatRelativeTime } from '../lib/format';
+import { friendlyError } from '../lib/errors';
 
 export default function SettingsMembersPage() {
-  const { roomCode, metadata, activeMembers, isAdmin, loading } = useRoom();
-  const { requests, loading: reqLoading } = useJoinRequests();
+  const { roomCode, metadata, activeMembers, isAdmin, loading, error: roomError, fromCache } = useRoom();
+  const { requests, loading: reqLoading, error: reqError } = useJoinRequests();
   const { user, profile } = useAuth();
   const { isOnline } = useConnection();
   const toast = useToast();
@@ -26,10 +28,13 @@ export default function SettingsMembersPage() {
 
   const guard = { disabled: !isOnline, title: isOnline ? undefined : 'פעולה זו דורשת חיבור לאינטרנט' };
 
+  // שגיאת החדר קודמת לשגיאת בקשות ההצטרפות — היא הסיבה השורשית
+  const membersError = roomError ?? reqError;
+
   return (
     <>
       <TopBar title="חברי החדר" back={`/r/${roomCode}/settings`} subtitle={metadata?.name} />
-      <PlainShell>
+      <PlainShell hasTopBar>
         <div className="space-y-5 py-4">
           {/* בקשות הצטרפות — מנהל בלבד */}
           {isAdmin && !reqLoading && requests.length > 0 && (
@@ -48,7 +53,7 @@ export default function SettingsMembersPage() {
                           {r.email}
                         </p>
                         {r.requestedAt && (
-                          <p className="text-[11px] text-ink-400">
+                          <p className="text-[11px] text-ink-500">
                             ביקש {formatRelativeTime(r.requestedAt)}
                           </p>
                         )}
@@ -106,6 +111,10 @@ export default function SettingsMembersPage() {
 
             {loading ? (
               <ListSkeleton rows={3} />
+            ) : membersError && !fromCache ? (
+              // רשימת חברים ריקה בגלל permission_denied נראית בדיוק כמו
+              // חדר ריק. כאן היא נאמרת במפורש.
+              <ErrorState message={friendlyError(membersError)} onRetry={() => location.reload()} />
             ) : (
               <ul className="card divide-y divide-ink-100">
                 {activeMembers.map((m) => (
@@ -115,7 +124,7 @@ export default function SettingsMembersPage() {
                       <p className="flex items-center gap-1.5 font-semibold text-ink-900">
                         <span className="min-w-0 truncate">{m.name}</span>
                         {m.id === user?.uid && (
-                          <span className="shrink-0 text-xs font-normal text-ink-400">(אתה)</span>
+                          <span className="shrink-0 text-xs font-normal text-ink-500">(אתה)</span>
                         )}
                         {m.role === 'admin' && (
                           <span className="shrink-0">

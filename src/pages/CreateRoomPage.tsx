@@ -55,7 +55,7 @@ export default function CreateRoomPage() {
   return (
     <>
       <TopBar title="יצירת חדר חדש" back="/onboarding" />
-      <PlainShell>
+      <PlainShell hasTopBar>
         <form onSubmit={handleSubmit} className="space-y-5 py-4" noValidate>
           <Input
             label="שם החדר"

@@ -130,7 +130,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
         </div>
       ) : step === 'pick' ? (
         <div className="p-5 pt-4">
-          <h2 id="report-item-title" className="pe-8 text-lg font-bold text-ink-900">
+          <h2 id="report-item-title" className="pe-12 text-lg font-bold text-ink-900">
             מה חסר בבית?
           </h2>
 
@@ -146,7 +146,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
               enterKeyHint="search"
               autoFocus
               className="w-full rounded-2xl border border-ink-200 bg-white/80 px-4 py-3.5
-                         text-[16px] shadow-sm backdrop-blur placeholder:text-ink-400
+                         text-[16px] shadow-sm backdrop-blur placeholder:text-ink-500
                          transition focus:border-brand-400 focus:outline-none
                          focus:ring-2 focus:ring-brand-500/25"
             />
@@ -197,7 +197,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
                     <span className="line-clamp-2 text-sm font-semibold leading-tight text-ink-900">
                       {p.name}
                     </span>
-                    <span className="num text-xs text-ink-400">{formatILS(p.price)}</span>
+                    <span className="num text-xs text-ink-500">{formatILS(p.price)}</span>
                   </button>
                 ))}
               </div>

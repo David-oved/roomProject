@@ -17,6 +17,7 @@ import { useToast } from '../store/ToastContext';
 import { useConfirm } from '../store/ConfirmContext';
 import { claimItem, deleteItem, unclaimItem } from '../services/itemService';
 import { formatILS, formatRelativeTime, formatTime } from '../lib/format';
+import { friendlyError } from '../lib/errors';
 import { useCatalog, type RoomProduct } from '../hooks/useCatalog';
 import {
   CATEGORY_EMOJI,
@@ -122,7 +123,9 @@ export default function ItemsPage() {
         ) : loading ? (
           <ListSkeleton rows={4} />
         ) : error && !fromCache ? (
-          <ErrorState message={error.message} onRetry={() => location.reload()} />
+          // friendlyError ולא error.message: הודעת RTDB הגולמית היא
+          // "permission_denied" — מחרוזת שלא אומרת למשתמש כלום.
+          <ErrorState message={friendlyError(error)} onRetry={() => location.reload()} />
         ) : items.length === 0 ? (
           <EmptyState
             icon={filter === 'done' ? '📦' : '🎉'}
@@ -220,7 +223,7 @@ function ItemCard({
           </p>
 
           {product && (
-            <p className="mt-1 text-xs text-ink-400">
+            <p className="mt-1 text-xs text-ink-500">
               מחיר משוער <span className="num font-medium text-ink-600">{formatILS(product.price)}</span>
               {product.unit && <span> · {product.unit}</span>}
             </p>

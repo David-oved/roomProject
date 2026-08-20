@@ -132,7 +132,7 @@ export function StaplesPicker({
               type="search"
               enterKeyHint="search"
               className="w-full rounded-xl border border-ink-200 bg-white ps-10 pe-3 py-3
-                         text-[16px] placeholder:text-ink-400 focus:border-brand-500
+                         text-[16px] placeholder:text-ink-500 focus:border-brand-500
                          focus:outline-none focus:ring-2 focus:ring-brand-500/30"
             />
             <span
@@ -312,7 +312,7 @@ function ProductRow({
 
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-ink-900">{product.name}</span>
-          <span className="text-xs text-ink-400">
+          <span className="text-xs text-ink-500">
             {showCategory && (
               <>
                 {CATEGORY_EMOJI[product.category]} {CATEGORY_LABELS[product.category]}

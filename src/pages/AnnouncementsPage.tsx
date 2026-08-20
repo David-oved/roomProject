@@ -8,7 +8,9 @@ import { useVisualViewportBounds } from '../hooks/useVisualViewportBounds';
 import { useAnnouncements } from '../hooks/useRoomData';
 import { sendAnnouncement } from '../services/announcementService';
 import { MegaphoneIcon, ChevronIcon } from '../components/ui/icons';
+import { ErrorState } from '../components/ui/EmptyState';
 import { formatSmartDate } from '../lib/format';
+import { friendlyError } from '../lib/errors';
 
 /**
  * הודעות שידור מהמנהל — כל חבר קורא, רק המנהל כותב. אותו דפוס פריסה
@@ -22,7 +24,7 @@ export default function AnnouncementsPage() {
   const { isOnline } = useConnection();
   const toast = useToast();
 
-  const { announcements, loading } = useAnnouncements();
+  const { announcements, loading, error, fromCache } = useAnnouncements();
   const sorted = useMemo(() => [...announcements].reverse(), [announcements]);
 
   const viewport = useVisualViewportBounds();
@@ -51,7 +53,17 @@ export default function AnnouncementsPage() {
   }
 
   return (
-    <div className="fixed inset-x-0 flex flex-col bg-ink-50" style={{ top: viewport.top, height: viewport.height }}>
+    // ‼️ left/width ולא inset-x-0 — ראו את ההסבר על זום-צביטה
+    // ב-useVisualViewportBounds.
+    <div
+      className="fixed flex flex-col bg-ink-50"
+      style={{
+        top: viewport.top,
+        left: viewport.left,
+        height: viewport.height,
+        width: viewport.width,
+      }}
+    >
       <header
         className="sticky top-0 z-10 flex shrink-0 items-center gap-2.5 border-b border-ink-200/70
                    bg-white/90 px-2 backdrop-blur-xl safe-x"
@@ -81,6 +93,8 @@ export default function AnnouncementsPage() {
           <div className="flex h-full items-center justify-center">
             <span className="h-6 w-6 animate-spin rounded-full border-2 border-ink-200 border-t-brand-500" />
           </div>
+        ) : error && !fromCache ? (
+          <ErrorState message={friendlyError(error)} onRetry={() => location.reload()} />
         ) : sorted.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
             <span className="grid h-12 w-12 place-items-center rounded-2xl bg-ink-100 text-ink-400">
@@ -97,7 +111,7 @@ export default function AnnouncementsPage() {
                 <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-ink-900">
                   {a.text}
                 </p>
-                <p className="mt-1.5 text-xs text-ink-400">
+                <p className="mt-1.5 text-xs text-ink-500">
                   {memberName(a.senderId)} · {a.sentAt ? formatSmartDate(a.sentAt) : ''}
                 </p>
               </li>
@@ -124,7 +138,7 @@ export default function AnnouncementsPage() {
               placeholder="הודעה לכל חברי החדר…"
               disabled={!isOnline}
               className="h-11 flex-1 rounded-full border border-ink-200 bg-ink-50 px-4 text-[15px]
-                         placeholder:text-ink-400 focus:border-brand-400 focus:bg-white
+                         placeholder:text-ink-500 focus:border-brand-400 focus:bg-white
                          focus:outline-none focus:ring-2 focus:ring-brand-500/25"
             />
             <button

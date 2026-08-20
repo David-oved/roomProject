@@ -34,7 +34,10 @@ export function TopBar({
             className="tap grid shrink-0 place-items-center rounded-full text-ink-500
                        transition hover:bg-ink-100 hover:text-ink-800"
           >
-            {/* ב-RTL החץ מצביע ימינה — התמונה מתהפכת עם כיוון הדף */}
+            {/* ‼️ ה-SVG *אינו* מתהפך לבד עם dir — אין לדפדפן שום מנגנון
+                כזה. ההיפוך כאן הוא rotate-180 מפורש, וזה מה שגורם לחץ
+                להצביע ימינה ב-RTL. ההערה הקודמת טענה את ההפך, ולפיה
+                הסרת ה-rotate-180 הייתה נראית כמו ניקוי בטוח. */}
             <ChevronIcon width={22} height={22} className="rotate-180" />
           </button>
         )}

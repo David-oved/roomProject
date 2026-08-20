@@ -105,7 +105,7 @@ export default function PendingApprovalPage() {
         </p>
 
         {data.requestedAt && (
-          <p className="text-xs text-ink-400">נשלח {formatRelativeTime(data.requestedAt)}</p>
+          <p className="text-xs text-ink-500">נשלח {formatRelativeTime(data.requestedAt)}</p>
         )}
 
         <div className="mt-6 w-full max-w-xs">
@@ -121,7 +121,7 @@ export default function PendingApprovalPage() {
           </Button>
         </div>
 
-        <p className="mt-4 max-w-xs text-xs leading-relaxed text-ink-400">
+        <p className="mt-4 max-w-xs text-xs leading-relaxed text-ink-500">
           אפשר לסגור את האפליקציה — הבקשה תישמר.
         </p>
       </div>

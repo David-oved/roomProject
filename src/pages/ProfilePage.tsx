@@ -21,7 +21,7 @@ export default function ProfilePage() {
   return (
     <>
       <TopBar title="החשבון שלי" back />
-      <PlainShell>
+      <PlainShell hasTopBar>
         <div className="space-y-6 py-4">
           <AccountSettings />
           <NotificationSettings />
@@ -46,7 +46,7 @@ export default function ProfilePage() {
             יציאה מהחשבון
           </Button>
 
-          <p className="text-center text-[11px] text-ink-400">
+          <p className="text-center text-[11px] text-ink-500">
             היציאה מנקה את כל הנתונים השמורים במכשיר
           </p>
         </div>

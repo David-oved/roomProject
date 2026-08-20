@@ -38,10 +38,18 @@ const Ctx = createContext<ToastApi>({
 
 export const useToast = () => useContext(Ctx);
 
+/**
+ * ‼️ הגוונים כאן נבחרו לפי יחס ניגודיות מדוד מול טקסט לבן, לא לפי העין:
+ *   warn   amber-500 = 2.15:1  →  amber-700 = 5.02:1
+ *          זה הגוון של טוסט "אין חיבור לאינטרנט" — ההודעה שהכי חשוב
+ *          שתיקרא, ובדיוק היא הייתה הכי פחות קריאה.
+ *   success emerald-600 = 3.77:1 → emerald-700 = 5.48:1
+ *   error   rose-600 = 4.70:1 ו-info ink-800 = 14.63:1 — עוברים, לא נגענו.
+ */
 const TONE_STYLES: Record<ToastTone, string> = {
-  success: 'bg-emerald-600 text-white',
+  success: 'bg-emerald-700 text-white',
   error: 'bg-rose-600 text-white',
-  warn: 'bg-amber-500 text-white',
+  warn: 'bg-amber-700 text-white',
   info: 'bg-ink-800 text-white',
 };
 

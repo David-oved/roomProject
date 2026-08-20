@@ -12,7 +12,7 @@ export function AppLogo({ showVersion = true }: { showVersion?: boolean }) {
       </div>
       <p className="text-lg font-bold tracking-tight text-brand-800">RoomMate</p>
       {showVersion && (
-        <p className="num text-[11px] text-ink-400">v{APP_VERSION}</p>
+        <p className="num text-[11px] text-ink-500">v{APP_VERSION}</p>
       )}
     </div>
   );

@@ -5,6 +5,7 @@ import { ToastProvider } from './store/ToastContext';
 import { ConfirmProvider } from './store/ConfirmContext';
 import { UpdateProvider } from './store/UpdateContext';
 import { UpdateNotice } from './components/system/UpdateNotice';
+import { RootErrorBoundary } from './components/system/ErrorBoundary';
 import { AppRoutes } from './router';
 import { isFirebaseConfigured } from './config/firebase';
 import SetupRequiredPage from './pages/SetupRequiredPage';
@@ -31,21 +32,30 @@ export default function App() {
     <UpdateProvider>
       <ToastProvider>
         <ConfirmProvider>
-          {isFirebaseConfigured ? (
-            <AuthProvider>
-              <ConnectionProvider>
-                <HashRouter>
-                  <AppRoutes />
-                </HashRouter>
-              </ConnectionProvider>
-            </AuthProvider>
-          ) : import.meta.env.DEV ? (
-            // בפיתוח: הוראות טכניות מפורטות
-            <SetupRequiredPage />
-          ) : (
-            // בייצור: הודעה ידידותית בלי שום פרט טכני
-            <ServiceUnavailablePage />
-          )}
+          {/*
+            ‼️ גבול השגיאה נמצא *בתוך* UpdateProvider ולא עוטף אותו, ו-
+            UpdateNotice נשאר מחוצה לו — מאותו טעם בדיוק שמתואר למעלה.
+            אם הגבול היה עוטף גם את מנגנון העדכון, קריסה הייתה מפילה יחד
+            איתה את פתח המילוט, והמשתמש היה נתקע בגרסה השבורה לנצח.
+            כך: גם אם כל האפליקציה קרסה, ההודעה על גרסה חדשה עדיין מוצגת.
+          */}
+          <RootErrorBoundary>
+            {isFirebaseConfigured ? (
+              <AuthProvider>
+                <ConnectionProvider>
+                  <HashRouter>
+                    <AppRoutes />
+                  </HashRouter>
+                </ConnectionProvider>
+              </AuthProvider>
+            ) : import.meta.env.DEV ? (
+              // בפיתוח: הוראות טכניות מפורטות
+              <SetupRequiredPage />
+            ) : (
+              // בייצור: הודעה ידידותית בלי שום פרט טכני
+              <ServiceUnavailablePage />
+            )}
+          </RootErrorBoundary>
 
           <UpdateNotice />
         </ConfirmProvider>

@@ -31,7 +31,7 @@ export default function SettingsPage() {
   return (
     <>
       <TopBar title="הגדרות" back={`/r/${roomCode}`} />
-      <PlainShell>
+      <PlainShell hasTopBar>
         <ul className="space-y-2 py-4">
           {CATEGORIES.map((c) => (
             <li key={c.key}>

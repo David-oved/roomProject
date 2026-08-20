@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
               אם קיים חשבון עבור <span className="num font-medium">{email}</span>, נשלח אליו
               קישור לאיפוס הסיסמה. הקישור תקף לשעה.
             </p>
-            <p className="mt-3 text-xs text-ink-400">
+            <p className="mt-3 text-xs text-ink-500">
               לא רואים את המייל? בדקו בתיקיית הספאם.
             </p>
             <Link to="/login" className="mt-6 block">

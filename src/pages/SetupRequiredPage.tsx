@@ -61,7 +61,7 @@ export default function SetupRequiredPage() {
           (Settings ← Secrets and variables ← Actions).
         </p>
 
-        <p className="mt-3 text-xs text-ink-400">
+        <p className="mt-3 text-xs text-ink-500">
           מדריך מלא: <span className="num">docs/02-firebase-setup.md</span>
         </p>
       </div>

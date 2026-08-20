@@ -41,7 +41,7 @@ export function TransferRequestSheet({
   return (
     <GlassModal open={!!task} onClose={onClose} labelledBy="transfer-task-title">
       <div className="p-5 pt-4">
-        <h2 id="transfer-task-title" className="pe-8 text-lg font-bold text-ink-900">
+        <h2 id="transfer-task-title" className="pe-12 text-lg font-bold text-ink-900">
           למי להעביר את "{task?.name}"?
         </h2>
         <p className="mt-1 text-xs text-ink-500">הבקשה תישלח לאישור — התור יעבור רק אם יאשר/תאשר.</p>
@@ -65,7 +65,7 @@ export function TransferRequestSheet({
                   <Avatar name={m.name} uid={m.id} src={m.avatar} size="xs" />
                   <span className="truncate text-sm font-medium text-ink-800">{m.name}</span>
                   {sendingTo === m.id && (
-                    <span className="num ms-auto text-xs text-ink-400">שולח…</span>
+                    <span className="num ms-auto text-xs text-ink-500">שולח…</span>
                   )}
                 </button>
               </li>

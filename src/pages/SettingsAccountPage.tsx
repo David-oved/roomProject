@@ -16,7 +16,7 @@ export default function SettingsAccountPage() {
   return (
     <>
       <TopBar title="חשבון" back={`/r/${roomCode}/settings`} />
-      <PlainShell>
+      <PlainShell hasTopBar>
         <div className="space-y-6 py-4">
           <AccountSettings />
           <Button

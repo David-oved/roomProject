@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import { AppShell } from '../components/layout/AppShell';
 import { TopBar } from '../components/layout/TopBar';
 import { Avatar } from '../components/ui/Avatar';
+import { ErrorState } from '../components/ui/EmptyState';
 import { ChatIcon } from '../components/ui/icons';
 import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
 import { useRtdbList } from '../hooks/useRtdb';
 import { countUnread, dmBasePath, generalChatPath } from '../services/chatService';
 import { formatRelativeTime } from '../lib/format';
+import { friendlyError } from '../lib/errors';
 import type { ChatMessage, WithId } from '../types/models';
 
 /**
@@ -18,10 +20,22 @@ import type { ChatMessage, WithId } from '../types/models';
  * קומפוננטה נפרדת לכל שורה עם hook קבוע אחד היא בדיוק התבנית הנכונה.
  */
 export default function ChatPage() {
-  const { roomCode, metadata, activeMembers, onlineMemberIds } = useRoom();
+  const { roomCode, metadata, activeMembers, onlineMemberIds, error, fromCache } = useRoom();
   const { user } = useAuth();
 
   const others = activeMembers.filter((m) => m.id !== user?.uid);
+
+  // ‼️ רשימת השיחות נגזרת כולה מרשימת חברי החדר. כשקריאת החדר נכשלת
+  // (למשל אחרי הסרה מהחדר) activeMembers מתרוקן — ובלי הבדיקה הזו המסך
+  // מציג רק את הצ'אט הכללי, כאילו פשוט אין עם מי לדבר.
+  if (error && !fromCache) {
+    return (
+      <AppShell>
+        <TopBar title="צ'אט" subtitle={metadata?.name} />
+        <ErrorState message={friendlyError(error)} onRetry={() => location.reload()} />
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>
@@ -111,13 +125,13 @@ function ConversationRow({
             {title}
           </span>
           {last?.sentAt && (
-            <span className="shrink-0 text-[11px] text-ink-400">
+            <span className="shrink-0 text-[11px] text-ink-500">
               {formatRelativeTime(last.sentAt)}
             </span>
           )}
         </div>
         <div className="mt-0.5 flex items-center justify-between gap-2">
-          <span className={`truncate text-xs ${unread > 0 ? 'font-medium text-ink-700' : 'text-ink-400'}`}>
+          <span className={`truncate text-xs ${unread > 0 ? 'font-medium text-ink-700' : 'text-ink-500'}`}>
             {loading ? '' : last ? (last.senderId === myUid ? `אתה: ${last.text}` : last.text) : subtitle ?? 'אין הודעות עדיין'}
           </span>
           {unread > 0 && (
