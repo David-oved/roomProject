@@ -85,19 +85,33 @@
         // אין עריכה ואין מחיקה מהלקוח — כדי שאי אפשר יהיה לשנות התראה
         // שכבר בתור.
         //
-        // ‼️ תוקן: audience='user' דרך הענף הרגיל (כל חבר פעיל בחדר) חייב
-        // שה-targetUid יהיה חבר (גם אם הוסר) של אותו חדר בדיוק, או שהכותב
-        // עצמו יהיה מנהל החדר. בלי זה, כל משתמש מחובר שהוא חבר בחדר כלשהו
-        // (אפילו חדר משלו) יכול היה לשלוח התראת פוש מזויפת לכל uid שהוא
-        // מכיר — כולל למשתמשים בחדרים אחרים לגמרי, פשוט על ידי ידיעת ה-uid
-        // שלהם (שנחשף למשל דרך שדה createdBy בקטלוג הגלובלי).
-        ".write": "auth != null && !data.exists() && newData.exists() && ((root.child('rooms/' + newData.child('roomCode').val() + '/members/' + auth.uid + '/status').val() === 'active' && (newData.child('audience').val() === 'room' || root.child('rooms/' + newData.child('roomCode').val() + '/members/' + newData.child('targetUid').val()).exists() || root.child('rooms/' + newData.child('roomCode').val() + '/metadata/adminId').val() === auth.uid)) || (newData.child('audience').val() === 'user' && newData.child('targetUid').val() === root.child('rooms/' + newData.child('roomCode').val() + '/metadata/adminId').val() && root.child('rooms/' + newData.child('roomCode').val() + '/pendingRequests/' + auth.uid + '/status').val() === 'pending'))",
+        // ‼️ תוקן (סבב 2): audience='user' דרך הענף הרגיל (כל חבר פעיל בחדר)
+        // חייב שה-targetUid יהיה חבר (גם אם הוסר) של אותו חדר בדיוק.
+        //
+        // הגרסה הקודמת הוסיפה כאן חלופה "או שהכותב הוא מנהל החדר" — וזה
+        // ביטל את ההגבלה לגמרי: כל משתמש יכול ליצור חדר משלו ולהיות המנהל
+        // שלו, ומשם לשגר התראת פוש מזויפת לכל uid שהוא מכיר (uid נחשף למשל
+        // דרך createdBy בקטלוג הגלובלי). "מנהל" אינו הרשאה נדירה במערכת
+        // הזו — הוא ברירת המחדל של כל יוצר חדר.
+        //
+        // מה שכן נשאר למנהל, בצמצום: להודיע למי שיש לו רשומת pendingRequests
+        // פתוחה בחדר שלו. זה נדרש ל-rejectJoinRequest — הנדחה כבר אינו
+        // ולא היה חבר, ובלי החריג הזה הוא לא היה מקבל את הודעת הדחייה.
+        // הצמצום אמיתי כי pendingRequests/$uid נסגר עכשיו ליצירה בידי
+        // המנהל (ראו שם) — כלומר היעד חייב להיות מישהו שביקש להצטרף בעצמו.
+        ".write": "auth != null && !data.exists() && newData.exists() && ((root.child('rooms/' + newData.child('roomCode').val() + '/members/' + auth.uid + '/status').val() === 'active' && (newData.child('audience').val() === 'room' || root.child('rooms/' + newData.child('roomCode').val() + '/members/' + newData.child('targetUid').val()).exists() || (root.child('rooms/' + newData.child('roomCode').val() + '/metadata/adminId').val() === auth.uid && root.child('rooms/' + newData.child('roomCode').val() + '/pendingRequests/' + newData.child('targetUid').val()).exists()))) || (newData.child('audience').val() === 'user' && newData.child('targetUid').val() === root.child('rooms/' + newData.child('roomCode').val() + '/metadata/adminId').val() && root.child('rooms/' + newData.child('roomCode').val() + '/pendingRequests/' + auth.uid + '/status').val() === 'pending'))",
         ".validate": "newData.hasChildren(['roomCode', 'title', 'body', 'audience', 'priority', 'createdAt'])",
 
         "roomCode":   { ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{6}$/)" },
         "title":      { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 60" },
         "body":       { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 160" },
-        "url":        { ".validate": "newData.isString() && newData.val().length <= 120" },
+        // ‼️ תוקן: הערך הזה מגיע ל-window.location.hash ב-main.tsx (דרך
+        // ההתראה וה-Service Worker). מחרוזת חופשית אפשרה להזריק לשם כל דבר.
+        // עכשיו: נתיב פנימי בלבד — נפתח ב-/ , תו שני שאינו / (חוסם
+        // "//evil.example" יחסי-פרוטוקול), ובלי ':' ולכן בלי javascript:.
+        // כל הקריאות באפליקציה מתאימות: /r/{code}/items , /onboarding ,
+        // /r/{code}/chat/dm/{uid} , /r/{code}/settings/members .
+        "url":        { ".validate": "newData.isString() && newData.val().length <= 120 && newData.val().matches(/^\\/([A-Za-z0-9_-][A-Za-z0-9\\/_-]*)?$/)" },
         "tag":        { ".validate": "newData.isString() && newData.val().length <= 40" },
         "audience":   { ".validate": "newData.val().matches(/^(room|user)$/)" },
         "priority":   { ".validate": "newData.val().matches(/^(now|digest)$/)" },
@@ -237,7 +251,11 @@
             ".validate": "newData.hasChildren(['name', 'email', 'joinedAt', 'status', 'role'])",
             "name":     { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 40" },
             "email":    { ".validate": "newData.isString() && newData.val().length <= 254" },
-            "avatar":   { ".validate": "newData.isString() && newData.val().length <= 1000" },
+            // ‼️ תוקן: יושר לכלל הקנוני של users/$uid/avatar (שורה ~26) —
+            // חובה https://. קודם התקבלה כל מחרוזת, ולכן חבר יכול היה לשתול
+            // כאן URL של משואת מעקב ("http://tracker/?u=" או data:) שנטענת
+            // בדפדפן של **כל** שותף לחדר בכל רינדור של רשימת החברים.
+            "avatar":   { ".validate": "newData.isString() && newData.val().matches(/^https:\\/\\/.+/) && newData.val().length <= 1000" },
             "joinedAt": { ".validate": "newData.isNumber()" },
             "status":   { ".validate": "newData.val().matches(/^(active|removed)$/)" },
             "role":     { ".validate": "newData.val().matches(/^(admin|member)$/)" },
@@ -263,13 +281,25 @@
           "$uid": {
             // המבקש קורא וכותב רק את הבקשה של עצמו, ורק אם אינו כבר חבר.
             ".read": "auth != null && auth.uid === $uid",
-            ".write": "auth != null && ((auth.uid === $uid && (!data.exists() || data.child('status').val() !== 'approved') && root.child('rooms/' + $code + '/metadata').exists() && !root.child('rooms/' + $code + '/members/' + auth.uid).exists()) || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid)",
+            // ‼️ תוקן: ענף המנהל הוגבל ל-(data.exists() || !newData.exists()) —
+            // כלומר המנהל מעדכן בקשה קיימת (approved/rejected) ומוחק בקשות,
+            // אבל **לא יוצר** בקשה חדשה בשם uid זר. בלי ההגבלה הזו המנהל היה
+            // יכול לשתול pendingRequests/<קורבן> ואז "להודיע" לו — מה שהיה
+            // עוקף בשני צעדים את ההגבלה החדשה ב-outbox.
+            // ה-(!newData.exists()) חיוני: removeMember/leaveRoom מוחקים את
+            // הנתיב הזה גם כשאין בו כלום, ומחיקה של צומת שלא קיים חייבת
+            // להישאר מותרת — אחרת כל הכתיבה האטומית שסביבה נכשלת.
+            ".write": "auth != null && ((auth.uid === $uid && (!data.exists() || data.child('status').val() !== 'approved') && root.child('rooms/' + $code + '/metadata').exists() && !root.child('rooms/' + $code + '/members/' + auth.uid).exists()) || (root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid && (data.exists() || !newData.exists())))",
 
             ".validate": "newData.hasChildren(['userId', 'displayName', 'requestedAt', 'status'])",
             "userId":      { ".validate": "newData.val() === $uid" },
             "displayName": { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 40" },
             "email":       { ".validate": "newData.isString() && newData.val().length <= 254" },
-            "avatar":      { ".validate": "newData.isString() && newData.val().length <= 1000" },
+            // ‼️ תוקן: כמו ב-members/avatar. כאן זה חמור יותר — בקשת הצטרפות
+            // יכול לשלוח **זר** שיודע רק את קוד החדר, והתמונה נטענת אוטומטית
+            // במסך "בקשות ממתינות" של המנהל. משואה כזו הייתה מדליפה למי
+            // שאינו חבר בחדר את ה-IP, ה-User-Agent ומועד הצפייה של המנהל.
+            "avatar":      { ".validate": "newData.isString() && newData.val().matches(/^https:\\/\\/.+/) && newData.val().length <= 1000" },
             "requestedAt": { ".validate": "newData.isNumber()" },
             "respondedAt": { ".validate": "newData.isNumber()" },
             "status":      { ".validate": "newData.val().matches(/^(pending|approved|rejected)$/) && (auth.uid === $uid ? newData.val() === 'pending' : true)" },
@@ -353,8 +383,13 @@
             //         עצמו (אישור-עצמי — ברירת המחדל הנוכחית, ללא אישור מנהל).
             // עדכון : המנהל משנה סטטוס — אך amount ו-boughtBy קפואים לנצח.
             //         הקונה עורך רק כל עוד pending/rejected, ומחזיר ל-pending.
-            // מחיקה : רק כשעדיין pending.
-            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && newData.child('boughtBy').val() === auth.uid && (newData.child('status').val() === 'pending' || (newData.child('status').val() === 'approved' && newData.child('approvedBy').val() === auth.uid))) || (data.exists() && newData.exists() && ((root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid && newData.child('amount').val() === data.child('amount').val() && newData.child('boughtBy').val() === data.child('boughtBy').val()) || (data.child('boughtBy').val() === auth.uid && (data.child('status').val() === 'pending' || data.child('status').val() === 'rejected') && newData.child('status').val() === 'pending'))) || (data.exists() && !newData.exists() && data.child('status').val() === 'pending' && (data.child('boughtBy').val() === auth.uid || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid)))",
+            // מחיקה : הקונה — רק כל עוד pending.  המנהל — בכל סטטוס.
+            //         ‼️ תוקן: קודם גם המנהל היה חסום ל-pending בלבד. מכיוון
+            //         שקניות נכנסות ישר כ-approved (אישור עצמי, ראו ההערה
+            //         ב-purchaseService.createPurchase), רשומה שגויה או
+            //         זדונית נכנסה כ-approved ואז **אף אחד** לא יכול היה
+            //         להסיר אותה — היא נשארה במאזן לנצח. זו פתחת החירום.
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && newData.child('boughtBy').val() === auth.uid && (newData.child('status').val() === 'pending' || (newData.child('status').val() === 'approved' && newData.child('approvedBy').val() === auth.uid))) || (data.exists() && newData.exists() && ((root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid && newData.child('amount').val() === data.child('amount').val() && newData.child('boughtBy').val() === data.child('boughtBy').val()) || (data.child('boughtBy').val() === auth.uid && (data.child('status').val() === 'pending' || data.child('status').val() === 'rejected') && newData.child('status').val() === 'pending'))) || (data.exists() && !newData.exists() && (root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid || (data.child('status').val() === 'pending' && data.child('boughtBy').val() === auth.uid))))",
 
             ".validate": "newData.hasChildren(['boughtBy', 'amount', 'date', 'splitMethod', 'status', 'splitBetween', 'shares'])",
             "itemId":   { ".validate": "newData.isString() && newData.val().length <= 40" },
@@ -389,6 +424,25 @@
             // מחזורית בצד שרת (יש כבר Cloudflare Worker + GitHub Action
             // עם הרשאות Admin SDK בפרויקט לצורך כזה) — לא נבנה כאן,
             // מסומן לדיון מוצרי נפרד.
+            //
+            // ‼️ נבדק ונדחה במפורש (סבב אבטחה, 2026-08): "חלקו של הקונה
+            // חייב להיות > 0 כשיש יותר ממשתתף אחד". שתי סיבות שהוא לא
+            // מיושם, ואל תוסיפו אותו בלי לקרוא אותן:
+            //
+            //  1. הוא **שובר זרימה לגיטימית**. ב-MarkBoughtSheet הקונה יכול
+            //     להסיר את עצמו מרשימת המשתתפים ('קניתי לשני השותפים, חצי
+            //     חצי, אני לא בפנים'). אז boughtBy כלל לא מופיע ב-shares.
+            //     בנוסף splitEqual של סכום זעיר בין הרבה משתתפים (2 אגורות
+            //     לשלושה) מחזיר 0 לאחד מהם באופן תקין לחלוטין.
+            //  2. הוא **לא מוסיף אבטחה**. תוקף שרוצה לחייב שותף בסכום מלא
+            //     פשוט לא יכלול את עצמו ב-splitBetween — בדיוק כמו הזרימה
+            //     הלגיטימית. כלומר הבדיקה נעקפת בלחיצה אחת.
+            //
+            // מסקנת האמת: הגבול כאן אינו טכני אלא מוצרי — כל חבר פעיל רשאי
+            // לרשום קנייה שמחייבת שותף, כי קניות נכנסות בלי אישור מנהל.
+            // מה שכן נסגר עכשיו: המנהל יכול למחוק רשומה approved (ראו .write
+            // למעלה), ולכן יש שוב דרך לתקן. אכיפת sum(shares) === amount
+            // שייכת ל-Worker/Action עם Admin SDK, לא לכללים.
             "shares": {
               ".validate": "newData.hasChildren() && (newData.parent().child('splitMethod').val() !== 'covered' || newData.child(newData.parent().child('boughtBy').val()).val() === newData.parent().child('amount').val())",
               "$uid": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= newData.parent().parent().child('amount').val() && newData.val() % 1 === 0 && newData.parent().parent().child('splitBetween/' + $uid).val() === true" }
@@ -422,13 +476,20 @@
             // ‼️ תוקן: to לא היה קפוא בענף העדכון (רק amount/from) — הנמען
             // שמאשר קבלה יכל תיאורטית להפנות את ה-to למישהו אחר תוך כדי
             // האישור. עכשיו קפוא גם הוא.
-            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && (newData.child('from').val() === auth.uid || newData.child('to').val() === auth.uid)) || (data.exists() && newData.exists() && data.child('to').val() === auth.uid && newData.child('amount').val() === data.child('amount').val() && newData.child('from').val() === data.child('from').val() && newData.child('to').val() === data.child('to').val()))",
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && !newData.child('confirmedBy').exists() && (newData.child('from').val() === auth.uid || newData.child('to').val() === auth.uid)) || (data.exists() && newData.exists() && data.child('to').val() === auth.uid && newData.child('amount').val() === data.child('amount').val() && newData.child('from').val() === data.child('from').val() && newData.child('to').val() === data.child('to').val()))",
             ".validate": "newData.hasChildren(['from', 'to', 'amount', 'date'])",
             "from":        { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val()).exists()" },
             "to":          { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val()).exists() && newData.val() !== newData.parent().child('from').val()" },
             "amount":      { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 10000000 && newData.val() % 1 === 0" },
             "date":        { ".validate": "newData.isNumber()" },
-            "confirmedBy": { ".validate": "newData.val() === newData.parent().child('to').val()" },
+            // ‼️ תוקן: הכלל הקודם בדק רק שה‏ערך שווה ל-to — ולא שמי שכותב
+            // אותו הוא to. חייב (from) יכול היה לכתוב confirmedBy=<uid של
+            // הנושה> ולמחוק בכך את החוב שלו בלי שהנושה ראה שקל.
+            // עכשיו נדרשות שתי הבדיקות יחד. בנוסף, ענף היצירה למעלה אוסר
+            // confirmedBy לא-null ביצירה — createSettlement כבר כותב null
+            // (src/services/purchaseService.ts) ולכן שום זרימה לגיטימית
+            // לא נשברת; האישור מגיע תמיד ככתיבה שנייה של המקבל.
+            "confirmedBy": { ".validate": "newData.val() === auth.uid && newData.val() === newData.parent().child('to').val()" },
             "$other":      { ".validate": false }
           }
         },
@@ -443,7 +504,19 @@
             ".validate": "newData.hasChildren(['type', 'actorId', 'text', 'createdAt'])",
             "type":      { ".validate": "newData.val().matches(/^(item_added|item_claimed|item_bought|purchase_made|purchase_approved|purchase_rejected|member_joined|member_removed|settlement|task_added|task_assigned|task_transfer)$/)" },
             "actorId":   { ".validate": "newData.val() === auth.uid || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid" },
-            "actorName": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            // ‼️ תוקן: השדה הזה הוא מה שמוצג בפועל למשתמש (NotificationsPage),
+            // וכמחרוזת חופשית חבר רגיל יכול היה לפרסם התראה בשם "מנהל החדר".
+            // עכשיו הוא חייב להתאים לשם האמיתי של מי שרשום ב-actorId.
+            //
+            // שני מקורות מותרים, ובכוונה: הלקוח שולח לפעמים את
+            // users/$uid/displayName (itemService, taskService, purchaseService)
+            // ולפעמים את rooms/$code/members/$uid/name (BalancesPage). השניים
+            // מסונכרנים ב-changeDisplayName, אבל יש חלון אמיתי שבו הם נבדלים:
+            // מי ששינה שם בזמן שבקשת ההצטרפות שלו ממתינה — ה-fan-out מדלג
+            // עליו כי users/$uid/rooms/$code עדיין לא קיים, ו-members/$uid/name
+            // נכתב מ-request.displayName הישן. דרישת התאמה לאחד בלבד הייתה
+            // חוסמת לו כל דיווח מוצר עד לשינוי שם נוסף.
+            "actorName": { ".validate": "newData.isString() && newData.val().length <= 40 && (newData.val() === root.child('rooms/' + $code + '/members/' + newData.parent().child('actorId').val() + '/name').val() || newData.val() === root.child('users/' + newData.parent().child('actorId').val() + '/displayName').val())" },
             "text":      { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200" },
             "entityId":  { ".validate": "newData.isString() && newData.val().length <= 40" },
             "createdAt": { ".validate": "newData.isNumber()" },
@@ -555,6 +628,17 @@
             // מדי מכדי להיסגר עמוק יותר), אבל validate לא "מדלג" ככה —
             // חייב לעמוד בו בעצמו לכל שדה. בלעדיו חבר אחד היה יכול לסמן
             // readBy/deliveredTo בשם חבר אחר, ולזייף וי כחול על ההודעות שלו.
+            //
+            // ‼️ פער ידוע שנשאר, ובמכוון: validate אינו רץ על **מחיקה**,
+            // ולכן חבר יכול למחוק את readBy/<שותף> ולהעלים לו וי כחול.
+            // ההצעה "להוסיף .write ברמת readBy/$uid" **לא עובדת**: ב-RTDB
+            // הרשאות write מדורגות כלפי מטה בלבד — הרשאה שניתנה ב-$msgId
+            // כבר מכסה את כל הצאצאים, ואי אפשר לשלול אותה עמוק יותר. כלל
+            // כזה היה קוד מת שנראה כמו הגנה. אין ניסוח שכן חוסם את זה,
+            // כי אי אפשר לדרוש "המפתחות הקיימים נשמרו" על מפתחות דינמיים.
+            // ההשפעה קוסמטית בלבד — **זיוף** קבלה (ההודעה נקראה) חסום, רק
+            // מחיקה אפשרית. סגירה אמיתית = להעביר readBy לצומת נפרד שבו
+            // ה-.write עצמו הוא לפי $uid, שינוי סכימה מחוץ להיקף התיקון.
             "deliveredTo": { "$uid": { ".validate": "newData.isBoolean() && newData.val() === true && $uid === auth.uid" } },
             "readBy":      { "$uid": { ".validate": "newData.isBoolean() && newData.val() === true && $uid === auth.uid" } },
             "$other":      { ".validate": false }

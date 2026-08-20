@@ -4,64 +4,35 @@ rules_version = '2';
 //  RoomMate — Firebase Storage Security Rules
 //  פריסה: firebase deploy --only storage
 //
-//  ⚠️ מגבלה ידועה: כללי Storage אינם יכולים לקרוא מ-Realtime Database,
-//     ולכן אי אפשר לאמת "האם המשתמש חבר בחדר הזה?" ברמת האחסון.
-//     ההגנה כאן: (1) חובה להיות מחובר, (2) הנתיב מכיל pushId אקראי
-//     בן 20 תווים שלא ניתן לניחוש. מי שאין לו את הקישור לא יגיע לקובץ.
-//     להקשחה מלאה בשלב מאוחר: Cloud Function שמנפיקה signed URLs.
+//  ‼️ הקובץ הזה נעול במכוון. האפליקציה **אינה משתמשת** ב-Firebase
+//     Storage בכלל — כל העלאת תמונה עוברת ב-Cloudinary. ראו
+//     src/services/avatarService.ts (POST ל-api.cloudinary.com,
+//     ה-secure_url נשמר ב-users/{uid}/avatar) ואת ההערה ב-.env.example:
+//     Firebase Storage מצריך תוכנית Blaze עם כרטיס אשראי, Cloudinary לא.
+//
+//     אומת בסבב האבטחה (2026-08):
+//       grep -rn "firebasestorage\|firebase/storage\|getStorage" src worker scripts
+//     מחזיר אפס תוצאות. ההתייחסות היחידה היא storageBucket ב-
+//     src/config/firebase.ts — פרמטר קונפיגורציה שלא נעשה בו שימוש.
+//
+//  מה היה כאן קודם ולמה זו הייתה בעיה:
+//     הכלל roomPhotos/{roomCode}/{fileName} התיר write **ו-delete** לכל
+//     משתמש מחובר, בלי שום קשר לחדר. כלומר כל בעל חשבון באפליקציה יכול
+//     היה למחוק או להחליף תמונות של כל חדר שקוד שלו ידוע לו, ולמלא את
+//     הדלי בתוכן שרירותי על חשבון הפרויקט. גם avatars/ ו-receipts/ היו
+//     פתוחים לקריאה לכל משתמש מחובר. אין סיבה להשאיר משטח תקיפה פתוח
+//     לשירות שאף שורת קוד לא נוגעת בו.
+//
+//  ⚠️ אם וכאשר Storage ייכנס לשימוש: אל תחזירו את הכללים הישנים.
+//     כתבו אותם מחדש עם קשר בעלות מפורש (request.auth.uid == userId),
+//     הגבלת contentType וגודל, וזכרו את המגבלה המובנית — כללי Storage
+//     אינם יכולים לקרוא מ-Realtime Database, ולכן "האם המשתמש חבר
+//     בחדר?" לא ניתן לאכיפה כאן. הפתרון הנכון לזה הוא Cloud Function
+//     שמנפיקה signed URLs, לא נתיב "קשה לניחוש".
 // ============================================================
 
 service firebase.storage {
   match /b/{bucket}/o {
-
-    // ---------- פונקציות עזר ----------
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isImage() {
-      return request.resource.contentType.matches('image/(jpeg|png|webp|heic)');
-    }
-
-    function underSize(mb) {
-      return request.resource.size < mb * 1024 * 1024;
-    }
-
-    // ---------- תמונות פרופיל ----------
-    // avatars/{userId}/{fileName}
-    // כל משתמש מחובר יכול לראות אווטארים (הם מוצגים לחברי החדר),
-    // אבל רק הבעלים יכול להעלות או למחוק את שלו.
-    match /avatars/{userId}/{fileName} {
-      allow read:   if isSignedIn();
-      allow write:  if isSignedIn()
-                    && request.auth.uid == userId
-                    && isImage()
-                    && underSize(2);          // עד 2MB
-      allow delete: if isSignedIn() && request.auth.uid == userId;
-    }
-
-    // ---------- חשבוניות ----------
-    // receipts/{roomCode}/{userId}/{pushId}.jpg
-    // רק מי שהעלה יכול לכתוב או למחוק. הקריאה פתוחה למשתמשים מחוברים,
-    // אבל הנתיב כולל pushId אקראי — ראו ההערה בראש הקובץ.
-    match /receipts/{roomCode}/{userId}/{fileName} {
-      allow read:   if isSignedIn();
-      allow create: if isSignedIn()
-                    && request.auth.uid == userId
-                    && isImage()
-                    && underSize(5);          // עד 5MB
-      allow update: if false;                  // חשבונית לא משתנה — מעלים חדשה
-      allow delete: if isSignedIn() && request.auth.uid == userId;
-    }
-
-    // ---------- תמונות חדר ----------
-    // roomPhotos/{roomCode}/{fileName} — נכתב ע"י המנהל (נאכף גם בקוד ובכללי ה-DB)
-    match /roomPhotos/{roomCode}/{fileName} {
-      allow read:  if isSignedIn();
-      allow write: if isSignedIn() && isImage() && underSize(3);
-    }
-
-    // ---------- כל השאר חסום ----------
     match /{allPaths=**} {
       allow read, write: if false;
     }

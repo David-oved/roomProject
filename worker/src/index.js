@@ -179,27 +179,59 @@ async function accessToken(env) {
   return tokenCache.token;
 }
 
+/**
+ * מקודדת נתיב DB מקטע-מקטע.
+ *
+ * ‼️ בלי זה, ערך שמגיע מגוף הבקשה (entryId) נדבק לכתובת כמו שהוא.
+ * "../users/<uid>" היה בורח מ-outbox/, ו-fetch מנרמל את ".." בעצמו —
+ * כלומר קריאה לכל נתיב במסד עם טוקן של חשבון השירות, שעוקף את כללי
+ * האבטחה לגמרי. גם בלי לראות את התוכן, ההבדל בין 200 ל-404 הפך את
+ * הנקודה הזו לאורקל קיום על נתיבים פרטיים.
+ *
+ * encodeURIComponent לבדו לא מספיק: הוא **לא** מקודד נקודות, ולכן
+ * ".." שורד אותו. לכן מקטעים ריקים, "." ו-".." נפסלים במפורש.
+ */
+const dbPath = (path) =>
+  String(path)
+    .split('/')
+    .map((seg) => {
+      if (seg === '' || seg === '.' || seg === '..') {
+        throw new Error('מקטע נתיב פסול');
+      }
+      return encodeURIComponent(seg);
+    })
+    .join('/');
+
+/**
+ * ‼️ הטוקן עובר בכותרת Authorization ולא ב-query string.
+ * מחרוזות שאילתה נכתבות ללא הצפנה ללוגים של פרוקסי, CDN ושרת — טוקן
+ * חשבון שירות שנוחת בלוג הוא טוקן דלוף.
+ */
+const dbAuthHeaders = async (env) => ({
+  authorization: `Bearer ${await accessToken(env)}`,
+});
+
+const dbUrl = (env, path) => `${env.FIREBASE_DATABASE_URL}/${dbPath(path)}.json`;
+
 const dbGet = async (env, path) => {
-  const token = await accessToken(env);
-  const res = await fetch(`${env.FIREBASE_DATABASE_URL}/${path}.json?access_token=${token}`);
+  const res = await fetch(dbUrl(env, path), { headers: await dbAuthHeaders(env) });
   if (!res.ok) throw new Error(`קריאה מ-${path} נכשלה (${res.status})`);
   return res.json();
 };
 
 const dbPatch = async (env, path, value) => {
-  const token = await accessToken(env);
-  await fetch(`${env.FIREBASE_DATABASE_URL}/${path}.json?access_token=${token}`, {
+  await fetch(dbUrl(env, path), {
     method: 'PATCH',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...(await dbAuthHeaders(env)) },
     body: JSON.stringify(value),
   });
 };
 
 const dbDelete = async (env, path) => {
-  const token = await accessToken(env);
-  await fetch(`${env.FIREBASE_DATABASE_URL}/${path}.json?access_token=${token}`, {
-    method: 'DELETE',
-  });
+  // ‼️ תוקן דרך אגב: הגרסה הקודמת שלפה טוקן ואז לא צירפה אותו לבקשה
+  // בכלל. המחיקה יצאה אנונימית, כללי האבטחה דחו אותה בשקט, ומנויי פוש
+  // מתים (404/410) לא נוקו לעולם — ניסינו לשלוח אליהם שוב ושוב.
+  await fetch(dbUrl(env, path), { method: 'DELETE', headers: await dbAuthHeaders(env) });
 };
 
 /* ───────────────────── שליחה ───────────────────── */
@@ -282,6 +314,14 @@ export default {
       const { idToken, entryId } = await request.json();
       if (!idToken || !entryId) return json(env, { error: 'חסרים פרטים' }, 400);
 
+      // ‼️ entryId מגיע מגוף הבקשה ונכנס לנתיב. חייב להיות מפתח push
+      // של Firebase בדיוק — מקף ועוד 19 תווים מהאלפבית של push.
+      // הבדיקה כאן ולא רק ב-dbPath: כך בקשה פסולה נעצרת לפני שנגענו
+      // במסד בכלל, ומקבלת 400 ברור במקום 500.
+      if (typeof entryId !== 'string' || !/^-[A-Za-z0-9_-]{19}$/.test(entryId)) {
+        return json(env, { error: 'מזהה רשומה פסול' }, 400);
+      }
+
       // ① מי אתה
       //    כשל אימות מוחזר כ-401 ולא כ-500: זו לא תקלה אצלנו אלא
       //    בקשה פסולה, ו-500 היה מעודד את הלקוח לנסות שוב לחינם.
@@ -309,7 +349,21 @@ export default {
       // ⑤ מי הנמענים
       let recipients = [];
       if (entry.audience === 'user') {
-        if (entry.targetUid) recipients = [entry.targetUid];
+        if (entry.targetUid) {
+          // ‼️ הגנה לעומק מול כללי ה-DB (ראו outbox ב-database.rules.json).
+          // גם אם כלל נשבר או נפרס בגרסה ישנה, נמען יחיד חייב להיות שייך
+          // לחדר שההתראה מדברת עליו: חבר (גם 'removed' — הוא צריך לקבל
+          // את ההודעה שהוסר) או בעל בקשת הצטרפות (כדי שהודעת הדחייה
+          // ב-rejectJoinRequest תגיע). כל השאר = 403.
+          const [member, pending] = await Promise.all([
+            dbGet(env, `rooms/${entry.roomCode}/members/${entry.targetUid}`),
+            dbGet(env, `rooms/${entry.roomCode}/pendingRequests/${entry.targetUid}`),
+          ]);
+          if (!member && !pending) {
+            return json(env, { error: 'הנמען אינו שייך לחדר' }, 403);
+          }
+          recipients = [entry.targetUid];
+        }
       } else {
         const members = await dbGet(env, `rooms/${entry.roomCode}/members`);
         recipients = Object.entries(members || {})

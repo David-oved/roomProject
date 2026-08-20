@@ -2,6 +2,86 @@
 <html lang="he" dir="rtl">
   <head>
     <meta charset="UTF-8" />
+
+    <!--
+      ═══════════════════════════════════════════════════════════════
+        Content-Security-Policy
+      ═══════════════════════════════════════════════════════════════
+
+      חייב להיות ה-meta הראשון אחרי charset: מדיניות ב-meta חלה רק על
+      משאבים שמוצהרים **אחריה**. אם היא תרד מתחת ל-<link> של הפונטים,
+      הפונטים כבר יהיו בדרך והמדיניות לא תחול עליהם.
+
+      כל מקור כאן נספר מהקוד בפועל, לא מהניחוש:
+        fonts.googleapis.com / fonts.gstatic.com  ← ה-<link> למטה
+        *.googleapis.com                          ← Firebase Auth
+                                                    (identitytoolkit,
+                                                     securetoken)
+        *.firebasedatabase.app / *.firebaseio.com ← RTDB. חובה גם wss:
+                                                    — ה-SDK עובר ל-
+                                                    WebSocket מיד אחרי
+                                                    ה-handshake, ובלי
+                                                    זה החדר לא נטען.
+        api.cloudinary.com                        ← העלאת אווטאר
+                                                    (avatarService.ts)
+        res.cloudinary.com                        ← הצגת האווטאר שנשמר
+        firebasestorage.googleapis.com            ← אווטארים היסטוריים
+                                                    מלפני המעבר ל-
+                                                    Cloudinary. עדיין
+                                                    יש כאלה בנתונים.
+        *.workers.dev                             ← ה-Worker של הפוש
+                                                    (VITE_PUSH_ENDPOINT,
+                                                    worker/wrangler.toml
+                                                    name = roommate-push)
+        127.0.0.1 / localhost                     ← אמולטורי Firebase
+                                                    בפיתוח. אותו קובץ
+                                                    HTML מוגש גם ב-dev,
+                                                    ובלי זה `npm run emu`
+                                                    מת.
+
+      ⚠️ אם ה-Worker יעבור לדומיין מותאם — להוסיף אותו ל-connect-src,
+         אחרת הפוש המיידי ייחסם. (לא נפילה: ההתראה עדיין תצא תוך 5
+         דקות מה-GitHub Action, ראו worker/src/index.js.)
+
+      'unsafe-inline' ב-script-src נדרש לסקריפט המילוט שבתחתית הקובץ.
+      הוא חייב להיות inline מעצם תפקידו — הוא רץ כשקוד ה-Service Worker
+      שבור, ולכן אסור לו להיות תלוי בשום קובץ חיצוני.
+      ב-style-src נדרש בגלל style={{...}} של React ותוספות זמן-ריצה.
+
+      ⚠️ frame-ancestors **מתעלמים ממנו** ב-meta (כך בתקן; רק
+         report-uri ו-sandbox חולקים את הגורל הזה). הוא נשאר כאן
+         כתיעוד כוונה — לאכיפה אמיתית צריך כותרת HTTP מהאירוח.
+         GitHub Pages אינו מאפשר כותרות מותאמות; אם האתר יעבור לאירוח
+         שכן מאפשר (Firebase Hosting / Cloudflare), יש להוסיף שם
+         Content-Security-Policy: frame-ancestors 'none' וגם
+         X-Frame-Options: DENY.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        base-uri 'none';
+        object-src 'none';
+        form-action 'self';
+        frame-ancestors 'none';
+        script-src 'self' 'unsafe-inline';
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' data: https://fonts.gstatic.com;
+        img-src 'self' data: blob: https://res.cloudinary.com https://firebasestorage.googleapis.com;
+        manifest-src 'self';
+        worker-src 'self' blob:;
+        connect-src 'self' data:
+          https://*.googleapis.com
+          https://*.firebaseio.com wss://*.firebaseio.com
+          https://*.firebasedatabase.app wss://*.firebasedatabase.app
+          https://api.cloudinary.com https://res.cloudinary.com
+          https://*.workers.dev
+          http://127.0.0.1:* ws://127.0.0.1:*
+          http://localhost:* ws://localhost:*;
+      "
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
     <!-- viewport-fit=cover חיוני: בלעדיו env(safe-area-inset-*) מחזיר 0
          והתוכן נחתך מתחת ל-Dynamic Island / הנאץ' באייפון -->
     <meta
