@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../store/AuthContext';
 import { useRoom } from '../store/RoomContext';
@@ -42,11 +42,17 @@ export default function ChatConversationPage() {
   const title = isGeneral ? 'כללי' : (other?.name ?? memberName(otherUid ?? ''));
   const otherOnline = !isGeneral && !!otherUid && onlineMemberIds.has(otherUid);
 
-  const recipientIds = isGeneral
-    ? activeMembers.map((m) => m.id).filter((id) => id !== myUid)
-    : otherUid
-      ? [otherUid]
-      : [];
+  // ‼️ מיוצב בזיכרון — הוא נכנס כ-prop לכל בועה, ו-Bubble עטוף ב-memo.
+  // מערך חדש בכל רינדור היה מבטל את ה-memo לגמרי.
+  const recipientIds = useMemo(
+    () =>
+      isGeneral
+        ? activeMembers.map((m) => m.id).filter((id) => id !== myUid)
+        : otherUid
+          ? [otherUid]
+          : [],
+    [isGeneral, activeMembers, myUid, otherUid]
+  );
 
   const { data: messages, loading: messagesLoading } = useRtdbList<ChatMessage>(path);
   const sorted = useMemo(
@@ -54,26 +60,33 @@ export default function ChatConversationPage() {
     [messages]
   );
 
-  const [text, setText] = useState('');
-  const [sending, setSending] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const isFirstRender = useRef(true);
   const animatedIds = useRef<Set<string>>(new Set());
 
-  function scrollToBottom(behavior: ScrollBehavior) {
+  const scrollToBottom = useCallback((behavior: ScrollBehavior) => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior });
-  }
+  }, []);
+
+  const scrollToBottomSmooth = useCallback(() => scrollToBottom('smooth'), [scrollToBottom]);
 
   // ‼️ מעבר בין שתי שיחות פרטיות (dm/:uid1 ← dm/:uid2) לא ממחזר את
   // הקומפוננטה — אותו תבנית-נתיב, רק פרמטר משתנה (בדיוק כמו הבאג שכבר
   // תוקן ב-SettingsRoomPage). בלי האיפוס הזה: טקסט שהתחלת להקליד לחבר
   // אחד נשלח בטעות לחבר השני, וההודעות של השיחה החדשה "נדבקות" לרצף
   // האנימציה/הגלילה של הקודמת.
+  // הטקסט שהוקלד יושב ב-Composer עצמו ומתאפס דרך key={path} — ראו שם.
   useEffect(() => {
-    setText('');
     isFirstRender.current = true;
     animatedIds.current = new Set();
   }, [path]);
+
+  // ‼️ סימון "כבר הונפשה" קורה כאן ולא בתוך הרינדור. פעולה על ref בזמן
+  // רינדור היא side effect: ב-StrictMode הרינדור הכפול היה מסמן את
+  // ההודעה כבר במעבר הראשון, וההנפשה בפועל לא הייתה רצה אף פעם.
+  useEffect(() => {
+    for (const m of sorted) animatedIds.current.add(m.id);
+  }, [sorted]);
 
   // גובה המסך צמוד ל-visual viewport האמיתי, לא מנוחש — ראו ההסבר המלא
   // ב-useVisualViewportBounds. שורת הכתיבה למטה היא ילד flex רגיל.
@@ -97,34 +110,33 @@ export default function ChatConversationPage() {
     isFirstRender.current = false;
   }, [sorted.length]);
 
-  async function submit() {
-    const trimmed = text.trim();
-    if (!trimmed || !user || !profile || !code || sending) return;
-    setText('');
-    setSending(true);
-    try {
-      if (isGeneral) {
-        await sendGeneralMessage(
-          code,
-          user.uid,
-          profile.displayName,
-          activeMembers.map((m) => m.id),
-          trimmed
-        );
-      } else if (otherUid) {
-        await sendDirectMessage(code, user.uid, profile.displayName, otherUid, trimmed);
+  /** מחזיר האם השליחה הצליחה — ה-Composer מחזיר את הטקסט אם לא. */
+  const send = useCallback(
+    async (trimmed: string): Promise<boolean> => {
+      try {
+        if (isGeneral) {
+          await sendGeneralMessage(
+            code!,
+            user!.uid,
+            profile!.displayName,
+            activeMembers.map((m) => m.id),
+            trimmed
+          );
+        } else if (otherUid) {
+          await sendDirectMessage(code!, user!.uid, profile!.displayName, otherUid, trimmed);
+        }
+        return true;
+      } catch (err) {
+        // השליחה נכשלה בפועל (לא רק "לא נראה מיד") — מחזירים את הטקסט
+        // במקום לאבד אותו בשקט, כדי שהמשתמש יוכל לנסות שוב. כוללים את
+        // סיבת הכשל בפועל (למשל permission_denied) כדי שאפשר יהיה לאבחן.
+        const reason = err instanceof Error ? err.message : String(err);
+        toast.error(`שליחת ההודעה נכשלה: ${reason}`);
+        return false;
       }
-    } catch (err) {
-      // השליחה נכשלה בפועל (לא רק "לא נראה מיד") — מחזירים את הטקסט
-      // במקום לאבד אותו בשקט, כדי שהמשתמש יוכל לנסות שוב. כוללים את
-      // סיבת הכשל בפועל (למשל permission_denied) כדי שאפשר יהיה לאבחן.
-      setText(trimmed);
-      const reason = err instanceof Error ? err.message : String(err);
-      toast.error(`שליחת ההודעה נכשלה: ${reason}`);
-    } finally {
-      setSending(false);
-    }
-  }
+    },
+    [isGeneral, code, user, profile, activeMembers, otherUid, toast]
+  );
 
   return (
     <div
@@ -198,7 +210,6 @@ export default function ChatConversationPage() {
             {sorted.map((m, i) => {
               const mine = m.senderId === myUid;
               const isNew = !animatedIds.current.has(m.id);
-              animatedIds.current.add(m.id);
               // בצ'אט הכללי מציגים שם+תמונה מעל הודעה של מישהו אחר, אבל רק
               // כשהיא פותחת "רצף" חדש (השולח הקודם היה מישהו אחר) — כמו
               // בכל אפליקציית צ'אט קבוצתי, כדי לא לחזור על אותו שם שוב ושוב.
@@ -243,42 +254,89 @@ export default function ChatConversationPage() {
         className="shrink-0 border-t border-ink-200/70 bg-white px-3 py-2.5 safe-x"
         style={{ paddingBottom: 'calc(var(--safe-bottom) + 0.625rem)' }}
       >
-        <div className="flex items-end gap-2">
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onFocus={() => scrollToBottom('smooth')}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                void submit();
-              }
-            }}
-            placeholder="הודעה…"
-            disabled={!isOnline}
-            className="h-11 flex-1 rounded-full border border-ink-200 bg-ink-50 px-4 text-[15px]
-                       placeholder:text-ink-400 focus:border-brand-400 focus:bg-white
-                       focus:outline-none focus:ring-2 focus:ring-brand-500/25"
-          />
-          <button
-            type="button"
-            onClick={() => void submit()}
-            disabled={!isOnline || text.trim().length === 0}
-            aria-label="שליחה"
-            className="tap grid h-11 w-11 shrink-0 place-items-center rounded-full text-white
-                       transition-transform duration-150 active:scale-90
-                       bg-gradient-to-br from-brand-500 to-brand-700
-                       disabled:from-ink-300 disabled:to-ink-300"
-          >
-            <SendIcon />
-          </button>
-        </div>
+        {/* ‼️ key={path} מחליף את setText('') שהיה כאן: מעבר בין שתי שיחות
+            פרטיות לא ממחזר את הדף (אותה תבנית-נתיב), אבל כן ממחזר את
+            ה-Composer — ולכן הטקסט שהתחלת להקליד לחבר אחד לא נשלח לשני. */}
+        <Composer
+          key={path}
+          ready={!!(user && profile && code)}
+          isOnline={isOnline}
+          onSend={send}
+          onFocus={scrollToBottomSmooth}
+        />
       </div>
     </div>
   );
 }
 
-function Bubble({
+/**
+ * שורת הכתיבה — מחזיקה את הטקסט המוקלד בעצמה.
+ *
+ * ‼️ בכוונה קומפוננטה נפרדת: כשה-state הזה ישב בדף, כל תו שהוקלד רינדר
+ * מחדש את כל רשימת ההודעות. עכשיו ההקלדה נעצרת כאן.
+ */
+const Composer = memo(function Composer({
+  ready,
+  isOnline,
+  onSend,
+  onFocus,
+}: {
+  /** האם יש כבר משתמש/פרופיל/קוד חדר — בלעדיהם אין מה לשלוח */
+  ready: boolean;
+  isOnline: boolean;
+  onSend: (trimmed: string) => Promise<boolean>;
+  onFocus: () => void;
+}) {
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+
+  async function submit() {
+    const trimmed = text.trim();
+    if (!trimmed || !ready || sending) return;
+    setText('');
+    setSending(true);
+    const ok = await onSend(trimmed);
+    if (!ok) setText(trimmed);
+    setSending(false);
+  }
+
+  return (
+    <div className="flex items-end gap-2">
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onFocus={onFocus}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            void submit();
+          }
+        }}
+        placeholder="הודעה…"
+        disabled={!isOnline}
+        className="h-11 flex-1 rounded-full border border-ink-200 bg-ink-50 px-4 text-[15px]
+                   placeholder:text-ink-400 focus:border-brand-400 focus:bg-white
+                   focus:outline-none focus:ring-2 focus:ring-brand-500/25"
+      />
+      <button
+        type="button"
+        onClick={() => void submit()}
+        disabled={!isOnline || text.trim().length === 0}
+        aria-label="שליחה"
+        className="tap grid h-11 w-11 shrink-0 place-items-center rounded-full text-white
+                   transition-transform duration-150 active:scale-90
+                   bg-gradient-to-br from-brand-500 to-brand-700
+                   disabled:from-ink-300 disabled:to-ink-300"
+      >
+        <SendIcon />
+      </button>
+    </div>
+  );
+});
+
+/** ‼️ memo — אחרת כל רינדור של הדף (נוכחות, גובה viewport/מקלדת) מרנדר
+ *  מחדש את כל הבועות ברשימה. */
+const Bubble = memo(function Bubble({
   message,
   mine,
   recipientIds,
@@ -324,7 +382,7 @@ function Bubble({
       </div>
     </div>
   );
-}
+});
 
 /** חץ שליחה — פונה שמאלה, כיוון "קדימה" בממשק עברי */
 function SendIcon() {

@@ -17,7 +17,7 @@ import { useToast } from '../store/ToastContext';
 import { useConfirm } from '../store/ConfirmContext';
 import { claimItem, deleteItem, unclaimItem } from '../services/itemService';
 import { formatILS, formatRelativeTime, formatTime } from '../lib/format';
-import { useCatalog } from '../hooks/useCatalog';
+import { useCatalog, type RoomProduct } from '../hooks/useCatalog';
 import {
   CATEGORY_EMOJI,
   CATEGORY_LABELS,
@@ -49,6 +49,10 @@ export default function ItemsPage() {
     isStaples ? 'open' : (filter as ItemStatus | 'open')
   );
   const { isOnline } = useConnection();
+  // ‼️ הוק אחד לכל הדף — לא אחד לכל שורה. useCatalog פותח שלוש האזנות
+  // RTDB ובונה מחדש את כל הקטלוג; קריאה שלו בתוך ItemCard הכפילה את זה
+  // במספר הפריטים על המסך.
+  const { getProduct } = useCatalog();
 
   // הכפתור המרכזי בניווט מנווט לכאן עם ?new=1
   useEffect(() => {
@@ -140,35 +144,47 @@ export default function ItemsPage() {
           <ul className="space-y-2.5">
             {items.map((item) => (
               <li key={item.id}>
-                <ItemCard item={item} onBuy={() => setBuyingItem(item)} />
+                <ItemCard
+                  item={item}
+                  product={item.productId ? getProduct(item.productId) : null}
+                  onBuy={() => setBuyingItem(item)}
+                />
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      <ReportItemSheet open={reportOpen} onClose={() => setReportOpen(false)} />
-      <MarkBoughtSheet
-        open={!!buyingItem}
-        onClose={() => setBuyingItem(null)}
-        item={buyingItem}
-      />
+      {/* ‼️ מרכיבים רק כשפתוח. GlassModal אמנם מחזיר null כשסגור, אבל זה
+          קורה *אחרי* שכל ההוקים של העטיפה כבר רצו (useCatalog, useItems,
+          useBalances) — כלומר האזנות RTDB פתוחות לגיליון שלא מוצג. אין
+          אנימציית יציאה שנפגעת מכך: GlassModal נעלם מיידית ממילא. */}
+      {reportOpen && <ReportItemSheet open onClose={() => setReportOpen(false)} />}
+      {buyingItem && (
+        <MarkBoughtSheet open onClose={() => setBuyingItem(null)} item={buyingItem} />
+      )}
     </AppShell>
   );
 }
 
-function ItemCard({ item, onBuy }: { item: WithId<Item>; onBuy: () => void }) {
+function ItemCard({
+  item,
+  product,
+  onBuy,
+}: {
+  item: WithId<Item>;
+  /** מוצר מהקטלוג — נפתר בדף ומועבר פנימה, ראו ההערה ב-ItemsPage */
+  product: RoomProduct | null;
+  onBuy: () => void;
+}) {
   const { user } = useAuth();
   const { roomCode, isAdmin, memberName } = useRoom();
   const { isOnline } = useConnection();
-  const { getProduct } = useCatalog();
   const toast = useToast();
   const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
 
   const mine = item.assignedTo === user?.uid;
-  // מוצר מהקטלוג — מציגים את המחיר שידוע לחדר הזה
-  const product = item.productId ? getProduct(item.productId) : null;
   const guard = {
     disabled: !isOnline || busy,
     title: isOnline ? undefined : 'פעולה זו דורשת חיבור לאינטרנט',

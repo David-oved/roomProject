@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -68,5 +69,9 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
     setOnlineState(isOnline);
   }, [isOnline]);
 
-  return <Ctx.Provider value={{ isOnline, lastSyncAt }}>{children}</Ctx.Provider>;
+  // ‼️ אובייקט חדש בכל רינדור כאן מרנדר מחדש את כל האפליקציה בכל חיבור
+  // מחדש, גם כשהערכים עצמם לא השתנו.
+  const value = useMemo<ConnectionValue>(() => ({ isOnline, lastSyncAt }), [isOnline, lastSyncAt]);
+
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

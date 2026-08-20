@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -73,29 +74,34 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     return () => list.forEach(window.clearTimeout);
   }, []);
 
-  const api: ToastApi = {
-    success: useCallback((m: string) => push('success', m), [push]),
-    error: useCallback((m: string) => push('error', m), [push]),
-    warn: useCallback((m: string) => push('warn', m), [push]),
-    info: useCallback((m: string) => push('info', m), [push]),
+  const success = useCallback((m: string) => push('success', m), [push]);
+  const error = useCallback((m: string) => push('error', m), [push]);
+  const warn = useCallback((m: string) => push('warn', m), [push]);
+  const info = useCallback((m: string) => push('info', m), [push]);
 
-    run: useCallback(
-      async <T,>(fn: () => Promise<T>): Promise<T | null> => {
-        try {
-          return await fn();
-        } catch (err) {
-          if (err instanceof OfflineError) {
-            push('warn', err.message);
-          } else {
-            push('error', friendlyError(err));
-          }
-          if (import.meta.env.DEV) console.error(err);
-          return null;
+  const run = useCallback(
+    async <T,>(fn: () => Promise<T>): Promise<T | null> => {
+      try {
+        return await fn();
+      } catch (err) {
+        if (err instanceof OfflineError) {
+          push('warn', err.message);
+        } else {
+          push('error', friendlyError(err));
         }
-      },
-      [push]
-    ),
-  };
+        if (import.meta.env.DEV) console.error(err);
+        return null;
+      }
+    },
+    [push]
+  );
+
+  // ‼️ אובייקט חדש בכל רינדור כאן = כל האפליקציה מרונדרת מחדש בכל טוסט,
+  // וה-Provider הזה עוטף את הכל. push יציב, ולכן ה-API הזה נוצר פעם אחת.
+  const api = useMemo<ToastApi>(
+    () => ({ success, error, warn, info, run }),
+    [success, error, warn, info, run]
+  );
 
   return (
     <Ctx.Provider value={api}>

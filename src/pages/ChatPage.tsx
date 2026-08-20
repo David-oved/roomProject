@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { AppShell } from '../components/layout/AppShell';
 import { TopBar } from '../components/layout/TopBar';
@@ -8,7 +9,7 @@ import { useAuth } from '../store/AuthContext';
 import { useRtdbList } from '../hooks/useRtdb';
 import { countUnread, dmBasePath, generalChatPath } from '../services/chatService';
 import { formatRelativeTime } from '../lib/format';
-import type { ChatMessage } from '../types/models';
+import type { ChatMessage, WithId } from '../types/models';
 
 /**
  * רשימת השיחות — הצ'אט הכללי למעלה, ואחריו שורה אחת לכל חבר פעיל
@@ -73,9 +74,17 @@ function ConversationRow({
 }) {
   const { data: messages, loading } = useRtdbList<ChatMessage>(path);
 
-  const sorted = [...messages].sort((a, b) => (b.sentAt ?? 0) - (a.sentAt ?? 0));
-  const last = sorted[0];
-  const unread = countUnread(messages, myUid);
+  // ‼️ מעבר יחיד במקום מיון מלא של כל השיחה בשביל איבר אחד. המיון רץ
+  // מחדש בכל רינדור של הדף — כולל כל שינוי נוכחות — ופעם אחת לכל חבר.
+  // ההשוואה החזקה (<) שומרת על אותה הכרעה בתיקו כמו המיון היציב שהיה כאן:
+  // מבין הודעות באותו זמן, הראשונה בסדר המפתחות מנצחת.
+  const { last, unread } = useMemo(() => {
+    let newest: WithId<ChatMessage> | undefined;
+    for (const m of messages) {
+      if (newest === undefined || (m.sentAt ?? 0) > (newest.sentAt ?? 0)) newest = m;
+    }
+    return { last: newest, unread: countUnread(messages, myUid) };
+  }, [messages, myUid]);
 
   return (
     <Link

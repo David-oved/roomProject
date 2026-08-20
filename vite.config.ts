@@ -112,11 +112,26 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          // ‼️ הכלל הקודם כאן הצביע על firebasestorage.googleapis.com —
+          // מארח שהאפליקציה הזאת לא פונה אליו בכלל. תמונות הפרופיל מוגשות
+          // מ-res.cloudinary.com (ראו secure_url ב-avatarService), ולכן זה
+          // המארח הנכון. ההעלאה עצמה (api.cloudinary.com) בכוונה לא במטמון.
+          //
+          // ‼️‼️ אזהרה — כרגע כל בלוק runtimeCaching הזה **מת**, כולל כלל
+          // הפונטים שמעליו: strategies כאן הוא 'injectManifest', ואנחנו
+          // כותבים את ה-SW בעצמנו ב-src/sw.ts. runtimeCaching היא אופציה
+          // של generateSW בלבד — vite-plugin-pwa מתעלם ממנה כאן בשקט.
+          // בדוק: אין אף אזכור של cloudinary/googleapis ב-dist/sw.js, ו-sw.ts
+          // עושה רק precacheAndRoute, בלי registerRoute אחד.
+          // כדי שהאווטארים באמת ייכנסו למטמון צריך registerRoute מפורש
+          // ב-src/sw.ts — וזה דורש workbox-strategies + workbox-expiration,
+          // שאינם מוצהרים ב-package.json (רק workbox-routing/core/precaching
+          // מוצהרים). התיקון כאן הוא תיקון *נכונות של הקונפיג* בלבד.
           {
-            urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
+            urlPattern: /^https:\/\/res\.cloudinary\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'firebase-images',
+              cacheName: 'avatar-images',
               expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 },
               cacheableResponse: { statuses: [0, 200] },
             },

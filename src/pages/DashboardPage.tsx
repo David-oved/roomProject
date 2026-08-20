@@ -484,8 +484,11 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <ReportItemSheet open={reportOpen} onClose={() => setReportOpen(false)} />
-      <AddTaskSheet open={addTaskOpen} onClose={() => setAddTaskOpen(false)} />
+      {/* ‼️ מרכיבים רק כשפתוח. GlassModal מחזיר null כשסגור, אבל רק *אחרי*
+          שההוקים של הגיליון כבר רצו (useCatalog, useItems) — האזנות RTDB
+          פתוחות לגיליון שאינו מוצג. אין אנימציית יציאה שנפגעת. */}
+      {reportOpen && <ReportItemSheet open onClose={() => setReportOpen(false)} />}
+      {addTaskOpen && <AddTaskSheet open onClose={() => setAddTaskOpen(false)} />}
     </AppShell>
   );
 }

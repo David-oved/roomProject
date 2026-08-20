@@ -209,7 +209,7 @@ export default function TasksPage() {
         )}
       </div>
 
-      <AddTaskSheet open={addOpen} onClose={() => setAddOpen(false)} />
+      {addOpen && <AddTaskSheet open onClose={() => setAddOpen(false)} />}
       <TransferRequestSheet task={transferring} onClose={() => setTransferring(null)} />
     </AppShell>
   );
