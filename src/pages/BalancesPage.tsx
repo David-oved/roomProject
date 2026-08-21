@@ -23,6 +23,7 @@ import { simplifyDebts } from '../lib/money';
 import { formatAmount, formatILS, formatSmartDate } from '../lib/format';
 import { friendlyError } from '../lib/errors';
 import { PURCHASE_STATUS_LABELS } from '../types/models';
+import { useHintRef } from '../store/HintContext';
 
 type Tab = 'summary' | 'pending' | 'history';
 
@@ -57,6 +58,16 @@ export default function BalancesPage() {
     { key: 'history', label: 'היסטוריה' },
   ];
 
+  const myBalanceHintRef = useHintRef<HTMLElement>(
+    'balances.myBalanceCard',
+    'מחושב אוטומטית מכל הקניות והתשלומים בחדר — לא צריך לחשב ידנית'
+  );
+  const tabHintRefs: Record<Tab, ReturnType<typeof useHintRef<HTMLButtonElement>>> = {
+    summary: useHintRef<HTMLButtonElement>('balances.tab.summary', 'מי חייב למי, ומי נשא בכמה מההוצאות'),
+    pending: useHintRef<HTMLButtonElement>('balances.tab.pending', 'קניות שממתינות לאישור מנהל לפני שהן נכנסות למאזן'),
+    history: useHintRef<HTMLButtonElement>('balances.tab.history', 'כל הקניות שכבר טופלו בחדר'),
+  };
+
   return (
     <AppShell>
       <TopBar title="חשבון והוצאות" />
@@ -64,6 +75,7 @@ export default function BalancesPage() {
       <div className="pt-4">
         {/* כרטיס המאזן האישי */}
         <section
+          ref={myBalanceHintRef}
           className={[
             'rounded-card p-5 text-white shadow-lifted',
             myBalance >= 0
@@ -89,6 +101,7 @@ export default function BalancesPage() {
           {TABS.map((t) => (
             <button
               key={t.key}
+              ref={tabHintRefs[t.key]}
               onClick={() => setTab(t.key)}
               aria-pressed={tab === t.key}
               className={[
@@ -159,6 +172,19 @@ function SummaryTab({
 
   const nothingPending = allTransfers.length === 0 && awaitingMyConfirmation.length === 0;
 
+  const confirmSettlementHintRef = useHintRef<HTMLButtonElement>(
+    'balances.confirmSettlement',
+    'מאשר שקיבלת את הכסף בפועל — סוגר את החוב'
+  );
+  const transfersSectionHintRef = useHintRef<HTMLHeadingElement>(
+    'balances.transfersSection',
+    'הדרך הכי פשוטה לסגור את כל החובות — לא בהכרח מי-קנה-מה-למי'
+  );
+  const paySettlementHintRef = useHintRef<HTMLButtonElement>(
+    'balances.paySettlement',
+    'שולח בקשת אישור לצד השני — החוב ייסגר רק אחרי אישורו'
+  );
+
   return (
     <div className="space-y-4">
       {/* ── הכל מאוזן — לא מחליף את שאר המסך, רק מודיע ── */}
@@ -189,6 +215,7 @@ function SummaryTab({
                   <p className="num text-lg font-bold text-emerald-700">{formatILS(s.amount)}</p>
                 </div>
                 <Button
+                  ref={confirmSettlementHintRef}
                   size="sm"
                   disabled={!isOnline || busy === s.id}
                   loading={busy === s.id}
@@ -217,7 +244,9 @@ function SummaryTab({
 
       {transfers.length > 0 && (
         <section>
-          <h2 className="mb-2 px-1 text-sm font-bold text-ink-700">מה שנוגע לך</h2>
+          <h2 ref={transfersSectionHintRef} className="mb-2 px-1 text-sm font-bold text-ink-700">
+            מה שנוגע לך
+          </h2>
           <ul className="space-y-2">
             {transfers.map((t, i) => {
               const iOwe = t.from === user?.uid;
@@ -242,6 +271,7 @@ function SummaryTab({
                   )}
                   {iOwe && !alreadySent && (
                     <Button
+                      ref={paySettlementHintRef}
                       size="sm"
                       variant="secondary"
                       disabled={!isOnline || busy === key}
@@ -326,11 +356,22 @@ function ContributionsSection() {
     value: borne[m.id] ?? 0,
   }));
 
+  const paidOutHintRef = useHintRef<HTMLHeadingElement>(
+    'balances.contributionsPaidOut',
+    'כמה שילמתם בפועל מהכיס — לא אותו דבר כמו היתרה שלכם'
+  );
+  const chartHintRef = useHintRef<HTMLDivElement>(
+    'balances.contributionsChart',
+    'מי נשא בהוצאות יחסית לממוצע, כולל קניות "על עצמי"'
+  );
+
   return (
     <div className="space-y-4">
       {/* ── כמה כל אחד הוציא בפועל מהכיס ── */}
       <section>
-        <h2 className="mb-2 px-1 text-sm font-bold text-ink-700">כמה כל אחד הוציא</h2>
+        <h2 ref={paidOutHintRef} className="mb-2 px-1 text-sm font-bold text-ink-700">
+          כמה כל אחד הוציא
+        </h2>
         <ul className="card divide-y divide-ink-100">
           {[...activeMembers]
             .sort((a, b) => (paidOut[b.id] ?? 0) - (paidOut[a.id] ?? 0))
@@ -356,7 +397,7 @@ function ContributionsSection() {
       {total > 0 ? (
         <section>
           <h2 className="mb-2 px-1 text-sm font-bold text-ink-700">מי נשא בכמה מהעלות</h2>
-          <div className="card p-4">
+          <div ref={chartHintRef} className="card p-4">
             <ContributionChart slices={slices} total={total} />
 
             <div className="mt-4 flex items-center justify-between border-t border-ink-100 pt-3 text-xs">
@@ -411,6 +452,18 @@ function PendingTab({ isAdmin }: { isAdmin: boolean }) {
   const toast = useToast();
   const confirm = useConfirm();
   const [busy, setBusy] = useState<string | null>(null);
+  const approveHintRef = useHintRef<HTMLButtonElement>(
+    'balances.pending.approve',
+    'מאשר את הקנייה ומעדכן את המאזנים של כל החברים'
+  );
+  const rejectHintRef = useHintRef<HTMLButtonElement>(
+    'balances.pending.reject',
+    'דוחה את הקנייה ומבקש סיבה — לא ייכנס למאזן'
+  );
+  const sharesHintRef = useHintRef<HTMLUListElement>(
+    'balances.pending.shares',
+    'כך הסכום יתחלק בין החברים ברגע שהקנייה תאושר'
+  );
 
   if (pendingApproval.length === 0) {
     return <EmptyState icon="📭" title="אין קניות ממתינות" body="כל הקניות טופלו." />;
@@ -418,7 +471,7 @@ function PendingTab({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <ul className="space-y-2.5">
-      {pendingApproval.map((p) => (
+      {pendingApproval.map((p, idx) => (
         <li key={p.id} className="card p-4">
           <div className="flex items-start gap-3">
             <Avatar name={memberName(p.boughtBy)} uid={p.boughtBy} src={memberAvatar(p.boughtBy)} size="sm" />
@@ -436,7 +489,10 @@ function PendingTab({ isAdmin }: { isAdmin: boolean }) {
             </span>
           </div>
 
-          <ul className="mt-3 space-y-1 rounded-xl bg-ink-50 p-3">
+          <ul
+            ref={idx === 0 ? sharesHintRef : undefined}
+            className="mt-3 space-y-1 rounded-xl bg-ink-50 p-3"
+          >
             {Object.entries(p.shares ?? {}).map(([uid, share]) => (
               <li key={uid} className="flex justify-between text-xs">
                 <span className="text-ink-600">{memberName(uid)}</span>
@@ -448,6 +504,7 @@ function PendingTab({ isAdmin }: { isAdmin: boolean }) {
           {isAdmin ? (
             <div className="mt-3 flex gap-2">
               <Button
+                ref={approveHintRef}
                 size="sm"
                 fullWidth
                 disabled={!isOnline || busy === p.id}
@@ -463,6 +520,7 @@ function PendingTab({ isAdmin }: { isAdmin: boolean }) {
                 אישור
               </Button>
               <Button
+                ref={rejectHintRef}
                 size="sm"
                 variant="secondary"
                 disabled={!isOnline || busy === p.id}
@@ -515,15 +573,24 @@ function HistoryTab({
     .filter((p) => p.status === 'approved' || p.status === 'settled')
     .reduce((a, p) => a + p.amount, 0);
 
+  const totalHintRef = useHintRef<HTMLDivElement>(
+    'balances.historyTotal',
+    'סכום כל הקניות שאושרו או נסגרו — לא כולל קניות שנדחו'
+  );
+  const entryHintRef = useHintRef<HTMLParagraphElement>(
+    'balances.historyEntry',
+    'סטטוס הקנייה: אושרה, נדחתה, או ממתינה לאישור'
+  );
+
   return (
     <>
-      <div className="card mb-3 flex items-center justify-between p-4">
+      <div ref={totalHintRef} className="card mb-3 flex items-center justify-between p-4">
         <span className="text-sm font-semibold text-ink-700">סה"כ הוצאות החדר</span>
         <span className="num text-lg font-bold text-brand-800">{formatILS(total)}</span>
       </div>
 
       <ul className="card divide-y divide-ink-100">
-        {done.map((p) => (
+        {done.map((p, idx) => (
           <li key={p.id} className="flex items-center gap-3 px-4 py-3">
             <Avatar name={memberName(p.boughtBy)} uid={p.boughtBy} src={memberAvatar(p.boughtBy)} size="xs" />
             <div className="min-w-0 flex-1">
@@ -534,7 +601,7 @@ function HistoryTab({
             </div>
             <div className="shrink-0 text-end">
               <p className="num text-sm font-bold text-ink-900">{formatILS(p.amount)}</p>
-              <p className="text-[11px] text-ink-500">
+              <p ref={idx === 0 ? entryHintRef : undefined} className="text-[11px] text-ink-500">
                 {p.splitMethod === 'covered' ? '🙋 על חשבונו' : PURCHASE_STATUS_LABELS[p.status]}
               </p>
             </div>

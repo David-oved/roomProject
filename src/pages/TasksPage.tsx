@@ -19,6 +19,7 @@ import { completeTask, deleteTask, respondTaskTransfer } from '../services/taskS
 import { formatSmartDate } from '../lib/format';
 import { friendlyError } from '../lib/errors';
 import { CATEGORY_EMOJI, CATEGORY_LABELS, type Task, type TaskTransfer, type WithId } from '../types/models';
+import { useHintRef } from '../store/HintContext';
 
 export default function TasksPage() {
   const { roomCode, isAdmin, memberName, activeMembers } = useRoom();
@@ -36,6 +37,49 @@ export default function TasksPage() {
 
   const guard = { disabled: !isOnline };
 
+  const addTaskHintRef = useHintRef<HTMLButtonElement>(
+    'tasks.add',
+    'מוסיפים כאן מטלה קבועה חדשה לחברי החדר'
+  );
+  // ‼️ מזהה נפרד, לא משותף עם addTaskHintRef — שני הכפתורים מורכבים
+  // בו-זמנית כשאין עדיין מטלות (כותרת + EmptyState). ראו ההסבר הזהה
+  // ב-ItemsPage.tsx.
+  const addTaskEmptyHintRef = useHintRef<HTMLButtonElement>(
+    'tasks.addEmpty',
+    'מוסיפים כאן מטלה קבועה חדשה לחברי החדר'
+  );
+  const transferAcceptHintRef = useHintRef<HTMLButtonElement>(
+    'tasks.transferAccept',
+    'מאשר שאתה לוקח את התור — המטלה עוברת אליך'
+  );
+  const transferRejectHintRef = useHintRef<HTMLButtonElement>(
+    'tasks.transferReject',
+    'דוחה את הבקשה — התור נשאר אצל המבקש'
+  );
+  const rowHintRef = useHintRef<HTMLParagraphElement>(
+    'tasks.row',
+    'כשמסמנים "בוצע", המטלה עוברת אוטומטית לחבר הבא בתור'
+  );
+  const completeHintRef = useHintRef<HTMLButtonElement>(
+    'tasks.complete',
+    'מסמן שביצעת את המטלה — התור עובר הלאה בסבב'
+  );
+  const requestTransferHintRef = useHintRef<HTMLButtonElement>(
+    'tasks.requestTransfer',
+    'פותח בחירת חבר להעברת התור — צריך את אישורו'
+  );
+  const deleteHintRef = useHintRef<HTMLButtonElement>(
+    'tasks.delete',
+    'מוחק את המטלה לצמיתות אחרי אישור בחלון קופץ'
+  );
+  const fairnessHintRef = useHintRef<HTMLHeadingElement>(
+    'tasks.fairness',
+    'כמה מטלות כל אחד השלים ב-30 הימים האחרונים'
+  );
+  // אינדקס המטלה הראשונה שהתור בה שלי — לא בהכרח השורה הראשונה ברשימה,
+  // ולכן הערות "בוצע"/"בקשת העברה" חייבות לעגן שם ולא ב-idx===0 הסתמי.
+  const firstMineIdx = tasks.findIndex((t) => t.currentAssignee === user?.uid);
+
   async function run(key: string, fn: () => Promise<unknown>) {
     setBusy(key);
     await toast.run(fn);
@@ -49,7 +93,7 @@ export default function TasksPage() {
         back={`/r/${roomCode}`}
         actions={
           isAdmin && (
-            <Button size="sm" onClick={() => setAddOpen(true)} disabled={!isOnline}>
+            <Button ref={addTaskHintRef} size="sm" onClick={() => setAddOpen(true)} disabled={!isOnline}>
               + מטלה
             </Button>
           )
@@ -61,7 +105,7 @@ export default function TasksPage() {
           <section>
             <h2 className="mb-2 px-1 text-sm font-bold text-amber-800">ממתין לתשובתך</h2>
             <ul className="space-y-2">
-              {incoming.map((t) => (
+              {incoming.map((t, idx) => (
                 <li key={t.id} className="card flex items-center gap-3 border-amber-200 bg-amber-50/60 p-4">
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-700">
                     <ExchangeIcon width={16} height={16} />
@@ -73,6 +117,7 @@ export default function TasksPage() {
                   </div>
                   <div className="flex shrink-0 gap-1.5">
                     <Button
+                      ref={idx === 0 ? transferAcceptHintRef : undefined}
                       size="sm"
                       disabled={!isOnline || busy === t.id}
                       loading={busy === t.id}
@@ -81,6 +126,7 @@ export default function TasksPage() {
                       אישור
                     </Button>
                     <Button
+                      ref={idx === 0 ? transferRejectHintRef : undefined}
                       size="sm"
                       variant="ghost"
                       disabled={!isOnline || busy === t.id}
@@ -112,7 +158,7 @@ export default function TasksPage() {
               body={isAdmin ? 'הוסיפו מטלה ראשונה — למשל שטיפת כלים או פינוי אשפה.' : 'המנהל עדיין לא הוסיף מטלות קבועות.'}
               action={
                 isAdmin && (
-                  <Button onClick={() => setAddOpen(true)} disabled={!isOnline}>
+                  <Button ref={addTaskEmptyHintRef} onClick={() => setAddOpen(true)} disabled={!isOnline}>
                     הוספת מטלה
                   </Button>
                 )
@@ -120,7 +166,7 @@ export default function TasksPage() {
             />
           ) : (
             <ul className="space-y-2.5">
-              {tasks.map((t) => {
+              {tasks.map((t, idx) => {
                 const mine = t.currentAssignee === user?.uid;
                 const overdue = (t.dueAt ?? 0) < Date.now();
                 return (
@@ -134,7 +180,10 @@ export default function TasksPage() {
                           <h3 className="min-w-0 flex-1 truncate font-bold text-ink-900">{t.name}</h3>
                           {overdue && <Badge tone="danger">באיחור</Badge>}
                         </div>
-                        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-500">
+                        <p
+                          ref={idx === 0 ? rowHintRef : undefined}
+                          className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-500"
+                        >
                           <Avatar name={memberName(t.currentAssignee)} uid={t.currentAssignee} size="xs" />
                           {mine ? 'התור שלך' : `תור ${memberName(t.currentAssignee)}`} · {CATEGORY_LABELS[t.category]} ·{' '}
                           {t.dueAt ? formatSmartDate(t.dueAt) : ''}
@@ -146,6 +195,7 @@ export default function TasksPage() {
                       {mine && (
                         <>
                           <Button
+                            ref={idx === firstMineIdx ? completeHintRef : undefined}
                             size="sm"
                             {...guard}
                             disabled={!isOnline || busy === t.id}
@@ -159,6 +209,7 @@ export default function TasksPage() {
                             בוצע ✓
                           </Button>
                           <Button
+                            ref={idx === firstMineIdx ? requestTransferHintRef : undefined}
                             size="sm"
                             variant="secondary"
                             {...guard}
@@ -170,6 +221,7 @@ export default function TasksPage() {
                       )}
                       {isAdmin && (
                         <Button
+                          ref={idx === 0 ? deleteHintRef : undefined}
                           size="sm"
                           variant="ghost"
                           className="ms-auto text-rose-600"
@@ -197,7 +249,9 @@ export default function TasksPage() {
 
         {activeMembers.length > 1 && Object.keys(fairness).length > 0 && (
           <section>
-            <h2 className="mb-2 px-1 text-sm font-bold text-ink-700">הוגנות — 30 הימים האחרונים</h2>
+            <h2 ref={fairnessHintRef} className="mb-2 px-1 text-sm font-bold text-ink-700">
+              הוגנות — 30 הימים האחרונים
+            </h2>
             <ul className="card divide-y divide-ink-100">
               {[...activeMembers]
                 .sort((a, b) => (fairness[b.id] ?? 0) - (fairness[a.id] ?? 0))

@@ -60,6 +60,14 @@ export default function ItemsPage() {
     'items.report',
     'דיווח מהיר על מוצר שנגמר או עומד להיגמר'
   );
+  // ‼️ מזהה נפרד מ-reportHintRef, לא משותף: שני הכפתורים יכולים להיות
+  // מורכבים בו-זמנית (הרשימה ריקה = גם כפתור הכותרת וגם EmptyState
+  // מוצגים יחד) — id משותף על שני אלמנטים חיים בו-זמנית גורם ל-unmount
+  // של אחד למחוק בטעות את הרישום של השני מהתור.
+  const reportEmptyHintRef = useHintRef<HTMLButtonElement>(
+    'items.reportEmpty',
+    'דיווח מהיר על מוצר שנגמר או עומד להיגמר'
+  );
   // אחד לכל פילטר קבוע — לא בתוך .map, כי useHintRef הוא hook.
   const filterHintRefs: Record<Filter, ReturnType<typeof useHintRef<HTMLButtonElement>>> = {
     open: useHintRef<HTMLButtonElement>('items.filter.open', 'כל המוצרים הפתוחים — לא כולל מה שכבר הושלם'),
@@ -153,7 +161,7 @@ export default function ItemsPage() {
             }
             action={
               filter !== 'done' && (
-                <Button ref={reportHintRef} onClick={() => setReportOpen(true)} disabled={!isOnline}>
+                <Button ref={reportEmptyHintRef} onClick={() => setReportOpen(true)} disabled={!isOnline}>
                   דיווח על מוצר חסר
                 </Button>
               )
