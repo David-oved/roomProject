@@ -20,6 +20,7 @@
 | 09 | [09-best-practices.md](./09-best-practices.md) | Advanced tips, ביצועים, אבטחה, מלכודות נפוצות |
 | 10 | [10-versioning.md](./10-versioning.md) | **מנגנון הגרסאות והעדכון האוטומטי** — version.json, עדכון כפוי, שומר הלולאה |
 | 13 | [13-admin-console.md](./13-admin-console.md) | **קונסולת המנהל** — חוזה הנתונים בין האפליקציה לכלי הניהול המקומי |
+| 14 | [14-developer-panel.md](./14-developer-panel.md) | **פאנל המפתח** — טאב בתוך האפליקציה, נראה רק לחשבון אחד |
 
 קבצים מוכנים לשימוש בשורש הפרויקט: `database.rules.json`, `storage.rules`.
 

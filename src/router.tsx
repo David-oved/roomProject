@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
-import { RequireAuth, RequireGuest, RequireRoomMember } from './components/auth/guards';
+import { RequireAuth, RequireDeveloper, RequireGuest, RequireRoomMember } from './components/auth/guards';
 import { RoomProvider } from './store/RoomContext';
 import { TutorialProvider } from './store/TutorialContext';
 import { TutorialModal } from './components/onboarding/TutorialModal';
@@ -34,6 +34,7 @@ const SettingsAboutPage = lazy(() => import('./pages/SettingsAboutPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const AdminMessagesPage = lazy(() => import('./pages/AdminMessagesPage'));
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage'));
+const DeveloperPage = lazy(() => import('./pages/DeveloperPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 /**
@@ -89,6 +90,13 @@ export function AppRoutes() {
                 לפנייה ששלח. */}
             <Route path="/messages" element={<AdminMessagesPage />} />
             <Route path="/feedback" element={<FeedbackPage />} />
+
+            {/* גלוי ונגיש רק לחשבון המפתח (src/lib/developer.ts) — ראו
+                docs/14-developer-panel.md. גם כאן: מחוץ ל-RoomLayout,
+                כי המידע חוצה-חדרים ולא שייך לחדר מסוים. */}
+            <Route element={<RequireDeveloper />}>
+              <Route path="/developer" element={<DeveloperPage />} />
+            </Route>
             <Route path="/rooms/create" element={<CreateRoomPage />} />
             <Route path="/rooms/join" element={<JoinRoomPage />} />
             <Route path="/rooms/:code/pending" element={<PendingApprovalPage />} />

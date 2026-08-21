@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../../store/AuthContext';
 import { useRoom } from '../../store/RoomContext';
 import { useSuspension } from '../../hooks/useAdminMessages';
+import { isDeveloper } from '../../lib/developer';
 import { FullPageSpinner } from '../ui/Spinner';
 
 // נטען עצלה — רוב המשתמשים לעולם לא יראו את המסך הזה
@@ -74,4 +75,19 @@ export function RequireRoomMember() {
 
   // אף פעם לא היה חבר — ייתכן שיש בקשה ממתינה
   return <Navigate to={`/rooms/${code}/pending`} replace />;
+}
+
+/**
+ * דורש שהמשתמש המחובר הוא חשבון המפתח היחיד (ראו src/lib/developer.ts).
+ *
+ * ‼️ כמו כל שומר סף — זו נוחות ניתוב, לא ההגנה עצמה. מי שינווט לכאן
+ *    ידנית בלי להיות המפתח פשוט חוזר ל-onboarding, בלי שום רמז שהמסך
+ *    הזה בכלל קיים. ההגנה האמיתית על *הנתונים* יושבת ב-Security Rules.
+ */
+export function RequireDeveloper() {
+  const { user, loading } = useAuth();
+
+  if (loading) return <FullPageSpinner />;
+  if (!isDeveloper(user?.email)) return <Navigate to="/onboarding" replace />;
+  return <Outlet />;
 }

@@ -569,4 +569,68 @@ describe.skipIf(!hasEmulator)('database.rules.json', () => {
       );
     });
   });
+  /* ═════════ פאנל המפתח ═════════ */
+
+  describe('פאנל המפתח (developer panel)', () => {
+    const DEV_EMAIL = 'wbddwd55@gmail.com';
+    /** אותו מנגנון בדיוק בכל הבדיקות: uid כלשהו, עם claim של המייל הנכון. */
+    const asDeveloper = () => testEnv.authenticatedContext('uid-anyone', { email: DEV_EMAIL }).database();
+
+    it('חשבון המפתח קורא את כל אוסף המשתמשים בבת אחת — מותר', async () => {
+      await assertSucceeds(get(ref(asDeveloper(), 'users')));
+    });
+
+    it('חשבון המפתח קורא את כל אוסף roomCodes בבת אחת — מותר', async () => {
+      await assertSucceeds(get(ref(asDeveloper(), 'roomCodes')));
+    });
+
+    it('חשבון המפתח קורא metadata וחברים של חדר שהוא לא חבר בו — מותר', async () => {
+      await assertSucceeds(get(ref(asDeveloper(), `rooms/${OTHER_ROOM}/metadata`)));
+      await assertSucceeds(get(ref(asDeveloper(), `rooms/${OTHER_ROOM}/members`)));
+    });
+
+    it('הניצול: משתמש עם מייל אחר לא מקבל את אותה גישה, גם עם claim של email', async () => {
+      const impostor = testEnv
+        .authenticatedContext('uid-impostor', { email: 'not-the-dev@example.com' })
+        .database();
+      await assertFails(get(ref(impostor, 'users')));
+      await assertFails(get(ref(impostor, 'roomCodes')));
+      await assertFails(get(ref(impostor, `rooms/${OTHER_ROOM}/metadata`)));
+    });
+
+    it('הניצול: המנהל של OTHER_ROOM לא סורק users או roomCodes דרך הרשאתו כמנהל', async () => {
+      // OUTSIDER הוא אכן מנהל OTHER_ROOM ורשאי לקרוא את החדר שלו —
+      // אבל זה לא אמור לתת לו שום דריסה לאוספים הגלובליים.
+      await assertSucceeds(get(ref(as(OUTSIDER), `rooms/${OTHER_ROOM}/metadata`)));
+      await assertFails(get(ref(as(OUTSIDER), 'users')));
+      await assertFails(get(ref(as(OUTSIDER), 'roomCodes')));
+    });
+
+    it('חבר רגיל בחדר שלו עדיין קורא את המטא-דאטה כרגיל — הכלל הישן לא נשבר', async () => {
+      // בדיקת רגרסיה: הוספת .read חדש בצומת metadata/members לא אמורה
+      // לגעת בכלל הקיים שמאפשר לחבר פעיל לקרוא את rooms/$code כולו.
+      await assertSucceeds(get(ref(as(MEMBER), `rooms/${ROOM}/metadata`)));
+      await assertSucceeds(get(ref(as(MEMBER), `rooms/${ROOM}/members`)));
+    });
+
+    it('הניצול: זר לגמרי (לא חבר, לא המפתח) לא קורא metadata של חדר', async () => {
+      await assertFails(get(ref(as(STRANGER), `rooms/${OTHER_ROOM}/metadata`)));
+    });
+
+    it('חשבון המפתח לא מקבל שום זכות כתיבה — רק קריאה', async () => {
+      // ה-.read החדש לא נלווה בשום .write. כתיבה לפרופיל של מישהו אחר
+      // חייבת להיכשל בדיוק כמו לכל משתמש רגיל אחר.
+      await assertFails(
+        set(ref(asDeveloper(), `users/${MEMBER}/displayName`), 'שם מזויף')
+      );
+      await assertFails(
+        set(ref(asDeveloper(), `rooms/${OTHER_ROOM}/metadata/name`), 'שם מזויף')
+      );
+    });
+
+    it('הניצול: כתיבת claim מייל בלי חיבור אמיתי לא עוקפת — משתמש לא-מאומת נדחה תמיד', async () => {
+      const anon = testEnv.unauthenticatedContext().database();
+      await assertFails(get(ref(anon, 'users')));
+    });
+  });
 });
