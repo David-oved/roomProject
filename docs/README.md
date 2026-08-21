@@ -19,6 +19,7 @@
 | 08 | [08-checklist.md](./08-checklist.md) | Checklist התקנות + Checklist Firebase Console |
 | 09 | [09-best-practices.md](./09-best-practices.md) | Advanced tips, ביצועים, אבטחה, מלכודות נפוצות |
 | 10 | [10-versioning.md](./10-versioning.md) | **מנגנון הגרסאות והעדכון האוטומטי** — version.json, עדכון כפוי, שומר הלולאה |
+| 13 | [13-admin-console.md](./13-admin-console.md) | **קונסולת המנהל** — חוזה הנתונים בין האפליקציה לכלי הניהול המקומי |
 
 קבצים מוכנים לשימוש בשורש הפרויקט: `database.rules.json`, `storage.rules`.
 

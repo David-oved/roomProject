@@ -205,6 +205,90 @@
       }
     },
 
+    // ---------- משוב מהמשתמשים לקונסולת המנהל ----------
+    // ערוץ חד-כיווני: המשתמש כותב, קונסולת המנהל קוראת דרך Admin SDK.
+    //
+    // ‼️ .read נשאר false ברמת האוסף, וקריאה מותרת רק לרשומה של הכותב
+    //    עצמו. משוב מכיל תלונות על שותפים לחדר ופרטי מכשיר — אין שום
+    //    סיבה שמשתמש אחד יראה את מה שאחר כתב.
+    //
+    // ‼️ הרשומה נעולה אחרי היצירה (!data.exists()). הסטטוס, העדיפות
+    //    והתשובה שלי נשמרים תחת adminConsole/feedbackState — ראו
+    //    docs/13-admin-console.md. בלי ההפרדה הזו הייתי צריך לתת ללקוח
+    //    הרשאת כתיבה על שדות שהם עדות שלו עצמו.
+    "feedback": {
+      ".read": false,
+      "$feedbackId": {
+        ".read": "auth != null && data.child('userId').val() === auth.uid",
+        ".write": "auth != null && !data.exists() && newData.exists() && newData.child('userId').val() === auth.uid && root.child('rooms/' + newData.child('roomCode').val() + '/members/' + auth.uid + '/status').val() === 'active'",
+        ".validate": "newData.hasChildren(['roomCode', 'userId', 'type', 'subject', 'body', 'createdAt'])",
+
+        "roomCode":  { ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{6}$/)" },
+        "userId":    { ".validate": "newData.val() === auth.uid" },
+        "type":      { ".validate": "newData.val().matches(/^(bug|feature|issue|question|compliment|other)$/)" },
+        "subject":   { ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 80" },
+        "body":      { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 2000" },
+        "createdAt": { ".validate": "newData.isNumber()" },
+        // פרטי מכשיר לצורך שחזור תקלה. מחרוזות קצרות בלבד — זה שדה
+        // חופשי שמוצג לי בממשק, ולכן הוא גם משטח הזרקה פוטנציאלי.
+        "environment": {
+          "$key": { ".validate": "newData.isString() && newData.val().length <= 60" }
+        },
+        "attachments": {
+          "$index": {
+            "name":   { ".validate": "newData.isString() && newData.val().length <= 120" },
+            "size":   { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10485760" },
+            "url":    { ".validate": "newData.isString() && newData.val().matches(/^https:\\/\\/.+/) && newData.val().length <= 1000" },
+            "$other": { ".validate": false }
+          }
+        },
+        "$other": { ".validate": false }
+      }
+    },
+
+    // ---------- תיבת ההודעות ממנהל המערכת ----------
+    // הקונסולה כותבת (Admin SDK, עוקף כללים), המשתמש קורא את שלו בלבד.
+    //
+    // ‼️ המשתמש כותב כאן דבר אחד ויחיד: קבלות — readAt ו-clickedAt.
+    //    כל שאר השדות קפואים בתנאי הכתיבה עצמו, כי מעקב קריאה שאפשר
+    //    לזייף בו את גוף ההודעה אינו מעקב אלא קישוט.
+    "adminMessages": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$messageId": {
+          ".write": "auth != null && auth.uid === $uid && data.exists() && newData.exists() && newData.child('title').val() === data.child('title').val() && newData.child('body').val() === data.child('body').val() && newData.child('sentAt').val() === data.child('sentAt').val()",
+          "readAt":    { ".validate": "newData.isNumber()" },
+          "clickedAt": { ".validate": "newData.isNumber()" },
+          // כל שדה אחר מותר רק אם ערכו לא השתנה
+          "$other":    { ".validate": "data.exists() && newData.val() === data.val()" }
+        }
+      }
+    },
+
+    // ---------- השעיות ----------
+    // דגל חסימה שנכתב אך ורק על ידי הקונסולה. המשתמש קורא את שלו כדי
+    // שהאפליקציה תוכל לחסום אותו בכניסה.
+    //
+    // ‼️ מכוון שזה צומת נפרד ולא שדה תחת users/$uid: הלקוח כותב את
+    //    users/$uid ב-set מלא בהרשמה ובתיקון פרופיל, וכתיבה כזו הייתה
+    //    מוחקת דגל השעיה שיושב באותו אובייקט. כאן אין לו הרשאת כתיבה
+    //    בכלל, ולכן אין דרך לנקות אותו מהלקוח.
+    "suspensions": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+
+    // ---------- מרחב העבודה של קונסולת המנהל ----------
+    // סטטוסים של משוב, הודעות שיצאו, תבניות, הגדרות התראות, יומן
+    // ביקורת וגיבויים. נגיש אך ורק ל-Admin SDK שרץ על המחשב שלי.
+    // מפורש ולא מסתמך על ברירת המחדל — כדי שיהיה ברור שזו כוונה.
+    "adminConsole": {
+      ".read": false,
+      ".write": false
+    },
+
     // ================= חדרים =================
     "rooms": {
       "$code": {
