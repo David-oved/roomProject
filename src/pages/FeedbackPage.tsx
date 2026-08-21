@@ -8,6 +8,7 @@ import { useAuth } from '../store/AuthContext';
 import { useConnection } from '../store/ConnectionContext';
 import { useToast } from '../store/ToastContext';
 import { useAdminMessages } from '../hooks/useAdminMessages';
+import { useMyRoomNames } from '../hooks/useMyRoomNames';
 import {
   BODY_MAX,
   SUBJECT_MAX,
@@ -53,6 +54,8 @@ export default function FeedbackPage() {
   const { messages } = useAdminMessages();
 
   const myRooms = useMemo(() => Object.keys(profile?.rooms ?? {}), [profile?.rooms]);
+  // הבורר מציג שמות ולא קודים — משתמש לא זוכר את החדר שלו לפי AB2K7Q
+  const roomNames = useMyRoomNames(myRooms);
   const [roomCode, setRoomCode] = useState(() => params.get('room') ?? myRooms[0] ?? '');
   const [type, setType] = useState<FeedbackType>('bug');
   const [subject, setSubject] = useState('');
@@ -200,7 +203,7 @@ export default function FeedbackPage() {
                     >
                       {myRooms.map((code) => (
                         <option key={code} value={code}>
-                          {code}
+                          {roomNames[code] ? `${roomNames[code]} (${code})` : code}
                         </option>
                       ))}
                     </select>
