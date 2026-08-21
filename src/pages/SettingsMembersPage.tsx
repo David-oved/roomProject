@@ -16,6 +16,7 @@ import { useConfirm } from '../store/ConfirmContext';
 import { approveJoinRequest, rejectJoinRequest, removeMember } from '../services/roomService';
 import { formatFullDate, formatRelativeTime } from '../lib/format';
 import { friendlyError } from '../lib/errors';
+import { useHintRef } from '../store/HintContext';
 
 export default function SettingsMembersPage() {
   const { roomCode, metadata, activeMembers, isAdmin, loading, error: roomError, fromCache } = useRoom();
@@ -25,8 +26,23 @@ export default function SettingsMembersPage() {
   const toast = useToast();
   const confirm = useConfirm();
   const [busy, setBusy] = useState<string | null>(null);
+  const approveHintRef = useHintRef<HTMLButtonElement>(
+    'settingsMembers.approve',
+    'מאשר את הבקשה והופך את המבקש לחבר בחדר'
+  );
+  const rejectHintRef = useHintRef<HTMLButtonElement>(
+    'settingsMembers.reject',
+    'דוחה את בקשת ההצטרפות אחרי אישור נוסף'
+  );
+  const removeHintRef = useHintRef<HTMLButtonElement>(
+    'settingsMembers.remove',
+    'מסיר את החבר מהחדר; הקניות שלו נשארות בהיסטוריה'
+  );
 
   const guard = { disabled: !isOnline, title: isOnline ? undefined : 'פעולה זו דורשת חיבור לאינטרנט' };
+  // כפתור "הסר" מוצג רק לחבר שאינו אני — לא ל-idx===0 הסתמי, שעלול
+  // להיות אני עצמי (בלי כפתור הסרה בכלל).
+  const firstRemovableIdx = activeMembers.findIndex((m) => m.id !== user?.uid);
 
   // שגיאת החדר קודמת לשגיאת בקשות ההצטרפות — היא הסיבה השורשית
   const membersError = roomError ?? reqError;
@@ -43,7 +59,7 @@ export default function SettingsMembersPage() {
                 בקשות הצטרפות (<span className="num">{requests.length}</span>)
               </h2>
               <ul className="space-y-2">
-                {requests.map((r) => (
+                {requests.map((r, idx) => (
                   <li key={r.id} className="card p-4">
                     <div className="flex items-center gap-3">
                       <Avatar name={r.displayName} uid={r.userId} src={r.avatar} size="md" />
@@ -62,6 +78,7 @@ export default function SettingsMembersPage() {
 
                     <div className="mt-3 flex gap-2">
                       <Button
+                        ref={idx === 0 ? approveHintRef : undefined}
                         size="sm"
                         fullWidth
                         {...guard}
@@ -78,6 +95,7 @@ export default function SettingsMembersPage() {
                         אישור
                       </Button>
                       <Button
+                        ref={idx === 0 ? rejectHintRef : undefined}
                         size="sm"
                         variant="secondary"
                         {...guard}
@@ -117,7 +135,7 @@ export default function SettingsMembersPage() {
               <ErrorState message={friendlyError(membersError)} onRetry={() => location.reload()} />
             ) : (
               <ul className="card divide-y divide-ink-100">
-                {activeMembers.map((m) => (
+                {activeMembers.map((m, idx) => (
                   <li key={m.id} className="flex items-center gap-3 px-4 py-3">
                     <Avatar name={m.name} uid={m.id} src={m.avatar} size="sm" />
                     <div className="min-w-0 flex-1">
@@ -139,6 +157,7 @@ export default function SettingsMembersPage() {
 
                     {isAdmin && m.id !== user?.uid && (
                       <Button
+                        ref={idx === firstRemovableIdx ? removeHintRef : undefined}
                         size="sm"
                         variant="ghost"
                         className="text-rose-600"

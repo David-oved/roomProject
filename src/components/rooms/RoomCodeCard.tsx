@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CopyIcon, ShareIcon } from '../ui/icons';
 import { useToast } from '../../store/ToastContext';
+import { useHintRef } from '../../store/HintContext';
 
 /** קישור הצטרפות ישיר. HashRouter — ולכן ה-# הכרחי. */
 function joinUrl(code: string): string {
@@ -18,6 +19,14 @@ export function RoomCodeCard({
 }) {
   const toast = useToast();
   const [copied, setCopied] = useState(false);
+  const copyHintRef = useHintRef<HTMLButtonElement>(
+    'rooms.copyCode',
+    'מעתיק את קוד החדר ללוח כדי לשלוח ידנית'
+  );
+  const shareHintRef = useHintRef<HTMLButtonElement>(
+    'rooms.shareCode',
+    'שולח קישור הצטרפות ישיר דרך וואטסאפ, SMS או כל אפליקציה'
+  );
 
   async function copy() {
     try {
@@ -65,6 +74,7 @@ export function RoomCodeCard({
 
       <div className={compact ? 'flex gap-1.5' : 'mt-4 flex justify-center gap-2'}>
         <button
+          ref={copyHintRef}
           onClick={copy}
           className="tap inline-flex items-center gap-1.5 rounded-xl border border-ink-200
                      bg-white px-3 text-sm font-semibold text-ink-700 transition
@@ -74,6 +84,7 @@ export function RoomCodeCard({
           {copied ? 'הועתק ✓' : 'העתק'}
         </button>
         <button
+          ref={shareHintRef}
           onClick={share}
           className="tap inline-flex items-center gap-1.5 rounded-xl bg-brand-700 px-3
                      text-sm font-semibold text-white transition active:scale-95 hover:bg-brand-800"

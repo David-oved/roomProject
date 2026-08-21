@@ -9,6 +9,7 @@ import { friendlyError } from '../lib/errors';
 import { useAuth } from '../store/AuthContext';
 import { useConnection } from '../store/ConnectionContext';
 import { CODE_LENGTH, isValidRoomCode, sanitizeRoomCode } from '../lib/roomCode';
+import { useHintRef } from '../store/HintContext';
 
 export default function JoinRoomPage() {
   const navigate = useNavigate();
@@ -23,7 +24,15 @@ export default function JoinRoomPage() {
 
   /** קודים שכבר ניסינו — מונע לולאת שליחה אוטומטית על קוד שנכשל */
   const attempted = useRef<Set<string>>(new Set());
-  const inputRef = useRef<HTMLInputElement>(null);
+  // ‼️ useRef<T | null> ולא useRef<T> — הראשון בוחר את ה-overload
+  // המוטבילי (MutableRefObject), הנדרש כי ה-ref על השדה משולב ידנית
+  // עם useHintRef ולכן צריך לכתוב ל-.current בעצמנו במקום שריאקט יעשה
+  // זאת אוטומטית.
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const autoSubmitHintRef = useHintRef<HTMLInputElement>(
+    'joinRoom.autoSubmit',
+    'הבקשה נשלחת אוטומטית ברגע שהקוד מלא — בלי צורך ללחוץ על כפתור'
+  );
 
   const submit = useCallback(
     async (value: string) => {
@@ -109,7 +118,10 @@ export default function JoinRoomPage() {
               קוד חדר בן {CODE_LENGTH} תווים
             </label>
             <input
-              ref={inputRef}
+              ref={(el) => {
+                inputRef.current = el;
+                autoSubmitHintRef(el);
+              }}
               id="room-code"
               value={code}
               onChange={(e) => {

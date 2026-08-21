@@ -14,6 +14,7 @@ import { clearRoomPrice, setRoomPrice, toggleStaple } from '../../services/catal
 import { reportItem } from '../../services/itemService';
 import { formatILS } from '../../lib/format';
 import { CATEGORY_EMOJI, CATEGORY_LABELS, type Category } from '../../types/models';
+import { useHintRef } from '../../store/HintContext';
 
 /**
  * מלאי הבית — מוצרי הבסיס של החדר.
@@ -96,7 +97,7 @@ export function StaplesView() {
       </div>
 
       <div className="space-y-4">
-        {grouped.map(([category, list]) => (
+        {grouped.map(([category, list], groupIdx) => (
           <section key={category}>
             <h3 className="mb-1.5 flex items-center gap-1.5 px-1 text-xs font-bold text-ink-500">
               <span aria-hidden>{CATEGORY_EMOJI[category]}</span>
@@ -105,8 +106,13 @@ export function StaplesView() {
             </h3>
 
             <ul className="card divide-y divide-ink-100">
-              {list.map((p) => (
-                <StapleRow key={p.id} product={p} alreadyReported={reported.has(p.id)} />
+              {list.map((p, idx) => (
+                <StapleRow
+                  key={p.id}
+                  product={p}
+                  alreadyReported={reported.has(p.id)}
+                  isFirst={groupIdx === 0 && idx === 0}
+                />
               ))}
             </ul>
           </section>
@@ -128,9 +134,11 @@ export function StaplesView() {
 function StapleRow({
   product,
   alreadyReported,
+  isFirst,
 }: {
   product: RoomProduct;
   alreadyReported: boolean;
+  isFirst?: boolean;
 }) {
   const { roomCode } = useRoom();
   const { user, profile } = useAuth();
@@ -138,6 +146,14 @@ function StapleRow({
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
+  const editPriceHintRef = useHintRef<HTMLButtonElement>(
+    isFirst ? 'staples.editPrice' : undefined,
+    'לוחצים כדי לעדכן את המחיר המשוער — נשמר רק לחדר הזה'
+  );
+  const reportHintRef = useHintRef<HTMLButtonElement>(
+    isFirst ? 'staples.report' : undefined,
+    'מדווח בלחיצה אחת שהמוצר הזה נגמר בבית'
+  );
 
   async function report() {
     if (!roomCode || !user || !profile) return;
@@ -166,6 +182,7 @@ function StapleRow({
       ) : (
         <>
           <button
+            ref={editPriceHintRef}
             onClick={() => setEditing(true)}
             disabled={!isOnline}
             aria-label={`שינוי מחיר עבור ${product.name}`}
@@ -188,6 +205,7 @@ function StapleRow({
             </Badge>
           ) : (
             <Button
+              ref={reportHintRef}
               size="sm"
               variant="secondary"
               className="shrink-0"
