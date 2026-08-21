@@ -9,6 +9,7 @@
 const KEYS = {
   lastEmail: 'rm:last-email',
   lastRoom: 'rm:last-room',
+  tutorialSeen: 'rm:tutorial-seen',
 } as const;
 
 function read(key: string): string | null {
@@ -36,8 +37,14 @@ export const setLastEmail = (email: string) => write(KEYS.lastEmail, email.trim(
 export const getLastRoom = () => read(KEYS.lastRoom);
 export const setLastRoom = (code: string | null) => write(KEYS.lastRoom, code);
 
+/** האם ההדרכה הראשונית כבר הוצגה במכשיר הזה */
+export const getTutorialSeen = () => read(KEYS.tutorialSeen) === '1';
+export const setTutorialSeen = (seen: boolean) => write(KEYS.tutorialSeen, seen ? '1' : null);
+
 /** ניקוי מלא — נקרא ביציאה מהחשבון */
 export function clearPrefs(): void {
   write(KEYS.lastRoom, null);
   // האימייל נשאר בכוונה: הוא לא סוד, והוא חוסך הקלדה בכניסה הבאה
+  // tutorialSeen נשאר גם הוא — אין סיבה להטריד משתמש חוזר בהדרכה שנייה
+  // רק כי הוא התנתק והתחבר שוב באותו מכשיר
 }

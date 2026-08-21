@@ -2,6 +2,7 @@ import { Button } from '../ui/Button';
 import { RefreshIcon } from '../ui/icons';
 import { useConnection } from '../../store/ConnectionContext';
 import { useUpdate } from '../../store/UpdateContext';
+import { useTutorial } from '../../store/TutorialContext';
 import { APP_VERSION, BUILD_TIME } from '../../lib/version';
 import { formatSmartDate } from '../../lib/format';
 
@@ -9,6 +10,7 @@ import { formatSmartDate } from '../../lib/format';
 export function AboutSettings() {
   const { isOnline } = useConnection();
   const { status, remote, checkNow, applyUpdate } = useUpdate();
+  const { openTutorial } = useTutorial();
 
   return (
     <section className="card p-4">
@@ -59,6 +61,12 @@ export function AboutSettings() {
       <p className="mt-2 text-[11px] leading-relaxed text-ink-500">
         האפליקציה בודקת עדכונים אוטומטית בכל כניסה. עדכון מוריד מחדש את כל קבצי האפליקציה.
       </p>
+
+      <div className="mt-4 border-t border-ink-100 pt-4">
+        <Button variant="secondary" fullWidth onClick={openTutorial}>
+          🎓 הצגת ההדרכה מחדש
+        </Button>
+      </div>
     </section>
   );
 }

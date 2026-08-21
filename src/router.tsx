@@ -2,6 +2,8 @@ import { lazy, Suspense } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { RequireAuth, RequireGuest, RequireRoomMember } from './components/auth/guards';
 import { RoomProvider } from './store/RoomContext';
+import { TutorialProvider } from './store/TutorialContext';
+import { TutorialModal } from './components/onboarding/TutorialModal';
 import { FullPageSpinner } from './components/ui/Spinner';
 import { ErrorBoundary } from './components/system/ErrorBoundary';
 
@@ -55,7 +57,10 @@ function RouteBoundary() {
 function RoomLayout() {
   return (
     <RoomProvider>
-      <Outlet />
+      <TutorialProvider>
+        <Outlet />
+        <TutorialModal />
+      </TutorialProvider>
     </RoomProvider>
   );
 }
