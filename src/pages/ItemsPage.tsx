@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AppShell } from '../components/layout/AppShell';
+import { RoomArchivedBanner } from '../components/system/RoomArchivedBanner';
 import { TopBar } from '../components/layout/TopBar';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -51,6 +52,9 @@ export default function ItemsPage() {
     isStaples ? 'open' : (filter as ItemStatus | 'open')
   );
   const { isOnline } = useConnection();
+  // חדר בארכיון = קריאה בלבד. אותה השבתה כמו אופליין, נימוק אחר.
+  const { isArchived } = useRoom();
+  const canWrite = isOnline && !isArchived;
   // ‼️ הוק אחד לכל הדף — לא אחד לכל שורה. useCatalog פותח שלוש האזנות
   // RTDB ובונה מחדש את כל הקטלוג; קריאה שלו בתוך ItemCard הכפילה את זה
   // במספר הפריטים על המסך.
@@ -107,13 +111,21 @@ export default function ItemsPage() {
             ref={reportHintRef}
             size="sm"
             onClick={() => setReportOpen(true)}
-            disabled={!isOnline}
-            title={isOnline ? undefined : 'פעולה זו דורשת חיבור לאינטרנט'}
+            disabled={!canWrite}
+            title={
+              isArchived
+                ? 'החדר בארכיון — לצפייה בלבד'
+                : isOnline
+                  ? undefined
+                  : 'פעולה זו דורשת חיבור לאינטרנט'
+            }
           >
             + דיווח
           </Button>
         }
       />
+
+      <RoomArchivedBanner />
 
       {/* פילטרים */}
       <div className="scroll-area -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 pt-4">
@@ -161,7 +173,7 @@ export default function ItemsPage() {
             }
             action={
               filter !== 'done' && (
-                <Button ref={reportEmptyHintRef} onClick={() => setReportOpen(true)} disabled={!isOnline}>
+                <Button ref={reportEmptyHintRef} onClick={() => setReportOpen(true)} disabled={!canWrite}>
                   דיווח על מוצר חסר
                 </Button>
               )
@@ -209,7 +221,7 @@ function ItemCard({
   isFirst: boolean;
 }) {
   const { user } = useAuth();
-  const { roomCode, isAdmin, memberName } = useRoom();
+  const { roomCode, isAdmin, isArchived, memberName } = useRoom();
   const { isOnline } = useConnection();
   const toast = useToast();
   const confirm = useConfirm();
@@ -233,7 +245,7 @@ function ItemCard({
 
   const mine = item.assignedTo === user?.uid;
   const guard = {
-    disabled: !isOnline || busy,
+    disabled: !isOnline || isArchived || busy,
     title: isOnline ? undefined : 'פעולה זו דורשת חיבור לאינטרנט',
   };
 

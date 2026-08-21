@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AppShell } from '../components/layout/AppShell';
+import { RoomArchivedBanner } from '../components/system/RoomArchivedBanner';
 import { TopBar } from '../components/layout/TopBar';
 import { Avatar } from '../components/ui/Avatar';
 import { Badge } from '../components/ui/Badge';
@@ -22,7 +23,7 @@ import { CATEGORY_EMOJI, CATEGORY_LABELS, type Task, type TaskTransfer, type Wit
 import { useHintRef } from '../store/HintContext';
 
 export default function TasksPage() {
-  const { roomCode, isAdmin, memberName, activeMembers } = useRoom();
+  const { roomCode, isAdmin, isArchived, memberName, activeMembers } = useRoom();
   const { user, profile } = useAuth();
   const { isOnline } = useConnection();
   const { tasks, loading, error, fromCache } = useTasks();
@@ -35,7 +36,7 @@ export default function TasksPage() {
   const [transferring, setTransferring] = useState<WithId<Task> | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
-  const guard = { disabled: !isOnline };
+  const guard = { disabled: !isOnline || isArchived };
 
   const addTaskHintRef = useHintRef<HTMLButtonElement>(
     'tasks.add',
@@ -93,12 +94,13 @@ export default function TasksPage() {
         back={`/r/${roomCode}`}
         actions={
           isAdmin && (
-            <Button ref={addTaskHintRef} size="sm" onClick={() => setAddOpen(true)} disabled={!isOnline}>
+            <Button ref={addTaskHintRef} size="sm" onClick={() => setAddOpen(true)} disabled={!isOnline || isArchived}>
               + מטלה
             </Button>
           )
         }
       />
+      <RoomArchivedBanner />
 
       <div className="space-y-5 pt-4">
         {incoming.length > 0 && (
@@ -119,7 +121,7 @@ export default function TasksPage() {
                     <Button
                       ref={idx === 0 ? transferAcceptHintRef : undefined}
                       size="sm"
-                      disabled={!isOnline || busy === t.id}
+                      disabled={!isOnline || isArchived || busy === t.id}
                       loading={busy === t.id}
                       onClick={() => run(t.id, () => respondToTransfer(t, true))}
                     >
@@ -129,7 +131,7 @@ export default function TasksPage() {
                       ref={idx === 0 ? transferRejectHintRef : undefined}
                       size="sm"
                       variant="ghost"
-                      disabled={!isOnline || busy === t.id}
+                      disabled={!isOnline || isArchived || busy === t.id}
                       onClick={() => run(t.id, () => respondToTransfer(t, false))}
                     >
                       דחייה
@@ -158,7 +160,7 @@ export default function TasksPage() {
               body={isAdmin ? 'הוסיפו מטלה ראשונה — למשל שטיפת כלים או פינוי אשפה.' : 'המנהל עדיין לא הוסיף מטלות קבועות.'}
               action={
                 isAdmin && (
-                  <Button ref={addTaskEmptyHintRef} onClick={() => setAddOpen(true)} disabled={!isOnline}>
+                  <Button ref={addTaskEmptyHintRef} onClick={() => setAddOpen(true)} disabled={!isOnline || isArchived}>
                     הוספת מטלה
                   </Button>
                 )
@@ -198,7 +200,7 @@ export default function TasksPage() {
                             ref={idx === firstMineIdx ? completeHintRef : undefined}
                             size="sm"
                             {...guard}
-                            disabled={!isOnline || busy === t.id}
+                            disabled={!isOnline || isArchived || busy === t.id}
                             loading={busy === t.id}
                             onClick={() =>
                               run(t.id, () =>

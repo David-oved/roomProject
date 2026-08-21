@@ -413,6 +413,10 @@ route('POST', '/api/feedback/:id/respond', async ({ db, state, params, body }) =
       kind: 'info',
       sentAt,
       readAt: null,
+      // ‼️ מקשר את ההודעה לפנייה. בלי זה האפליקציה לא יכולה לסמן
+      //    "נענתה" ליד הפנייה, והמשתמש לא יודע שההודעה שקיבל היא
+      //    התשובה לדבר ששאל לפני שבוע.
+      relatedFeedback: params.id,
     });
   }
 
@@ -774,8 +778,12 @@ route('GET', '/api/system', ({ state }) => {
   const usage = process.memoryUsage();
   return {
     mode: config.mode,
-    databaseURL: config.databaseURL,
-    serviceAccount: config.serviceAccountPath ? 'נטען' : 'חסר',
+    databaseURL: config.source,
+    serviceAccount: config.emulatorHost
+      ? 'לא נדרש (אמולטור)'
+      : config.serviceAccountPath
+        ? 'נטען'
+        : 'חסר',
     missing: config.missing,
     uptimeSec: Math.round(process.uptime()),
     memoryMb: Math.round(usage.rss / 1024 / 1024),

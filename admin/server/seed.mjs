@@ -62,7 +62,7 @@ const PRODUCTS = [
 
 const ROOM_BLUEPRINTS = [
   {
-    code: 'AB12',
+    code: 'AB2K7Q',
     name: 'מעונות 205',
     description: 'שלושה סטודנטים ומקרר אחד',
     health: 'healthy',
@@ -75,7 +75,7 @@ const ROOM_BLUEPRINTS = [
     pendingRequests: 0,
   },
   {
-    code: 'CD34',
+    code: 'CD4RM8',
     name: 'דירת שותפים רמת גן',
     description: 'שמונה שותפים, מטבח אחד, הרבה קפה',
     health: 'risk',
@@ -91,7 +91,7 @@ const ROOM_BLUEPRINTS = [
     imbalance: 45_000,
   },
   {
-    code: 'EF56',
+    code: 'EF5TP3',
     name: 'מעונות 201',
     description: 'החדר שכולם שכחו',
     health: 'critical',
@@ -106,7 +106,7 @@ const ROOM_BLUEPRINTS = [
     imbalance: 240_000,
   },
   {
-    code: 'GH78',
+    code: 'GH7WS6',
     name: 'מעונות 105',
     description: 'שלושה, רגועים',
     health: 'healthy',
@@ -119,7 +119,7 @@ const ROOM_BLUEPRINTS = [
     pendingRequests: 0,
   },
   {
-    code: 'IJ90',
+    code: 'JK9XN4',
     name: 'דירת הגן',
     description: 'חדר חדש, עוד לומדים את המערכת',
     health: 'new',
@@ -422,7 +422,7 @@ export function buildSeed(now = Date.now()) {
   /* ── משוב מהחדרים ── */
   const feedback = {
     fb_1: {
-      roomCode: 'AB12',
+      roomCode: 'AB2K7Q',
       userId: 'u_david',
       type: 'bug',
       subject: 'לוח המחוונים לא נטען בנייד',
@@ -433,7 +433,7 @@ export function buildSeed(now = Date.now()) {
       createdAt: now - 4 * HOUR,
     },
     fb_2: {
-      roomCode: 'CD34',
+      roomCode: 'CD4RM8',
       userId: 'u_shalom',
       type: 'feature',
       subject: 'להוסיף מוצרים חוזרים',
@@ -443,7 +443,7 @@ export function buildSeed(now = Date.now()) {
       createdAt: now - 30 * HOUR,
     },
     fb_3: {
-      roomCode: 'IJ90',
+      roomCode: 'JK9XN4',
       userId: 'u_maya',
       type: 'question',
       subject: 'איך מחלקים בחלוקה מותאמת?',
@@ -453,7 +453,7 @@ export function buildSeed(now = Date.now()) {
       createdAt: now - 2 * DAY,
     },
     fb_4: {
-      roomCode: 'EF56',
+      roomCode: 'EF5TP3',
       userId: 'u_roi',
       type: 'issue',
       subject: 'המאזן שלי לא מסתדר',
@@ -463,7 +463,7 @@ export function buildSeed(now = Date.now()) {
       createdAt: now - 5 * DAY,
     },
     fb_5: {
-      roomCode: 'GH78',
+      roomCode: 'GH7WS6',
       userId: 'u_itay',
       type: 'compliment',
       subject: 'תודה על סבב המטלות',
@@ -473,7 +473,7 @@ export function buildSeed(now = Date.now()) {
       createdAt: now - 8 * DAY,
     },
     fb_6: {
-      roomCode: 'CD34',
+      roomCode: 'CD4RM8',
       userId: 'u_omer',
       type: 'bug',
       subject: 'התראות פוש לא מגיעות',

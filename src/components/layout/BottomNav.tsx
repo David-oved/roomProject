@@ -1,6 +1,7 @@
 import { NavLink, useNavigate, useParams } from 'react-router-dom';
 import { CartIcon, ChatIcon, HomeIcon, PlusIcon, WalletIcon } from '../ui/icons';
 import { useConnection } from '../../store/ConnectionContext';
+import { useRoom } from '../../store/RoomContext';
 import { useHintRef } from '../../store/HintContext';
 
 /**
@@ -26,6 +27,7 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const { isOnline } = useConnection();
+  const { isArchived } = useRoom();
   const fabHintRef = useHintRef<HTMLButtonElement>(
     'nav.fab',
     'פותח ישר טופס להוספת מוצר חסר חדש'
@@ -94,8 +96,14 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
             ref={fabHintRef}
             type="button"
             onClick={() => navigate(`${base}/items?new=1`)}
-            disabled={!isOnline}
-            title={isOnline ? 'דיווח על מוצר חסר' : 'פעולה זו דורשת חיבור לאינטרנט'}
+            disabled={!isOnline || isArchived}
+            title={
+              isArchived
+                ? 'החדר בארכיון — לצפייה בלבד'
+                : isOnline
+                  ? 'דיווח על מוצר חסר'
+                  : 'פעולה זו דורשת חיבור לאינטרנט'
+            }
             aria-label="דיווח על מוצר חסר"
             className="relative -mt-3.5 grid h-14 w-14 place-items-center rounded-2xl text-white
                        shadow-fab ring-4 ring-white transition-transform duration-150 ease-out

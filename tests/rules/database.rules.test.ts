@@ -4,7 +4,7 @@ import {
   assertSucceeds,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { ref, remove, set } from 'firebase/database';
+import { get, ref, remove, set, update } from 'firebase/database';
 import {
   ADMIN,
   HTTPS_AVATAR,
@@ -385,6 +385,187 @@ describe.skipIf(!hasEmulator)('database.rules.json', () => {
           ref(as(ADMIN), `rooms/${ROOM}/notifications/n5`),
           notification({ actorId: MEMBER2, actorName: 'חברה' })
         )
+      );
+    });
+  });
+  /* ═════════ הערוץ מול מנהל המערכת ═════════ */
+
+  /**
+   * שלושת הצמתים שנוספו יחד עם קונסולת הניהול (docs/13-admin-console.md).
+   * שלושתם חולקים אותה תבנית: הלקוח רשאי לעשות בהם דבר אחד ומדויק,
+   * וכל השאר סגור — כי הצד השני של הערוץ הוא Admin SDK שעוקף כללים
+   * לגמרי, ולכן כאן נמצאת כל ההגבלה שקיימת.
+   */
+
+  describe('feedback', () => {
+    const feedback = (over: Record<string, unknown> = {}) => ({
+      roomCode: ROOM,
+      userId: MEMBER,
+      type: 'bug',
+      subject: 'הכפתור לא עובד',
+      body: 'לחצתי ולא קרה כלום',
+      createdAt: T,
+      ...over,
+    });
+
+    it('חבר פעיל שולח משוב על החדר שלו — מותר', async () => {
+      await assertSucceeds(set(ref(as(MEMBER), 'feedback/f1'), feedback()));
+    });
+
+    it('פרטי מכשיר מצורפים — מותר', async () => {
+      await assertSucceeds(
+        set(
+          ref(as(MEMBER), 'feedback/f2'),
+          feedback({ environment: { browser: 'Safari', os: 'iOS', appVersion: '1.21.0' } })
+        )
+      );
+    });
+
+    it('הניצול: כתיבת משוב בשם משתמש אחר — נחסם', async () => {
+      await assertFails(set(ref(as(MEMBER), 'feedback/f3'), feedback({ userId: MEMBER2 })));
+    });
+
+    it('הניצול: משוב על חדר שהכותב אינו חבר בו — נחסם', async () => {
+      // בלי הבדיקה הזו אפשר להציף את תיבת המנהל בפניות על חדרים זרים
+      await assertFails(
+        set(ref(as(MEMBER), 'feedback/f4'), feedback({ roomCode: OTHER_ROOM }))
+      );
+    });
+
+    it('עריכת משוב שכבר נשלח — נחסם', async () => {
+      await given('feedback/f5', feedback());
+      await assertFails(
+        set(ref(as(MEMBER), 'feedback/f5'), feedback({ body: 'נוסח אחר לגמרי' }))
+      );
+    });
+
+    it('מחיקת משוב שכבר נשלח — נחסם', async () => {
+      await given('feedback/f6', feedback());
+      await assertFails(remove(ref(as(MEMBER), 'feedback/f6')));
+    });
+
+    it('סוג משוב שאינו ברשימה — נחסם', async () => {
+      await assertFails(set(ref(as(MEMBER), 'feedback/f7'), feedback({ type: 'spam' })));
+    });
+
+    it('נושא קצר משלושה תווים — נחסם (אותו סף כמו בלקוח)', async () => {
+      await assertFails(set(ref(as(MEMBER), 'feedback/f8'), feedback({ subject: 'אב' })));
+    });
+
+    it('הכותב קורא את הפנייה שלו — מותר', async () => {
+      await given('feedback/f9', feedback());
+      await assertSucceeds(get(ref(as(MEMBER), 'feedback/f9')));
+    });
+
+    it('הניצול: חבר קורא פנייה של מישהו אחר — נחסם', async () => {
+      await given('feedback/f10', feedback());
+      await assertFails(get(ref(as(MEMBER2), 'feedback/f10')));
+    });
+
+    it('הניצול: סריקת כל אוסף המשוב — נחסם', async () => {
+      await given('feedback/f11', feedback());
+      await assertFails(get(ref(as(MEMBER), 'feedback')));
+    });
+  });
+
+  describe('adminMessages', () => {
+    const message = (over: Record<string, unknown> = {}) => ({
+      title: 'תחזוקה הלילה',
+      body: 'המערכת לא תהיה זמינה בין 02:00 ל-04:00',
+      kind: 'warning',
+      sentAt: T,
+      readAt: null,
+      ...over,
+    });
+
+    it('המשתמש קורא את התיבה שלו — מותר', async () => {
+      await given(`adminMessages/${MEMBER}/m1`, message());
+      await assertSucceeds(get(ref(as(MEMBER), `adminMessages/${MEMBER}`)));
+    });
+
+    it('הניצול: קריאת התיבה של משתמש אחר — נחסם', async () => {
+      await given(`adminMessages/${MEMBER}/m1`, message());
+      await assertFails(get(ref(as(MEMBER2), `adminMessages/${MEMBER}`)));
+    });
+
+    it('סימון נקרא — מותר', async () => {
+      await given(`adminMessages/${MEMBER}/m1`, message());
+      await assertSucceeds(
+        update(ref(as(MEMBER), `adminMessages/${MEMBER}/m1`), { readAt: T + 1 })
+      );
+    });
+
+    it('סימון לחיצה על כפתור הפעולה — מותר', async () => {
+      await given(`adminMessages/${MEMBER}/m1`, message());
+      await assertSucceeds(
+        update(ref(as(MEMBER), `adminMessages/${MEMBER}/m1`), { clickedAt: T + 2 })
+      );
+    });
+
+    it('הניצול: שינוי גוף ההודעה תוך כדי סימון נקרא — נחסם', async () => {
+      // ‼️ בלי הקפאת השדות, "מעקב קריאה" הופך לקישוט: המשתמש יכול
+      //    לשכתב את מה שהמנהל שלח ואז לטעון שקרא משהו אחר.
+      await given(`adminMessages/${MEMBER}/m1`, message());
+      await assertFails(
+        update(ref(as(MEMBER), `adminMessages/${MEMBER}/m1`), {
+          readAt: T + 1,
+          body: 'הודעה שלא נשלחה מעולם',
+        })
+      );
+    });
+
+    it('הניצול: יצירת הודעה "ממנהל המערכת" יש מאין — נחסם', async () => {
+      await assertFails(set(ref(as(MEMBER), `adminMessages/${MEMBER}/fake`), message()));
+    });
+
+    it('הניצול: שתילת הודעה בתיבה של משתמש אחר — נחסם', async () => {
+      await assertFails(set(ref(as(MEMBER), `adminMessages/${MEMBER2}/fake`), message()));
+    });
+
+    it('מחיקת הודעה מהתיבה — נחסם', async () => {
+      await given(`adminMessages/${MEMBER}/m1`, message());
+      await assertFails(remove(ref(as(MEMBER), `adminMessages/${MEMBER}/m1`)));
+    });
+  });
+
+  describe('suspensions', () => {
+    const suspension = { at: T, reason: 'שימוש לרעה' };
+
+    it('המשתמש קורא את מצב החסימה של עצמו — מותר', async () => {
+      await given(`suspensions/${MEMBER}`, suspension);
+      await assertSucceeds(get(ref(as(MEMBER), `suspensions/${MEMBER}`)));
+    });
+
+    it('הניצול: מחיקת החסימה של עצמי — נחסם', async () => {
+      await given(`suspensions/${MEMBER}`, suspension);
+      await assertFails(remove(ref(as(MEMBER), `suspensions/${MEMBER}`)));
+    });
+
+    it('הניצול: חסימת משתמש אחר — נחסם', async () => {
+      await assertFails(set(ref(as(MEMBER), `suspensions/${MEMBER2}`), suspension));
+    });
+
+    it('הניצול: קריאת החסימה של משתמש אחר — נחסם', async () => {
+      await given(`suspensions/${MEMBER2}`, suspension);
+      await assertFails(get(ref(as(MEMBER), `suspensions/${MEMBER2}`)));
+    });
+  });
+
+  describe('adminConsole', () => {
+    it('הניצול: קריאת מרחב העבודה של המנהל — נחסם', async () => {
+      await given('adminConsole/feedbackState/f1', { status: 'new', priority: 'high' });
+      await assertFails(get(ref(as(MEMBER), 'adminConsole/feedbackState/f1')));
+    });
+
+    it('הניצול: שינוי סטטוס הטיפול בפנייה שלי — נחסם', async () => {
+      await assertFails(
+        set(ref(as(MEMBER), 'adminConsole/feedbackState/f1'), { status: 'resolved' })
+      );
+    });
+
+    it('הניצול: כתיבה ליומן הביקורת — נחסם', async () => {
+      await assertFails(
+        set(ref(as(ADMIN), 'adminConsole/auditLog/x1'), { action: 'לא קרה', at: T })
       );
     });
   });

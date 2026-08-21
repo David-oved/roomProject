@@ -30,7 +30,7 @@ adminConsole/**                ← הקונסולה בלבד. הלקוח לא ר
 
 ```jsonc
 {
-  "roomCode": "AB12",              // חדר שהמשתמש חבר פעיל בו
+  "roomCode": "AB2K7Q",              // חדר שהמשתמש חבר פעיל בו
   "userId": "<auth.uid>",          // חייב להיות הכותב עצמו
   "type": "bug",                   // bug | feature | issue | question | compliment | other
   "subject": "לוח המחוונים לא נטען בנייד",   // 3–80 תווים
@@ -168,13 +168,76 @@ adminConsole/**                ← הקונסולה בלבד. הלקוח לא ר
 
 ---
 
-## 6 · רשימת משימות לצד הלקוח
+## 6 · מה כבר קיים בצד הלקוח
 
-- [ ] מסך „שליחת משוב” שכותב ל-`feedback/{id}` (כולל `environment`)
-- [ ] תיבת „הודעות ממנהל המערכת” שקוראת מ-`adminMessages/{uid}` ומסמנת
-      `readAt` בפתיחה בפועל ו-`clickedAt` בלחיצה על ה-CTA
-- [ ] חסימת כניסה כש-`suspensions/{uid}` קיים
-- [ ] תג „מנהל המערכת” על שידור עם `fromSystemAdmin`
-- [ ] מצב קריאה-בלבד לחדר עם `metadata/archivedAt`
-- [ ] עדכון `users/{uid}/lastActiveAt` בכל כניסה — הקונסולה נשענת עליו
-      לזיהוי משתמשים פעילים, בסיכון ורדומים
+כל הסעיפים למעלה ממומשים באפליקציה. המפה, למי שמחפש איפה לגעת:
+
+| מה | איפה |
+|---|---|
+| שליחת משוב (כולל איסוף `environment` אוטומטי) | `src/services/feedbackService.ts` · `src/pages/FeedbackPage.tsx` |
+| תיבת ההודעות + סימון `readAt` / `clickedAt` | `src/services/adminMessageService.ts` · `src/pages/AdminMessagesPage.tsx` |
+| באנר הודעה חדשה במסך הבית | `src/components/system/AdminMessageBanner.tsx` |
+| חסימת משתמש + מסך ערעור | `src/hooks/useAdminMessages.ts` (`useSuspension`) · `src/pages/SuspendedPage.tsx` · `RequireAuth` |
+| חדר בארכיון: באנר + חסימת כתיבה | `src/components/system/RoomArchivedBanner.tsx` · `src/services/guard.ts` (`assertRoomWritable`) |
+| תג "מנהל המערכת" על שידור | `src/pages/AnnouncementsPage.tsx` |
+| דופק `lastActiveAt` בכל פתיחת אפליקציה | `src/store/AuthContext.tsx` |
+
+### הערות מימוש ששווה להכיר
+
+**המשוב הוא "שגר ושכח" מבחינת הלקוח.** הכללים מתירים קריאה של פנייה
+בודדת אך לא סריקה של האוסף, ולכן "הפניות ששלחתי" נשען על רשימה מקומית
+(`src/lib/prefs.ts`). מחיקת נתוני הדפדפן מוחקת את הרשימה — הפנייה עצמה
+נשארת אצל המנהל. זה המחיר, והוא זול מלפתוח את האוסף לקריאה.
+
+**חסימת הכתיבה בחדר מאורכב עוברת דרך שכבת ה-services**, בדיוק כמו מצב
+אופליין: `RoomProvider` דוחף את המצב ל-`guard.ts`, וכל פונקציית כתיבה
+קוראת ל-`assertRoomWritable(code, …)` מיד אחרי `assertOnline(…)`. הצ׳אט
+נשאר פתוח בכוונה — חדר שהועבר לארכיון הוא בדיוק המצב שבו השותפים
+צריכים לדבר על מה שקרה.
+
+**החסימה נאכפת בשרת, לא במסך.** `RequireAuth` מציג את מסך החסימה, אבל
+מה שבאמת חוסם הוא שהקונסולה מסירה גישה בצד הנתונים. המסך קיים כדי
+להסביר — ולתת דרך לערער דרך ערוץ המשוב הרגיל.
+
+---
+
+## 7 · פיתוח ובדיקה מקומית
+
+```bash
+npm run emu        # אמולטורים (Auth + RTDB) עם הכללים האמיתיים
+npm run emu:seed   # 14 משתמשים, 5 חדרים, משוב, הודעות, חדר בארכיון ומשתמש חסום
+npm run dev        # האפליקציה, מול האמולטור (VITE_USE_EMULATORS=true)
+```
+
+לחיבור קונסולת הניהול לאותם נתונים — בלי מפתח ייצור:
+
+```bash
+FIREBASE_DATABASE_EMULATOR_HOST=127.0.0.1:9000 \
+GCLOUD_PROJECT=<project-id> npm run admin:server
+```
+
+הזריעה יוצרת משתמשי Authentication אמיתיים, כך שאפשר להתחבר דרך מסך
+ההתחברות: `david@example.com` / `roommate123` (חבר בשני חדרים, יש לו
+הודעות ופנייה שנענתה), ו-`adi@example.com` / `roommate123` (חסום).
+
+בדיקות:
+
+```bash
+npm test              # יחידה — כולל ולידציית המשוב ושומר הארכיון
+npm run test:rules    # כללי האבטחה מול אמולטור, כולל הצמתים כאן
+```
+
+---
+
+## 8 · מלכודת שכבר נפלנו בה
+
+קודי החדר בנתוני ההדגמה נבנו בתחילה בני ארבעה תווים (`AB12`), בעוד
+שהמערכת מייצרת קודים בני שישה. בקונסולה הכול נראה תקין — היא קוראת
+דרך Admin SDK ולכן עוקפת כללים — אבל **כל כתיבה מהאפליקציה לחדרים
+האלה נדחתה** ב-`PERMISSION_DENIED`, כי `roomCode` נבדק מול
+`/^[A-Z0-9]{6}$/`.
+
+המסקנה שנשארה בקוד: נתוני הדגמה שנקראים רק דרך Admin SDK אינם מוכיחים
+כלום על הלקוח. הבדיקה `tests/admin/adminConsole.test.ts → נתוני ההדגמה`
+נועלת את זה — היא מוודאת שכל קוד חדר בנתוני ההדגמה תקף גם לפי הכללים
+וגם לפי מחולל הקודים.

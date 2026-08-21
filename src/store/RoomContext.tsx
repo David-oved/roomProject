@@ -4,6 +4,7 @@ import { onDisconnect, ref, set } from 'firebase/database';
 import { db } from '../config/firebase';
 import { useRtdbList, useRtdbValue } from '../hooks/useRtdb';
 import { useAuth } from './AuthContext';
+import { setRoomArchived } from '../services/guard';
 import type { Member, RoomMetadata, WithId } from '../types/models';
 import { setLastRoom } from '../lib/prefs';
 
@@ -15,6 +16,11 @@ interface RoomValue {
   activeMembers: WithId<Member>[];
   myMembership: Member | null;
   isAdmin: boolean;
+  /**
+   * החדר הועבר לארכיון על ידי מנהל המערכת (metadata/archivedAt).
+   * הנתונים נשארים לצפייה; מה שנחסם הוא כתיבה חדשה.
+   */
+  isArchived: boolean;
   loading: boolean;
   fromCache: boolean;
   /**
@@ -38,6 +44,7 @@ const Ctx = createContext<RoomValue>({
   activeMembers: [],
   myMembership: null,
   isAdmin: false,
+  isArchived: false,
   loading: true,
   fromCache: false,
   error: null,
@@ -69,6 +76,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       activeMembers,
       myMembership,
       isAdmin: !!user && meta.data?.adminId === user.uid,
+      isArchived: !!meta.data?.archivedAt,
       loading: meta.loading || mem.loading,
       fromCache: meta.fromCache || mem.fromCache,
       error: meta.error ?? mem.error,
@@ -89,6 +97,20 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     online.data,
     user,
   ]);
+
+  /**
+   * דוחפים את מצב הארכוב לשכבת ה-services.
+   *
+   * ‼️ אותו דפוס כמו ConnectionProvider ו-setOnlineState: ה-services
+   *    אינם מכירים React, ולכן הם מקבלים את המצב דרך מודול ולא דרך
+   *    hook. בלי זה, כל פונקציית כתיבה הייתה צריכה פרמטר נוסף — וכל
+   *    מקום שהיו שוכחים להעביר אותו היה חור שקט בהגנה.
+   */
+  const isArchived = value.isArchived;
+  useEffect(() => {
+    setRoomArchived(roomCode, isArchived);
+    return () => setRoomArchived(roomCode, false);
+  }, [roomCode, isArchived]);
 
   // זוכרים את החדר הפעיל, כדי לחזור אליו ישירות בכניסה הבאה.
   // רק חברות פעילה נשמרת — אין טעם לזכור חדר שהוסרנו ממנו.

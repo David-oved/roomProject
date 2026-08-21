@@ -153,17 +153,33 @@ function createDemoDb(listeners) {
 
 async function createLiveDb(listeners) {
   const require = createRequire(import.meta.url);
-  const admin = require('firebase-admin');
+  /**
+   * ‼️ ה-API המודולרי (firebase-admin/app, firebase-admin/database) ולא
+   *    ה-namespace הישן. ב-firebase-admin 14 השורש כבר לא מייצא
+   *    admin.apps, admin.credential או app.database() — קוד בסגנון הישן
+   *    נופל שם עם "Cannot read properties of undefined". התגלה בהרצה
+   *    מול אמולטור, ולא היה מתגלה בלי חיבור אמיתי.
+   */
+  const { initializeApp, getApp, getApps, cert } = require('firebase-admin/app');
+  const { getDatabase } = require('firebase-admin/database');
 
-  const serviceAccount = JSON.parse(readFileSync(config.serviceAccountPath, 'utf8'));
-  const app = admin.apps.length
-    ? admin.app()
-    : admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
+  /**
+   * מול אמולטור אין אימות ואין מפתח — רק projectId וכתובת מקומית.
+   * מול ייצור נדרש service account מלא.
+   */
+  const options = config.emulatorHost
+    ? {
+        projectId: config.projectId,
+        databaseURL: `http://${config.emulatorHost}/?ns=${config.projectId}-default-rtdb`,
+      }
+    : {
+        credential: cert(JSON.parse(readFileSync(config.serviceAccountPath, 'utf8'))),
         databaseURL: config.databaseURL,
-      });
+      };
 
-  const rtdb = app.database();
+  const app = getApps().length ? getApp() : initializeApp(options);
+
+  const rtdb = getDatabase(app);
 
   /**
    * מראה מלאה של העץ, מתעדכנת בזמן אמת.
@@ -233,7 +249,7 @@ export async function openDb() {
   if (config.mode === 'live') {
     try {
       impl = await createLiveDb(listeners);
-      console.info(`🔗 מחובר ל-Firebase: ${config.databaseURL}`);
+      console.info(`🔗 מחובר: ${config.source}`);
     } catch (err) {
       console.error('❌ החיבור ל-Firebase נכשל, נופלים למצב הדגמה:', err.message);
       impl = createDemoDb(listeners);

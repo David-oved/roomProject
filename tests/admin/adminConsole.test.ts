@@ -118,6 +118,29 @@ function fixture() {
 
 const world = () => buildWorld(fixture(), NOW);
 
+/* ═══════════════════ שפיות נתוני ההדגמה ═══════════════════ */
+
+describe('נתוני ההדגמה', () => {
+  it('כל קוד חדר תקף לפי הכללים ולפי מחולל הקודים של האפליקציה', async () => {
+    // ‼️ הבדיקה הזו נולדה מבאג אמיתי: נתוני ההדגמה נבנו עם קודים בני
+    //    ארבעה תווים ("AB12"), בעוד המערכת מייצרת שישה. הכול נראה תקין
+    //    בקונסולה — שקוראת דרך Admin SDK ולכן עוקפת כללים — אבל כל
+    //    כתיבה מהאפליקציה לחדרים האלה נדחתה ב-PERMISSION_DENIED.
+    const { buildSeed } = await import('../../admin/server/seed.mjs');
+    const ALPHABET = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/;
+    const RULES_PATTERN = /^[A-Z0-9]{6}$/;
+
+    const seed = buildSeed(NOW) as { rooms: Record<string, unknown> };
+    const codes = Object.keys(seed.rooms);
+    expect(codes.length).toBeGreaterThan(0);
+
+    for (const code of codes) {
+      expect(code, `קוד החדר ${code} אינו עומד בכללי האבטחה`).toMatch(RULES_PATTERN);
+      expect(code, `קוד החדר ${code} מכיל תווים שהמחולל לא מייצר`).toMatch(ALPHABET);
+    }
+  });
+});
+
 /* ═══════════════════ מודל העולם ═══════════════════ */
 
 describe('buildWorld', () => {

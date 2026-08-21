@@ -1,6 +1,6 @@
 import { get, push, ref, runTransaction, serverTimestamp, update } from 'firebase/database';
 import { db } from '../config/firebase';
-import { assertOnline } from './guard';
+import { assertOnline, assertRoomWritable } from './guard';
 import { enqueueNotification } from './outboxService';
 import { splitEqual, splitPercentage, splitWithDebtOffset } from '../lib/money';
 import { formatILS } from '../lib/format';
@@ -77,6 +77,7 @@ export async function createPurchase(
   draft: PurchaseDraft
 ): Promise<string> {
   assertOnline('לרשום קנייה');
+  assertRoomWritable(code, 'לרשום קנייה');
 
   if (!Number.isInteger(draft.amount) || draft.amount <= 0) {
     throw new Error('הסכום חייב להיות חיובי');
@@ -168,6 +169,7 @@ export async function approvePurchase(
   purchaseId: string
 ): Promise<void> {
   assertOnline('לאשר קנייה');
+  assertRoomWritable(code, 'לאשר קנייה');
 
   const pRef = ref(db, `rooms/${code}/purchases/${purchaseId}`);
   const result = await runTransaction(pRef, (p: Purchase | null) => {
@@ -220,6 +222,7 @@ export async function rejectPurchase(
   reason?: string
 ): Promise<void> {
   assertOnline('לדחות קנייה');
+  assertRoomWritable(code, 'לדחות קנייה');
 
   const notifId = push(ref(db, `rooms/${code}/notifications`)).key!;
 
@@ -269,6 +272,7 @@ export async function createSettlement(
   amount: Agorot
 ): Promise<void> {
   assertOnline('לרשום תשלום');
+  assertRoomWritable(code, 'לרשום תשלום');
   if (!Number.isInteger(amount) || amount <= 0) throw new Error('הסכום חייב להיות חיובי');
 
   const id = push(ref(db, `rooms/${code}/settlements`)).key!;
@@ -323,6 +327,7 @@ export async function confirmSettlement(
   amount: Agorot
 ): Promise<void> {
   assertOnline('לאשר קבלת תשלום');
+  assertRoomWritable(code, 'לאשר קבלת תשלום');
 
   const notifId = push(ref(db, `rooms/${code}/notifications`)).key!;
 

@@ -17,7 +17,13 @@
         ".validate": "newData.hasChildren(['email', 'displayName', 'createdAt'])",
 
         "email": {
-          ".validate": "newData.isString() && newData.val().length <= 254 && newData.val().matches(/^[^@\\s]+@[^@\\s]+\\.[^@\\s]{2,}$/)"
+          // ‼️ בלי \\s בביטוי הרגולרי: מנוע ה-Rules של RTDB אינו מכיר
+          //    את המחלקה הזו, ו**כל הקובץ** נדחה בטעינה עם
+          //    "Illegal regular expression, 'whitespacechar' not found".
+          //    זה חסם גם את הרצת בדיקות הכללים (npm run test:rules).
+          //    רשימת התווים המפורשת מחמירה יותר מהמקור — היא פוסלת
+          //    רווחים בדיוק כמו קודם, וגם תווים שאין להם מה לחפש בכתובת.
+          ".validate": "newData.isString() && newData.val().length <= 254 && newData.val().matches(/^[A-Za-z0-9._%+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,}$/)"
         },
         "displayName": {
           ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 40"

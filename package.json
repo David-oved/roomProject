@@ -13,6 +13,7 @@
     "admin:build": "tsc -p admin/tsconfig.json --noEmit && vite build --config admin/vite.config.ts",
     "admin:preview": "node admin/start.mjs --server-only",
     "emu": "firebase emulators:start --import=./.emulator-data --export-on-exit",
+    "emu:seed": "node scripts/seed-emulator.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:rules": "firebase emulators:exec --only database \"vitest run tests/rules\"",

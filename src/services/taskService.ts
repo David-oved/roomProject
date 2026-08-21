@@ -1,6 +1,6 @@
 import { push, ref, serverTimestamp, update } from 'firebase/database';
 import { db } from '../config/firebase';
-import { assertOnline } from './guard';
+import { assertOnline, assertRoomWritable } from './guard';
 import { enqueueNotification } from './outboxService';
 import type { Category, Task, TaskTransfer, WithId } from '../types/models';
 
@@ -22,6 +22,7 @@ export async function createTask(
   draft: TaskDraft
 ): Promise<string> {
   assertOnline('להוסיף מטלה');
+  assertRoomWritable(code, 'להוסיף מטלה');
   if (draft.participants.length === 0) throw new Error('בחרו לפחות משתתף אחד');
 
   const name = draft.name.trim();
@@ -68,6 +69,7 @@ export async function createTask(
 /** מנהל בלבד — נאכף ב-Rules. */
 export async function deleteTask(code: string, taskId: string): Promise<void> {
   assertOnline('למחוק מטלה');
+  assertRoomWritable(code, 'למחוק מטלה');
   await update(ref(db), { [`rooms/${code}/tasks/${taskId}`]: null });
 }
 
@@ -87,6 +89,7 @@ export async function completeTask(
   userName: string
 ): Promise<void> {
   assertOnline('לסמן מטלה כבוצעה');
+  assertRoomWritable(code, 'לסמן מטלה כבוצעה');
 
   const idx = task.participants.indexOf(task.currentAssignee);
   const nextAssignee = task.participants[(idx + 1) % task.participants.length] ?? task.currentAssignee;
@@ -139,6 +142,7 @@ export async function requestTaskTransfer(
   toUid: string
 ): Promise<void> {
   assertOnline('לבקש העברת תור');
+  assertRoomWritable(code, 'לבקש העברת תור');
 
   const transferId = push(ref(db, `rooms/${code}/taskTransfers`)).key!;
 
@@ -176,6 +180,7 @@ export async function respondTaskTransfer(
   accepted: boolean
 ): Promise<void> {
   assertOnline('להשיב לבקשת העברה');
+  assertRoomWritable(code, 'להשיב לבקשת העברה');
 
   const updates: Record<string, unknown> = {
     [`rooms/${code}/taskTransfers/${transfer.id}/status`]: accepted ? 'approved' : 'rejected',

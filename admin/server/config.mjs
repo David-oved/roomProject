@@ -64,22 +64,45 @@ const saPath =
   resolveMaybe(process.env.GOOGLE_APPLICATION_CREDENTIALS) ??
   join(ADMIN_ROOT, 'service-account.json');
 
+/**
+ * חיבור לאמולטור המקומי.
+ *
+ * ‼️ כשמשתנה הסביבה קיים, אין צורך ב-service account כלל: לאמולטור
+ *    אין אימות. זה מה שמאפשר לפתח את הקונסולה מול נתונים אמיתיים
+ *    של האפליקציה (npm run emu + npm run emu:seed) בלי להחזיק מפתח
+ *    ייצור על המחשב — וזו הדרך הנכונה לבדוק שינוי לפני שנוגעים בייצור.
+ */
+const emulatorHost = process.env.FIREBASE_DATABASE_EMULATOR_HOST ?? null;
+const projectId =
+  process.env.ADMIN_PROJECT_ID ?? process.env.GCLOUD_PROJECT ?? process.env.VITE_FB_PROJECT_ID ?? null;
+
 export const config = {
   port: Number(process.env.ADMIN_PORT ?? 5190),
   webPort: Number(process.env.ADMIN_WEB_PORT ?? 5199),
   host: '127.0.0.1',
   serviceAccountPath: existsSync(saPath) ? saPath : null,
   databaseURL: process.env.ADMIN_DATABASE_URL ?? process.env.VITE_FB_DATABASE_URL ?? null,
+  emulatorHost,
+  projectId,
   /** שורש הנתונים הפרטיים של הקונסולה בתוך RTDB. */
   consoleRoot: 'adminConsole',
-  /** אין service account או אין databaseURL → מצב הדגמה. */
+  /** אמולטור, או service account + databaseURL. אחרת — מצב הדגמה. */
   get mode() {
+    if (this.emulatorHost && this.projectId) return 'live';
     return this.serviceAccountPath && this.databaseURL ? 'live' : 'demo';
   },
   get missing() {
     const out = [];
+    if (this.emulatorHost && !this.projectId) out.push('GCLOUD_PROJECT / VITE_FB_PROJECT_ID');
+    if (this.emulatorHost) return out;
     if (!this.serviceAccountPath) out.push('service-account.json (ADMIN_SERVICE_ACCOUNT)');
     if (!this.databaseURL) out.push('VITE_FB_DATABASE_URL / ADMIN_DATABASE_URL');
     return out;
+  },
+  /** תיאור קצר של מקור הנתונים — מוצג במסך "מערכת". */
+  get source() {
+    if (this.mode === 'demo') return 'נתוני הדגמה מקומיים';
+    if (this.emulatorHost) return `אמולטור מקומי (${this.emulatorHost})`;
+    return this.databaseURL ?? 'Firebase';
   },
 };

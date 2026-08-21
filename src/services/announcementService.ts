@@ -1,6 +1,6 @@
 import { push, ref, serverTimestamp, update } from 'firebase/database';
 import { db } from '../config/firebase';
-import { assertOnline } from './guard';
+import { assertOnline, assertRoomWritable } from './guard';
 import { enqueueNotification } from './outboxService';
 
 const MAX_TEXT_LENGTH = 1000;
@@ -13,6 +13,7 @@ export async function sendAnnouncement(
   text: string
 ): Promise<void> {
   assertOnline('לשלוח הודעה');
+  assertRoomWritable(code, 'לשלוח הודעה');
   const trimmed = text.trim().slice(0, MAX_TEXT_LENGTH);
   if (!trimmed) return;
 
