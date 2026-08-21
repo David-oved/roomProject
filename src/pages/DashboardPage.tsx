@@ -36,6 +36,7 @@ import { friendlyError } from '../lib/errors';
 import { CATEGORY_EMOJI, type Category } from '../types/models';
 import { RoomCodeCard } from '../components/rooms/RoomCodeCard';
 import { NotificationPrompt } from '../components/system/NotificationPrompt';
+import { InstallPrompt } from '../components/system/InstallPrompt';
 import { ReportItemSheet } from '../components/items/ReportItemSheet';
 import { AddTaskSheet } from '../components/tasks/AddTaskSheet';
 import { completeTask } from '../services/taskService';
@@ -422,6 +423,9 @@ export default function DashboardPage() {
             )}
           </section>
         )}
+
+        {/* ── הזמנה להתקין למסך הבית ── */}
+        <InstallPrompt />
 
         {/* ── הזמנה להפעיל התראות ── */}
         <NotificationPrompt />

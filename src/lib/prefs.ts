@@ -11,6 +11,7 @@ const KEYS = {
   lastRoom: 'rm:last-room',
   tutorialSeen: 'rm:tutorial-seen',
   hintsSeen: 'rm:hints-seen',
+  installPromptDismissed: 'rm:install-prompt-dismissed',
 } as const;
 
 function read(key: string): string | null {
@@ -62,10 +63,15 @@ export function markHintSeen(id: string): void {
   write(KEYS.hintsSeen, JSON.stringify([...seen]));
 }
 
+/** האם באנר "התקינו את האפליקציה" בדשבורד כבר נסגר במכשיר הזה */
+export const getInstallPromptDismissed = () => read(KEYS.installPromptDismissed) === '1';
+export const setInstallPromptDismissed = () => write(KEYS.installPromptDismissed, '1');
+
 /** ניקוי מלא — נקרא ביציאה מהחשבון */
 export function clearPrefs(): void {
   write(KEYS.lastRoom, null);
   // האימייל נשאר בכוונה: הוא לא סוד, והוא חוסך הקלדה בכניסה הבאה
-  // tutorialSeen ו-hintsSeen נשארים גם הם — אין סיבה להטריד משתמש חוזר
-  // בהדרכה/הערות שהוא כבר ראה, רק כי הוא התנתק והתחבר שוב באותו מכשיר
+  // tutorialSeen, hintsSeen ו-installPromptDismissed נשארים גם הם — אין
+  // סיבה להטריד משתמש חוזר בדברים שכבר ראה/סגר, רק כי הוא התנתק והתחבר
+  // שוב באותו מכשיר
 }

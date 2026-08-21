@@ -3,6 +3,7 @@ import { RefreshIcon } from '../ui/icons';
 import { useConnection } from '../../store/ConnectionContext';
 import { useUpdate } from '../../store/UpdateContext';
 import { useTutorial } from '../../store/TutorialContext';
+import { useInstallGuide } from '../../store/InstallGuideContext';
 import { APP_VERSION, BUILD_TIME } from '../../lib/version';
 import { formatSmartDate } from '../../lib/format';
 
@@ -11,6 +12,7 @@ export function AboutSettings() {
   const { isOnline } = useConnection();
   const { status, remote, checkNow, applyUpdate } = useUpdate();
   const { openTutorial } = useTutorial();
+  const { installed, openGuide } = useInstallGuide();
 
   return (
     <section className="card p-4">
@@ -62,10 +64,15 @@ export function AboutSettings() {
         האפליקציה בודקת עדכונים אוטומטית בכל כניסה. עדכון מוריד מחדש את כל קבצי האפליקציה.
       </p>
 
-      <div className="mt-4 border-t border-ink-100 pt-4">
+      <div className="mt-4 space-y-2 border-t border-ink-100 pt-4">
         <Button variant="secondary" fullWidth onClick={openTutorial}>
           🎓 הצגת ההדרכה מחדש
         </Button>
+        {!installed && (
+          <Button variant="secondary" fullWidth onClick={openGuide}>
+            📲 איך מתקינים למסך הבית
+          </Button>
+        )}
       </div>
     </section>
   );
