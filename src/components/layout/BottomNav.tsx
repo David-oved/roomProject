@@ -1,6 +1,7 @@
 import { NavLink, useNavigate, useParams } from 'react-router-dom';
 import { CartIcon, ChatIcon, HomeIcon, PlusIcon, WalletIcon } from '../ui/icons';
 import { useConnection } from '../../store/ConnectionContext';
+import { useHintRef } from '../../store/HintContext';
 
 /**
  * סרגל ניווט תחתון — 5 מקומות, כשהאמצעי הוא כפתור הפעולה הראשי.
@@ -17,23 +18,55 @@ interface Tab {
   Icon: typeof HomeIcon;
   end?: boolean;
   dot?: boolean;
+  hintId: string;
+  hintText: string;
 }
 
 export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const { isOnline } = useConnection();
+  const fabHintRef = useHintRef<HTMLButtonElement>(
+    'nav.fab',
+    'פותח ישר טופס להוספת מוצר חסר חדש'
+  );
 
   if (!code) return null;
 
   const base = `/r/${code}`;
   const left: Tab[] = [
-    { to: base, label: 'בית', Icon: HomeIcon, end: true },
-    { to: `${base}/items`, label: 'חסרים', Icon: CartIcon },
+    {
+      to: base,
+      label: 'בית',
+      Icon: HomeIcon,
+      end: true,
+      hintId: 'nav.home',
+      hintText: 'תמונת מצב מהירה של החדר — יתרה, חסרים ומטלות',
+    },
+    {
+      to: `${base}/items`,
+      label: 'חסרים',
+      Icon: CartIcon,
+      hintId: 'nav.items',
+      hintText: 'רשימת כל המוצרים שדווחו כחסרים בחדר',
+    },
   ];
   const right: Tab[] = [
-    { to: `${base}/balances`, label: 'חשבון', Icon: WalletIcon },
-    { to: `${base}/chat`, label: "צ'אט", Icon: ChatIcon, dot: unreadChat > 0 },
+    {
+      to: `${base}/balances`,
+      label: 'חשבון',
+      Icon: WalletIcon,
+      hintId: 'nav.balances',
+      hintText: 'כאן עוקבים מי שילם וכמה כל אחד חייב',
+    },
+    {
+      to: `${base}/chat`,
+      label: "צ'אט",
+      Icon: ChatIcon,
+      dot: unreadChat > 0,
+      hintId: 'nav.chat',
+      hintText: 'צ׳אט קבוצתי ושיחות פרטיות עם חברי החדר',
+    },
   ];
 
   return (
@@ -58,6 +91,7 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
         <li className="relative flex w-[20%] shrink-0 items-center justify-center self-stretch">
           <div aria-hidden className="pointer-events-none absolute -top-2 h-14 w-14 rounded-full bg-brand-500/25 blur-lg" />
           <button
+            ref={fabHintRef}
             type="button"
             onClick={() => navigate(`${base}/items?new=1`)}
             disabled={!isOnline}
@@ -82,10 +116,12 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
   );
 }
 
-function TabButton({ to, label, Icon, end, dot }: Tab) {
+function TabButton({ to, label, Icon, end, dot, hintId, hintText }: Tab) {
+  const hintRef = useHintRef<HTMLAnchorElement>(hintId, hintText);
   return (
     <li className="flex-1 self-stretch">
       <NavLink
+        ref={hintRef}
         to={to}
         end={end}
         className="tap flex h-full flex-col items-center justify-center gap-1
