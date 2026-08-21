@@ -301,6 +301,32 @@ describe.skipIf(!hasEmulator)('database.rules.json', () => {
         })
       );
     });
+
+    it('pendingRequests: חבר פעיל מוחק את רשומת הבקשה של עצמו (leaveRoom) — מותר', async () => {
+      // ‼️ רגרסיה שנתפסה בסבב האבטחה: leaveRoom (roomService.ts) מוחק
+      // תמיד rooms/{code}/pendingRequests/{uid} כחלק מהעדכון האטומי,
+      // גם כשהקורא כבר חבר. לפני התיקון: ענף "המבקש הטרי" דורש
+      // !members.exists() (שקרי לחבר פעיל), וענף המנהל דורש שהקורא
+      // יהיה המנהל — ולכן העזיבה נכשלה כליל לכל מי שאינו מנהל.
+      await assertSucceeds(remove(ref(as(MEMBER), `rooms/${ROOM}/pendingRequests/${MEMBER}`)));
+    });
+
+    it('pendingRequests: חבר פעיל לא יכול לכתוב (לא למחוק) בקשה בשם עצמו', async () => {
+      // חייב להישאר חסום: הענף החדש מתיר רק מחיקה (newData לא קיים),
+      // לא יצירה/עדכון — אחרת חבר יכול "לאשר" מחדש בקשה משלו.
+      await assertFails(
+        set(ref(as(MEMBER), `rooms/${ROOM}/pendingRequests/${MEMBER}`), {
+          userId: MEMBER,
+          displayName: 'חבר',
+          requestedAt: T,
+          status: 'approved',
+        })
+      );
+    });
+
+    it('pendingRequests: חבר לא יכול למחוק בקשה של uid אחר', async () => {
+      await assertFails(remove(ref(as(MEMBER), `rooms/${ROOM}/pendingRequests/${STRANGER}`)));
+    });
   });
 
   /* ═════════ תיקון 10 — התחזות בשם המציג ═════════ */
@@ -340,6 +366,24 @@ describe.skipIf(!hasEmulator)('database.rules.json', () => {
         set(
           ref(as(MEMBER), `rooms/${ROOM}/notifications/n3`),
           notification({ actorName: 'מנהל החדר' })
+        )
+      );
+    });
+
+    it('חבר רגיל רושם actorId של עצמו — מותר', async () => {
+      await assertSucceeds(
+        set(ref(as(MEMBER), `rooms/${ROOM}/notifications/n4`), notification({ actorId: MEMBER }))
+      );
+    });
+
+    it('הניצול: המנהל מזייף actorId של חבר אחר — נחסם', async () => {
+      // ‼️ הכלל הישן התיר לכל כותב שהוא המנהל לרשום כל actorId שרצה,
+      // בלי קשר ל-newData — כלומר המנהל יכול היה לייחס פעולה (למשל
+      // "דחיית קנייה") לחבר שלא עשה אותה כלל.
+      await assertFails(
+        set(
+          ref(as(ADMIN), `rooms/${ROOM}/notifications/n5`),
+          notification({ actorId: MEMBER2, actorName: 'חברה' })
         )
       );
     });

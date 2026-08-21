@@ -286,10 +286,13 @@
             // אבל **לא יוצר** בקשה חדשה בשם uid זר. בלי ההגבלה הזו המנהל היה
             // יכול לשתול pendingRequests/<קורבן> ואז "להודיע" לו — מה שהיה
             // עוקף בשני צעדים את ההגבלה החדשה ב-outbox.
-            // ה-(!newData.exists()) חיוני: removeMember/leaveRoom מוחקים את
-            // הנתיב הזה גם כשאין בו כלום, ומחיקה של צומת שלא קיים חייבת
-            // להישאר מותרת — אחרת כל הכתיבה האטומית שסביבה נכשלת.
-            ".write": "auth != null && ((auth.uid === $uid && (!data.exists() || data.child('status').val() !== 'approved') && root.child('rooms/' + $code + '/metadata').exists() && !root.child('rooms/' + $code + '/members/' + auth.uid).exists()) || (root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid && (data.exists() || !newData.exists())))",
+            // ‼️ תוקן: נוסף ענף ראשון (auth.uid === $uid && !newData.exists())
+            // — כל משתמש רשאי למחוק ללא תנאי את רשומת הבקשה **של עצמו**.
+            // בלעדיו leaveRoom נכשל לכל מי שאינו מנהל: הענף השני (המבקש
+            // הטרי) דורש !members.exists(), ששקרי לחבר פעיל שעוזב, והענף
+            // השלישי (מנהל) שקרי כשהעוזב אינו המנהל. מחיקת הצומת של עצמך
+            // בטוחה ללא תנאי נוסף — אין בה חשיפת מידע או שינוי הרשאה.
+            ".write": "auth != null && ((auth.uid === $uid && !newData.exists()) || (auth.uid === $uid && (!data.exists() || data.child('status').val() !== 'approved') && root.child('rooms/' + $code + '/metadata').exists() && !root.child('rooms/' + $code + '/members/' + auth.uid).exists()) || (root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid && (data.exists() || !newData.exists())))",
 
             ".validate": "newData.hasChildren(['userId', 'displayName', 'requestedAt', 'status'])",
             "userId":      { ".validate": "newData.val() === $uid" },
@@ -503,7 +506,13 @@
             ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && (!data.exists() || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid)",
             ".validate": "newData.hasChildren(['type', 'actorId', 'text', 'createdAt'])",
             "type":      { ".validate": "newData.val().matches(/^(item_added|item_claimed|item_bought|purchase_made|purchase_approved|purchase_rejected|member_joined|member_removed|settlement|task_added|task_assigned|task_transfer)$/)" },
-            "actorId":   { ".validate": "newData.val() === auth.uid || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid" },
+            // ‼️ תוקן: הענף השני (adminId === auth.uid) לא בדק בכלל את
+            // newData — כל עוד הכותב הוא המנהל, actorId יכול היה להיות
+            // כל uid שהוא בחר, ולא רק שלו. אין תרחיש לגיטימי שדורש זאת:
+            // בכל 10 אתרי הכתיבה (item/purchase/task/roomService) הכותב
+            // תמיד רושם actorId כ-uid של עצמו. הוסר — נשאר רק "אתה יכול
+            // לרשום את עצמך כמבצע הפעולה".
+            "actorId":   { ".validate": "newData.val() === auth.uid" },
             // ‼️ תוקן: השדה הזה הוא מה שמוצג בפועל למשתמש (NotificationsPage),
             // וכמחרוזת חופשית חבר רגיל יכול היה לפרסם התראה בשם "מנהל החדר".
             // עכשיו הוא חייב להתאים לשם האמיתי של מי שרשום ב-actorId.
