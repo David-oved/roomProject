@@ -10,6 +10,7 @@ const KEYS = {
   lastEmail: 'rm:last-email',
   lastRoom: 'rm:last-room',
   tutorialSeen: 'rm:tutorial-seen',
+  hintsSeen: 'rm:hints-seen',
 } as const;
 
 function read(key: string): string | null {
@@ -41,10 +42,30 @@ export const setLastRoom = (code: string | null) => write(KEYS.lastRoom, code);
 export const getTutorialSeen = () => read(KEYS.tutorialSeen) === '1';
 export const setTutorialSeen = (seen: boolean) => write(KEYS.tutorialSeen, seen ? '1' : null);
 
+/**
+ * מזהי הערות-הקשר (Hint) שכבר נצפו במכשיר הזה — פוטנציאלית מאות
+ * מזהים, ולכן מחרוזת JSON יחידה במקום מפתח נפרד לכל הערה.
+ */
+export function getHintsSeen(): Set<string> {
+  try {
+    const raw = read(KEYS.hintsSeen);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+export function markHintSeen(id: string): void {
+  const seen = getHintsSeen();
+  if (seen.has(id)) return;
+  seen.add(id);
+  write(KEYS.hintsSeen, JSON.stringify([...seen]));
+}
+
 /** ניקוי מלא — נקרא ביציאה מהחשבון */
 export function clearPrefs(): void {
   write(KEYS.lastRoom, null);
   // האימייל נשאר בכוונה: הוא לא סוד, והוא חוסך הקלדה בכניסה הבאה
-  // tutorialSeen נשאר גם הוא — אין סיבה להטריד משתמש חוזר בהדרכה שנייה
-  // רק כי הוא התנתק והתחבר שוב באותו מכשיר
+  // tutorialSeen ו-hintsSeen נשארים גם הם — אין סיבה להטריד משתמש חוזר
+  // בהדרכה/הערות שהוא כבר ראה, רק כי הוא התנתק והתחבר שוב באותו מכשיר
 }

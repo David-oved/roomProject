@@ -1,4 +1,5 @@
 import { useUpdate } from '../../store/UpdateContext';
+import { useHintRef } from '../../store/HintContext';
 
 /**
  * שני מצבי תצוגה:
@@ -8,6 +9,14 @@ import { useUpdate } from '../../store/UpdateContext';
 export function UpdateNotice() {
   const { status, remote, current, dismissed, dismiss, applyUpdate, forceLoopDetected } =
     useUpdate();
+  const applyHintRef = useHintRef<HTMLButtonElement>(
+    'updateNotice.apply',
+    'מוריד את הגרסה החדשה ופותח את האפליקציה מחדש'
+  );
+  const dismissHintRef = useHintRef<HTMLButtonElement>(
+    'updateNotice.dismiss',
+    'ממשיכים עם הגרסה הנוכחית — ההודעה תופיע שוב בפעם הבאה'
+  );
 
   // ── 1. עדכון מתבצע — מסך חוסם ──
   if (status === 'updating') {
@@ -91,6 +100,7 @@ export function UpdateNotice() {
 
         <div className="mt-3 flex gap-2">
           <button
+            ref={applyHintRef}
             onClick={applyUpdate}
             className="tap flex-1 rounded-xl bg-brand-700 px-4 text-sm font-semibold text-white
                        transition active:scale-[.98] hover:bg-brand-800"
@@ -98,6 +108,7 @@ export function UpdateNotice() {
             עדכן עכשיו
           </button>
           <button
+            ref={dismissHintRef}
             onClick={dismiss}
             className="tap rounded-xl px-4 text-sm font-medium text-ink-500
                        transition hover:bg-ink-100"

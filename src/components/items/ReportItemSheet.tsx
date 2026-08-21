@@ -13,6 +13,7 @@ import { useItems } from '../../hooks/useRoomData';
 import { useCatalog, type RoomProduct } from '../../hooks/useCatalog';
 import { formatILS } from '../../lib/format';
 import { CATEGORY_EMOJI, PRIORITY_LABELS, type Priority } from '../../types/models';
+import { useHintRef } from '../../store/HintContext';
 
 const PRIORITY_TONES: Record<Priority, string> = {
   high: 'border-rose-400 bg-rose-50 text-rose-800 ring-rose-400/30',
@@ -44,6 +45,31 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
   const [picked, setPicked] = useState<RoomProduct | null>(null);
   const [priority, setPriority] = useState<Priority>('normal');
   const [notes, setNotes] = useState('');
+
+  const pickProductHintRef = useHintRef<HTMLButtonElement>(
+    'reportItem.pickProduct',
+    'בוחרים מוצר מהקטלוג כדי לדווח שהוא נגמר'
+  );
+  const freeTextHintRef = useHintRef<HTMLButtonElement>(
+    'reportItem.freeText',
+    'ממשיכים עם השם שהקלדתם גם אם הוא לא בקטלוג'
+  );
+  const addToCatalogHintRef = useHintRef<HTMLButtonElement>(
+    'reportItem.addToCatalog',
+    'שומר את המוצר בקטלוג המשותף לכל החדרים באפליקציה'
+  );
+  const changeProductHintRef = useHintRef<HTMLButtonElement>(
+    'reportItem.changeProduct',
+    'חוזרים לבחירת מוצר אחר לפני שליחת הדיווח'
+  );
+  const priorityHintRef = useHintRef<HTMLButtonElement>(
+    'reportItem.priority',
+    'קובעים כמה דחוף לקנות את המוצר הזה'
+  );
+  const submitHintRef = useHintRef<HTMLButtonElement>(
+    'reportItem.submit',
+    'שולח את הדיווח והמוצר יופיע ברשימת החסרים'
+  );
 
   const name = picked?.name ?? freeName ?? '';
 
@@ -181,9 +207,10 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
               </p>
 
               <div className="grid grid-cols-2 gap-2.5">
-                {results.map((p) => (
+                {results.map((p, idx) => (
                   <button
                     key={p.id}
+                    ref={idx === 0 ? pickProductHintRef : undefined}
                     type="button"
                     onClick={() => choose(p)}
                     className="flex flex-col items-start gap-1 rounded-2xl border border-ink-100
@@ -212,6 +239,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
                 <div className="mt-3 space-y-2">
                   {!exactFreeMatch && (
                     <button
+                      ref={freeTextHintRef}
                       type="button"
                       onClick={chooseFreeText}
                       className="w-full rounded-2xl border border-dashed border-ink-300 bg-white/50
@@ -222,6 +250,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
                     </button>
                   )}
                   <button
+                    ref={addToCatalogHintRef}
                     type="button"
                     onClick={() => setAddingProduct(true)}
                     className="w-full rounded-2xl px-4 py-2.5 text-center text-xs font-semibold
@@ -237,6 +266,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
       ) : (
         <div className="p-5 pt-4">
           <button
+            ref={changeProductHintRef}
             type="button"
             onClick={() => setStep('pick')}
             className="mb-3 flex items-center gap-2 rounded-2xl bg-ink-50/80 px-3.5 py-2.5
@@ -257,9 +287,10 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
               {picked && <Badge tone="brand">מהקטלוג</Badge>}
             </legend>
             <div className="grid grid-cols-3 gap-2">
-              {(['high', 'normal', 'low'] as Priority[]).map((p) => (
+              {(['high', 'normal', 'low'] as Priority[]).map((p, idx) => (
                 <button
                   key={p}
+                  ref={idx === 0 ? priorityHintRef : undefined}
                   type="button"
                   onClick={() => setPriority(p)}
                   aria-pressed={priority === p}
@@ -284,7 +315,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
             />
           </div>
 
-          <Button size="lg" fullWidth className="mt-5" onClick={submit}>
+          <Button ref={submitHintRef} size="lg" fullWidth className="mt-5" onClick={submit}>
             דיווח
           </Button>
         </div>

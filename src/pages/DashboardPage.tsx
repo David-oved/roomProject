@@ -41,6 +41,7 @@ import { AddTaskSheet } from '../components/tasks/AddTaskSheet';
 import { completeTask } from '../services/taskService';
 import { useToast } from '../store/ToastContext';
 import { useConnection } from '../store/ConnectionContext';
+import { useHintRef } from '../store/HintContext';
 
 const CATEGORY_ICON: Record<Category, typeof KitchenIcon> = {
   kitchen: KitchenIcon,
@@ -70,6 +71,78 @@ export default function DashboardPage() {
   const latestAnnouncement = announcements[0];
 
   const justCreated = params.get('created') === '1';
+
+  // ‼️ הערות-הקשר: מזהה קבוע לכל אלמנט, מוצג פעם אחת בביקור ראשון —
+  // ראו HintContext. מקובצים כאן כדי לא לפזר useHintRef על פני כל
+  // ה-JSX; הטקסטים עצמם קבועים ולכן אין סיכון מ-hooks מותנים.
+  const notificationsHintRef = useHintRef<HTMLAnchorElement>(
+    'dashboard.notifications',
+    'כאן מופיעות התראות על תשלומים, מטלות ובקשות שממתינות לך'
+  );
+  const settingsHintRef = useHintRef<HTMLAnchorElement>(
+    'dashboard.settings',
+    'ניהול החדר, החברים והפרטים שלכם נמצא כאן'
+  );
+  const balanceDetailsHintRef = useHintRef<HTMLAnchorElement>(
+    'dashboard.balanceDetails',
+    'רואים כאן פירוט מלא של מי חייב למי כמה'
+  );
+  const reportShortcutHintRef = useHintRef<HTMLButtonElement>(
+    'dashboard.reportShortcut',
+    'לחיצה פותחת דיווח מהיר על מוצר שנגמר בבית'
+  );
+  const buyShortcutHintRef = useHintRef<HTMLAnchorElement>(
+    'dashboard.buyShortcut',
+    'עוברים לרשימת המוצרים כדי לסמן קנייה שביצעתם'
+  );
+  const settleShortcutHintRef = useHintRef<HTMLAnchorElement>(
+    'dashboard.settleShortcut',
+    'משם אפשר לסגור חובות ולעדכן תשלומים בין שותפים'
+  );
+  const confirmSettlementHintRef = useHintRef<HTMLAnchorElement>(
+    'dashboard.confirmSettlement',
+    'מישהו סימן שהחזיר לך כסף — אשרו כדי לעדכן מאזן'
+  );
+  const taskTransferHintRef = useHintRef<HTMLAnchorElement>(
+    'dashboard.taskTransferIncoming',
+    'שותף מבקש להעביר לך מטלה — כאן מאשרים או דוחים'
+  );
+  const joinRequestsHintRef = useHintRef<HTMLAnchorElement>(
+    'dashboard.joinRequests',
+    'מישהו מבקש להצטרף לחדר — מנהלים מאשרים כאן'
+  );
+  const pendingPurchasesHintRef = useHintRef<HTMLAnchorElement>(
+    'dashboard.pendingPurchases',
+    'קניות שממתינות לאישור מנהל לפני שהן משפיעות על המאזן'
+  );
+  const itemsSeeAllHintRef = useHintRef<HTMLAnchorElement>(
+    'dashboard.itemsSeeAll',
+    'רואים כאן את כל רשימת המוצרים החסרים'
+  );
+  const itemRowHintRef = useHintRef<HTMLAnchorElement>(
+    'dashboard.itemRow',
+    'לחיצה פותחת את רשימת המוצרים המלאה עם כל הפרטים'
+  );
+  const addTaskHintRef = useHintRef<HTMLButtonElement>(
+    'dashboard.addTask',
+    'מוסיפים כאן מטלה קבועה חדשה לחברי החדר'
+  );
+  const tasksSeeAllHintRef = useHintRef<HTMLAnchorElement>(
+    'dashboard.tasksSeeAll',
+    'רואים כאן את כל המטלות של כל השותפים'
+  );
+  const taskCompleteHintRef = useHintRef<HTMLButtonElement>(
+    'dashboard.taskComplete',
+    'מסמן שהמטלה בוצעה ומעביר אותה הלאה בתור'
+  );
+  const announcementCardHintRef = useHintRef<HTMLAnchorElement>(
+    'dashboard.announcementCard',
+    'רואים כאן את כל ההודעות שהמנהל שלח לחדר'
+  );
+  const roomCodeDetailsHintRef = useHintRef<HTMLElement>(
+    'dashboard.roomCodeDetails',
+    'פותח את קוד ההצטרפות לחדר כדי לשתף עם שותפים'
+  );
 
   /** כמה הוצאתי בפועל החודש — רק קניות שלי שאושרו/נסגרו */
   const spentThisMonth = useMemo(() => {
@@ -123,6 +196,7 @@ export default function DashboardPage() {
         actions={
           <>
             <Link
+              ref={notificationsHintRef}
               to={`/r/${roomCode}/notifications`}
               aria-label={`התראות${unreadCount ? `, ${unreadCount} חדשות` : ''}`}
               className={[
@@ -144,6 +218,7 @@ export default function DashboardPage() {
               )}
             </Link>
             <Link
+              ref={settingsHintRef}
               to={`/r/${roomCode}/settings`}
               aria-label="הגדרות"
               className="tap grid place-items-center rounded-full bg-ink-50 text-ink-500
@@ -207,6 +282,7 @@ export default function DashboardPage() {
           </div>
 
           <Link
+            ref={balanceDetailsHintRef}
             to={`/r/${roomCode}/balances`}
             className="mt-4 flex items-center justify-center rounded-xl border border-ink-200
                        py-2.5 text-sm font-semibold text-ink-700 transition hover:bg-ink-50"
@@ -224,6 +300,7 @@ export default function DashboardPage() {
         {/* ── קיצורי דרך ── */}
         <section className="grid grid-cols-3 gap-2">
           <button
+            ref={reportShortcutHintRef}
             onClick={() => setReportOpen(true)}
             className="flex flex-col items-center gap-2 rounded-2xl bg-brand-700 py-3.5 text-white
                        transition active:scale-[.97]"
@@ -232,6 +309,7 @@ export default function DashboardPage() {
             <span className="text-xs font-semibold">דיווח מוצר</span>
           </button>
           <Link
+            ref={buyShortcutHintRef}
             to={`/r/${roomCode}/items`}
             className="flex flex-col items-center gap-2 rounded-2xl border border-ink-200 bg-white
                        py-3.5 text-ink-700 transition active:scale-[.97]"
@@ -240,6 +318,7 @@ export default function DashboardPage() {
             <span className="text-xs font-semibold">רשמתי קנייה</span>
           </Link>
           <Link
+            ref={settleShortcutHintRef}
             to={`/r/${roomCode}/balances`}
             className="flex flex-col items-center gap-2 rounded-2xl border border-ink-200 bg-white
                        py-3.5 text-ink-700 transition active:scale-[.97]"
@@ -258,6 +337,7 @@ export default function DashboardPage() {
 
             {awaitingMyConfirmation.length > 0 && (
               <Link
+                ref={confirmSettlementHintRef}
                 to={`/r/${roomCode}/balances`}
                 className="flex items-center gap-3 border-b border-ink-100 p-4 transition last:border-b-0 hover:bg-ink-50"
               >
@@ -280,6 +360,7 @@ export default function DashboardPage() {
 
             {incomingTaskTransfers.length > 0 && (
               <Link
+                ref={taskTransferHintRef}
                 to={`/r/${roomCode}/tasks`}
                 className="flex items-center gap-3 border-b border-ink-100 p-4 transition last:border-b-0 hover:bg-ink-50"
               >
@@ -300,6 +381,7 @@ export default function DashboardPage() {
 
             {isAdmin && requests.length > 0 && (
               <Link
+                ref={joinRequestsHintRef}
                 to={`/r/${roomCode}/settings/members`}
                 className="flex items-center gap-3 border-b border-ink-100 p-4 transition last:border-b-0 hover:bg-ink-50"
               >
@@ -320,6 +402,7 @@ export default function DashboardPage() {
 
             {isAdmin && pendingApproval.length > 0 && (
               <Link
+                ref={pendingPurchasesHintRef}
                 to={`/r/${roomCode}/balances`}
                 className="flex items-center gap-3 p-4 transition hover:bg-ink-50"
               >
@@ -348,6 +431,7 @@ export default function DashboardPage() {
           <div className="mb-2 flex items-center justify-between px-1">
             <h2 className="text-sm font-bold text-ink-700">מוצרים חסרים</h2>
             <Link
+              ref={itemsSeeAllHintRef}
               to={`/r/${roomCode}/items`}
               className="tap-area text-xs font-semibold text-brand-700"
             >
@@ -362,11 +446,12 @@ export default function DashboardPage() {
             </div>
           ) : (
             <ul className="overflow-hidden rounded-card border border-ink-200/70 bg-white shadow-card">
-              {items.slice(0, 4).map((item) => {
+              {items.slice(0, 4).map((item, idx) => {
                 const Icon = CATEGORY_ICON[item.category];
                 return (
                   <li key={item.id} className="border-b border-ink-100 last:border-b-0">
                     <Link
+                      ref={idx === 0 ? itemRowHintRef : undefined}
                       to={`/r/${roomCode}/items`}
                       className="flex items-center gap-3 p-3.5 transition hover:bg-ink-50"
                     >
@@ -407,6 +492,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-3">
               {isAdmin && (
                 <button
+                  ref={addTaskHintRef}
                   onClick={() => setAddTaskOpen(true)}
                   disabled={!isOnline}
                   className="tap-area text-xs font-semibold text-brand-700 disabled:text-ink-300"
@@ -415,6 +501,7 @@ export default function DashboardPage() {
                 </button>
               )}
               <Link
+                ref={tasksSeeAllHintRef}
                 to={`/r/${roomCode}/tasks`}
                 className="tap-area text-xs font-semibold text-brand-700"
               >
@@ -432,7 +519,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <ul className="overflow-hidden rounded-card border border-ink-200/70 bg-white shadow-card">
-              {myTasks.slice(0, 4).map((t) => {
+              {myTasks.slice(0, 4).map((t, idx) => {
                 const overdue = (t.dueAt ?? 0) < Date.now();
                 return (
                   <li key={t.id} className="flex items-center gap-3 border-b border-ink-100 p-3.5 last:border-b-0">
@@ -447,6 +534,7 @@ export default function DashboardPage() {
                       </span>
                     </span>
                     <Button
+                      ref={idx === 0 ? taskCompleteHintRef : undefined}
                       size="sm"
                       variant="secondary"
                       disabled={!isOnline || busyTaskId === t.id}
@@ -469,6 +557,7 @@ export default function DashboardPage() {
         {/* ── הודעות מהמנהל ── */}
         {latestAnnouncement && (
           <Link
+            ref={announcementCardHintRef}
             to={`/r/${roomCode}/announcements`}
             className="card flex items-center gap-3 p-3.5 transition hover:shadow-lifted"
           >
@@ -487,7 +576,10 @@ export default function DashboardPage() {
 
         {roomCode && !justCreated && (
           <details className="overflow-hidden rounded-card border border-ink-200/70 bg-white">
-            <summary className="cursor-pointer list-none px-4 py-3.5 text-sm font-semibold text-ink-700">
+            <summary
+              ref={roomCodeDetailsHintRef}
+              className="cursor-pointer list-none px-4 py-3.5 text-sm font-semibold text-ink-700"
+            >
               קוד החדר לשיתוף
             </summary>
             <div className="border-t border-ink-100 p-4">

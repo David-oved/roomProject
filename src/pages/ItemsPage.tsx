@@ -19,6 +19,7 @@ import { claimItem, deleteItem, unclaimItem } from '../services/itemService';
 import { formatILS, formatRelativeTime, formatTime } from '../lib/format';
 import { friendlyError } from '../lib/errors';
 import { useCatalog, type RoomProduct } from '../hooks/useCatalog';
+import { useHintRef } from '../store/HintContext';
 import {
   CATEGORY_EMOJI,
   CATEGORY_LABELS,
@@ -55,6 +56,27 @@ export default function ItemsPage() {
   // במספר הפריטים על המסך.
   const { getProduct } = useCatalog();
 
+  const reportHintRef = useHintRef<HTMLButtonElement>(
+    'items.report',
+    'דיווח מהיר על מוצר שנגמר או עומד להיגמר'
+  );
+  // ‼️ מזהה נפרד מ-reportHintRef, לא משותף: שני הכפתורים יכולים להיות
+  // מורכבים בו-זמנית (הרשימה ריקה = גם כפתור הכותרת וגם EmptyState
+  // מוצגים יחד) — id משותף על שני אלמנטים חיים בו-זמנית גורם ל-unmount
+  // של אחד למחוק בטעות את הרישום של השני מהתור.
+  const reportEmptyHintRef = useHintRef<HTMLButtonElement>(
+    'items.reportEmpty',
+    'דיווח מהיר על מוצר שנגמר או עומד להיגמר'
+  );
+  // אחד לכל פילטר קבוע — לא בתוך .map, כי useHintRef הוא hook.
+  const filterHintRefs: Record<Filter, ReturnType<typeof useHintRef<HTMLButtonElement>>> = {
+    open: useHintRef<HTMLButtonElement>('items.filter.open', 'כל המוצרים הפתוחים — לא כולל מה שכבר הושלם'),
+    staples: useHintRef<HTMLButtonElement>('items.filter.staples', 'המוצרים הקבועים שתמיד צריך שיהיו בבית'),
+    needed: useHintRef<HTMLButtonElement>('items.filter.needed', 'מוצרים שדווחו ועדיין לא לקח אותם אף אחד'),
+    buying: useHintRef<HTMLButtonElement>('items.filter.buying', 'מוצרים שמישהו כבר התחייב לקנות'),
+    done: useHintRef<HTMLButtonElement>('items.filter.done', 'היסטוריית מוצרים שנקנו והושלמו'),
+  };
+
   // הכפתור המרכזי בניווט מנווט לכאן עם ?new=1
   useEffect(() => {
     if (params.get('new') === '1') {
@@ -82,6 +104,7 @@ export default function ItemsPage() {
         }
         actions={
           <Button
+            ref={reportHintRef}
             size="sm"
             onClick={() => setReportOpen(true)}
             disabled={!isOnline}
@@ -97,6 +120,7 @@ export default function ItemsPage() {
         {FILTERS.map((f) => (
           <button
             key={f.key}
+            ref={filterHintRefs[f.key]}
             onClick={() => setFilter(f.key)}
             aria-pressed={filter === f.key}
             className={[
@@ -137,7 +161,7 @@ export default function ItemsPage() {
             }
             action={
               filter !== 'done' && (
-                <Button onClick={() => setReportOpen(true)} disabled={!isOnline}>
+                <Button ref={reportEmptyHintRef} onClick={() => setReportOpen(true)} disabled={!isOnline}>
                   דיווח על מוצר חסר
                 </Button>
               )
@@ -145,12 +169,13 @@ export default function ItemsPage() {
           />
         ) : (
           <ul className="space-y-2.5">
-            {items.map((item) => (
+            {items.map((item, idx) => (
               <li key={item.id}>
                 <ItemCard
                   item={item}
                   product={item.productId ? getProduct(item.productId) : null}
                   onBuy={() => setBuyingItem(item)}
+                  isFirst={idx === 0}
                 />
               </li>
             ))}
@@ -174,11 +199,14 @@ function ItemCard({
   item,
   product,
   onBuy,
+  isFirst,
 }: {
   item: WithId<Item>;
   /** מוצר מהקטלוג — נפתר בדף ומועבר פנימה, ראו ההערה ב-ItemsPage */
   product: RoomProduct | null;
   onBuy: () => void;
+  /** מצמידים הערת-הקשר רק לכרטיס הראשון ברשימה — לא לכל שורה בלולאה */
+  isFirst: boolean;
 }) {
   const { user } = useAuth();
   const { roomCode, isAdmin, memberName } = useRoom();
@@ -186,6 +214,22 @@ function ItemCard({
   const toast = useToast();
   const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
+  const claimHintRef = useHintRef<HTMLButtonElement>(
+    'items.card.claim',
+    'מסמן שאתם מתחייבים לקנות את המוצר הזה'
+  );
+  const buyHintRef = useHintRef<HTMLButtonElement>(
+    'items.card.buy',
+    'פותח טופס לרישום כמה שילמתם ואיך לחלק'
+  );
+  const unclaimHintRef = useHintRef<HTMLButtonElement>(
+    'items.card.unclaim',
+    'מבטל את ההתחייבות שלכם — המוצר חוזר לרשימה'
+  );
+  const deleteHintRef = useHintRef<HTMLButtonElement>(
+    'items.card.delete',
+    'מוחק את המוצר לצמיתות מרשימת החדר'
+  );
 
   const mine = item.assignedTo === user?.uid;
   const guard = {
@@ -241,17 +285,23 @@ function ItemCard({
       {item.status !== 'done' && item.status !== 'bought' && (
         <div className="mt-3 flex gap-2">
           {item.status === 'needed' && (
-            <Button size="sm" {...guard} onClick={() => run(() => claimItem(roomCode!, item.id, user!.uid))}>
+            <Button
+              ref={isFirst ? claimHintRef : undefined}
+              size="sm"
+              {...guard}
+              onClick={() => run(() => claimItem(roomCode!, item.id, user!.uid))}
+            >
               אני קונה את זה
             </Button>
           )}
 
           {item.status === 'buying' && mine && (
             <>
-              <Button size="sm" {...guard} onClick={onBuy}>
+              <Button ref={isFirst ? buyHintRef : undefined} size="sm" {...guard} onClick={onBuy}>
                 קניתי — הזן סכום
               </Button>
               <Button
+                ref={isFirst ? unclaimHintRef : undefined}
                 size="sm"
                 variant="ghost"
                 {...guard}
@@ -264,6 +314,7 @@ function ItemCard({
 
           {isAdmin && (
             <Button
+              ref={isFirst ? deleteHintRef : undefined}
               size="sm"
               variant="ghost"
               className="ms-auto text-rose-600"

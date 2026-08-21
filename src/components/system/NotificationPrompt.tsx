@@ -6,6 +6,7 @@ import { BellIcon, CloseIcon, ShareIcon } from '../ui/icons';
 import { useAuth } from '../../store/AuthContext';
 import { useToast } from '../../store/ToastContext';
 import { getState, subscribeToPush, type PushState } from '../../services/pushService';
+import { useHintRef } from '../../store/HintContext';
 
 const DISMISS_KEY = 'rm:push-prompt-dismissed';
 
@@ -32,6 +33,10 @@ export function NotificationPrompt() {
     }
   });
   const [busy, setBusy] = useState(false);
+  const enableHintRef = useHintRef<HTMLButtonElement>(
+    'notificationPrompt.enable',
+    'מבקש הרשאת דפדפן ומפעיל התראות למכשיר הזה'
+  );
 
   useEffect(() => {
     void getState().then(setState);
@@ -117,6 +122,7 @@ export function NotificationPrompt() {
           </p>
 
           <Button
+            ref={enableHintRef}
             className="mt-3"
             size="sm"
             loading={busy}

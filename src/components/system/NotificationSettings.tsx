@@ -13,6 +13,7 @@ import {
   unsubscribeFromPush,
   type PushState,
 } from '../../services/pushService';
+import { useHintRef } from '../../store/HintContext';
 
 /**
  * הפעלת התראות פוש.
@@ -31,6 +32,10 @@ export function NotificationSettings() {
 
   const refresh = useCallback(() => void getState().then(setState), []);
   useEffect(refresh, [refresh]);
+  const enableHintRef = useHintRef<HTMLButtonElement>(
+    'notificationSettings.enable',
+    'מבקש הרשאת דפדפן ומפעיל התראות למכשיר הזה'
+  );
 
   if (!state) return null;
 
@@ -146,6 +151,7 @@ export function NotificationSettings() {
           </Button>
         ) : (
           <Button
+            ref={enableHintRef}
             fullWidth
             loading={busy}
             disabled={!isOnline}

@@ -15,6 +15,7 @@ import {
   deleteAccount,
 } from '../../services/authService';
 import { uploadAvatar } from '../../services/avatarService';
+import { useHintRef } from '../../store/HintContext';
 
 /**
  * פרטים אישיים — שם תצוגה וסיסמה.
@@ -46,6 +47,18 @@ export function AccountSettings() {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [busyDelete, setBusyDelete] = useState(false);
+  const avatarHintRef = useHintRef<HTMLButtonElement>(
+    'account.avatar',
+    'פותח בחירת תמונה מהמכשיר לעדכון תמונת הפרופיל'
+  );
+  const passwordToggleHintRef = useHintRef<HTMLButtonElement>(
+    'account.passwordToggle',
+    'פותח טופס להזנת סיסמה נוכחית וסיסמה חדשה'
+  );
+  const deleteHintRef = useHintRef<HTMLButtonElement>(
+    'account.delete',
+    'תהליך מחיקה סופי שדורש הקלדת אישור וסיסמה'
+  );
 
   const dirty = name.trim() !== profile?.displayName && name.trim().length >= 2;
   const passwordValid = newPassword.length >= 6 && newPassword === confirmPassword;
@@ -136,6 +149,7 @@ export function AccountSettings() {
             className={uploadingAvatar ? 'opacity-50' : ''}
           />
           <button
+            ref={avatarHintRef}
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={!isOnline || uploadingAvatar}
@@ -187,6 +201,7 @@ export function AccountSettings() {
           <h2 className="text-sm font-bold text-ink-700">סיסמה</h2>
           {!showPasswordForm && (
             <button
+              ref={passwordToggleHintRef}
               type="button"
               onClick={() => setShowPasswordForm(true)}
               className="tap-area text-xs font-semibold text-brand-700 hover:underline"
@@ -253,6 +268,7 @@ export function AccountSettings() {
 
         {!showDeleteForm ? (
           <Button
+            ref={deleteHintRef}
             variant="danger"
             fullWidth
             className="mt-3"
