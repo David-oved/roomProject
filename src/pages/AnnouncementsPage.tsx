@@ -11,6 +11,7 @@ import { MegaphoneIcon, ChevronIcon } from '../components/ui/icons';
 import { ErrorState } from '../components/ui/EmptyState';
 import { formatSmartDate } from '../lib/format';
 import { friendlyError } from '../lib/errors';
+import { useHintRef } from '../store/HintContext';
 
 /**
  * הודעות שידור מהמנהל — כל חבר קורא, רק המנהל כותב. אותו דפוס פריסה
@@ -33,6 +34,10 @@ export default function AnnouncementsPage() {
 
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const sendHintRef = useHintRef<HTMLButtonElement>(
+    'announcements.send',
+    'שולח הודעת שידור לכל חברי החדר בבת אחת'
+  );
 
   useEffect(() => {
     listRef.current?.scrollTo({
@@ -143,6 +148,7 @@ export default function AnnouncementsPage() {
                          focus:outline-none focus:ring-2 focus:ring-brand-500/25"
             />
             <button
+              ref={sendHintRef}
               type="button"
               onClick={() => void submit()}
               disabled={!isOnline || text.trim().length === 0}

@@ -35,11 +35,20 @@ const HintRegistryContext = createContext<HintRegistryApi>({
  * ‼️ בכוונה hook נפרד מ-useHintTarget/HintPopover: אלמנט קיים לא צריך
  * לשנות מבנה JSX (עטיפה ב-wrapper), רק להוסיף ref — כדי שנוכל להצמיד
  * הערות לעשרות אלמנטים בלי לגעת בפריסה של אף אחד מהם.
+ *
+ * id יכול להיות undefined — למשל כשמצמידים הערה רק לפריט הראשון
+ * בלולאה (ref={idx===0 ? id : undefined}) ורוצים עדיין לקרוא ל-hook
+ * ללא-תנאי (חוקי ה-hooks). כש-id הוא undefined, ה-ref שמוחזר לא עושה
+ * כלום — לא נרשם ולא נמחק שום דבר.
  */
-export function useHintRef<T extends HTMLElement = HTMLElement>(id: string, text: string) {
+export function useHintRef<T extends HTMLElement = HTMLElement>(
+  id: string | undefined,
+  text: string
+) {
   const { register, unregister } = useContext(HintRegistryContext);
   return useCallback(
     (el: T | null) => {
+      if (!id) return;
       if (el) register(id, text, el);
       else unregister(id);
     },

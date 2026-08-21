@@ -12,6 +12,7 @@ import { countUnread, dmBasePath, generalChatPath } from '../services/chatServic
 import { formatRelativeTime } from '../lib/format';
 import { friendlyError } from '../lib/errors';
 import type { ChatMessage, WithId } from '../types/models';
+import { useHintRef } from '../store/HintContext';
 
 /**
  * רשימת השיחות — הצ'אט הכללי למעלה, ואחריו שורה אחת לכל חבר פעיל
@@ -49,9 +50,11 @@ export default function ChatPage() {
           title="כללי"
           subtitle="כל חברי החדר"
           icon={<ChatIcon width={20} height={20} />}
+          hintId="chat.general"
+          hintText="צ'אט קבוצתי לכל חברי החדר יחד — לתיאומים משותפים"
         />
 
-        {others.map((m) => (
+        {others.map((m, idx) => (
           <ConversationRow
             key={m.id}
             to={`/r/${roomCode}/chat/dm/${m.id}`}
@@ -60,6 +63,8 @@ export default function ChatPage() {
             title={m.name}
             avatar={<Avatar name={m.name} uid={m.id} src={m.avatar} size="md" />}
             online={onlineMemberIds.has(m.id)}
+            hintId={idx === 0 ? 'chat.dm' : undefined}
+            hintText="שיחה פרטית — רק בינך לבין החבר הזה"
           />
         ))}
       </div>
@@ -76,6 +81,8 @@ function ConversationRow({
   icon,
   avatar,
   online,
+  hintId,
+  hintText,
 }: {
   to: string;
   path: string;
@@ -85,8 +92,11 @@ function ConversationRow({
   icon?: React.ReactNode;
   avatar?: React.ReactNode;
   online?: boolean;
+  hintId?: string;
+  hintText: string;
 }) {
   const { data: messages, loading } = useRtdbList<ChatMessage>(path);
+  const hintRef = useHintRef<HTMLAnchorElement>(hintId, hintText);
 
   // ‼️ מעבר יחיד במקום מיון מלא של כל השיחה בשביל איבר אחד. המיון רץ
   // מחדש בכל רינדור של הדף — כולל כל שינוי נוכחות — ופעם אחת לכל חבר.
@@ -102,6 +112,7 @@ function ConversationRow({
 
   return (
     <Link
+      ref={hintRef}
       to={to}
       className="card flex items-center gap-3 p-3.5 transition active:scale-[.99] hover:shadow-lifted"
     >

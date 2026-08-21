@@ -26,6 +26,7 @@ import { db } from '../config/firebase';
 import { formatRelativeTime } from '../lib/format';
 import { friendlyError } from '../lib/errors';
 import type { NotificationType } from '../types/models';
+import { useHintRef } from '../store/HintContext';
 
 const ICONS: Record<NotificationType, (p: IconProps) => JSX.Element> = {
   item_added: PlusIcon,
@@ -53,6 +54,10 @@ export default function NotificationsPage() {
   const { user } = useAuth();
   const { roomCode, memberAvatar } = useRoom();
   const { isOnline } = useConnection();
+  const autoReadHintRef = useHintRef<HTMLUListElement>(
+    'notifications.autoRead',
+    'ההתראות מסומנות כנקראו אוטומטית ברגע שנכנסתם למסך הזה'
+  );
 
   // סימון כנקרא בכניסה למסך. כל אחד כותב רק ל-readBy של עצמו.
   useEffect(() => {
@@ -86,7 +91,7 @@ export default function NotificationsPage() {
             body="כאן יופיע כל מה שקורה בחדר — דיווחים, קניות ואישורים."
           />
         ) : (
-          <ul className="card divide-y divide-ink-100">
+          <ul ref={autoReadHintRef} className="card divide-y divide-ink-100">
             {notifications.map((n) => {
               const unread = user ? !n.readBy?.[user.uid] : false;
               const Icon = ICONS[n.type];

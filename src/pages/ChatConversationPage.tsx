@@ -4,6 +4,7 @@ import { useAuth } from '../store/AuthContext';
 import { useRoom } from '../store/RoomContext';
 import { useConnection } from '../store/ConnectionContext';
 import { useToast } from '../store/ToastContext';
+import { useHintRef } from '../store/HintContext';
 import { useRtdbList } from '../hooks/useRtdb';
 import { useVisualViewportBounds } from '../hooks/useVisualViewportBounds';
 import {
@@ -59,6 +60,10 @@ export default function ChatConversationPage() {
   const sorted = useMemo(
     () => [...messages].sort((a, b) => (a.sentAt ?? 0) - (b.sentAt ?? 0)),
     [messages]
+  );
+  const firstMineIdx = useMemo(
+    () => sorted.findIndex((m) => m.senderId === myUid),
+    [sorted, myUid]
   );
 
   const listRef = useRef<HTMLDivElement>(null);
@@ -228,6 +233,10 @@ export default function ChatConversationPage() {
             {sorted.map((m, i) => {
               const mine = m.senderId === myUid;
               const isNew = !animatedIds.current.has(m.id);
+              // ‼️ הערת-הקשר על סימון "נקרא/נמסר" מצמידים רק להודעה
+              // הראשונה שלי בפועל — לא ל-i===0 הסתמי, שעלולה להיות
+              // הודעה של מישהו אחר בלי תג מסירה בכלל.
+              const isFirstTick = i === firstMineIdx;
               // בצ'אט הכללי מציגים שם+תמונה מעל הודעה של מישהו אחר, אבל רק
               // כשהיא פותחת "רצף" חדש (השולח הקודם היה מישהו אחר) — כמו
               // בכל אפליקציית צ'אט קבוצתי, כדי לא לחזור על אותו שם שוב ושוב.
@@ -257,6 +266,7 @@ export default function ChatConversationPage() {
                     mine={mine}
                     recipientIds={recipientIds}
                     senderName={showSender ? (sender?.name ?? memberName(m.senderId)) : undefined}
+                    isFirstTick={isFirstTick}
                   />
                 </li>
               );
@@ -307,6 +317,7 @@ const Composer = memo(function Composer({
 }) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const sendHintRef = useHintRef<HTMLButtonElement>('chat.send', 'שולח את ההודעה לשיחה הזו');
 
   async function submit() {
     const trimmed = text.trim();
@@ -341,6 +352,7 @@ const Composer = memo(function Composer({
                    focus:outline-none focus:ring-2 focus:ring-brand-500/25"
       />
       <button
+        ref={sendHintRef}
         type="button"
         onClick={() => void submit()}
         disabled={!isOnline || text.trim().length === 0}
@@ -370,14 +382,21 @@ const Bubble = memo(function Bubble({
   mine,
   recipientIds,
   senderName,
+  isFirstTick,
 }: {
   message: WithId<ChatMessage>;
   mine: boolean;
   recipientIds: string[];
   /** מוצג רק בצ'אט הכללי, בתחילת רצף הודעות של מישהו שאינו אני */
   senderName?: string;
+  /** הצמדת הערת-הקשר רק לתג המסירה של ההודעה הראשונה שלי בשיחה */
+  isFirstTick?: boolean;
 }) {
   const tick = mine ? tickFor(message, recipientIds) : null;
+  const tickHintRef = useHintRef<HTMLSpanElement>(
+    isFirstTick ? 'chat.tick' : undefined,
+    'וי אחד = נשלח, שני ווים = נמסר, ווים בהיר = נקרא'
+  );
 
   return (
     <div
@@ -407,6 +426,7 @@ const Bubble = memo(function Bubble({
              מסך. בנוסף, ההבדל היחיד בין השניים היה צבע (sky-300 =
              3.28:1 בלבד). כאן: תווית מפורשת + sky-100 = 4.77:1. */
           <span
+            ref={tickHintRef}
             role="img"
             aria-label={TICK_LABELS[tick]}
             className={tick === 'read' ? 'text-sky-100' : ''}

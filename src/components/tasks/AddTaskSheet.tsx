@@ -9,6 +9,7 @@ import { useAuth } from '../../store/AuthContext';
 import { useRoom } from '../../store/RoomContext';
 import { useToast } from '../../store/ToastContext';
 import { ALL_CATEGORIES, CATEGORY_EMOJI, CATEGORY_LABELS, type Category } from '../../types/models';
+import { useHintRef } from '../../store/HintContext';
 
 const INTERVAL_PRESETS: { label: string; days: number }[] = [
   { label: 'כל יום', days: 1 },
@@ -33,6 +34,18 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
   const [intervalDays, setIntervalDays] = useState(7);
   const [participants, setParticipants] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const categoryHintRef = useHintRef<HTMLButtonElement>(
+    'addTask.category',
+    'בוחרים קטגוריה למטלה — לתצוגה וסינון בלבד'
+  );
+  const intervalHintRef = useHintRef<HTMLButtonElement>(
+    'addTask.interval',
+    'קובע כל כמה זמן המטלה תחזור בסבב'
+  );
+  const submitHintRef = useHintRef<HTMLButtonElement>(
+    'addTask.submit',
+    'שומר את המטלה החדשה ומתחיל את הסבב'
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -84,9 +97,10 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
         <fieldset className="mt-4">
           <legend className="mb-2 text-sm font-medium text-ink-700">קטגוריה</legend>
           <div className="grid grid-cols-4 gap-2">
-            {ALL_CATEGORIES.map((c) => (
+            {ALL_CATEGORIES.map((c, idx) => (
               <button
                 key={c}
+                ref={idx === 0 ? categoryHintRef : undefined}
                 type="button"
                 onClick={() => setCategory(c)}
                 aria-pressed={category === c}
@@ -109,9 +123,10 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
         <fieldset className="mt-4">
           <legend className="mb-2 text-sm font-medium text-ink-700">תדירות</legend>
           <div className="grid grid-cols-4 gap-2">
-            {INTERVAL_PRESETS.map((p) => (
+            {INTERVAL_PRESETS.map((p, idx) => (
               <button
                 key={p.days}
+                ref={idx === 0 ? intervalHintRef : undefined}
                 type="button"
                 onClick={() => setIntervalDays(p.days)}
                 aria-pressed={intervalDays === p.days}
@@ -183,7 +198,15 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
           </ul>
         </fieldset>
 
-        <Button size="lg" fullWidth className="mt-5" loading={saving} disabled={!canSubmit} onClick={submit}>
+        <Button
+          ref={submitHintRef}
+          size="lg"
+          fullWidth
+          className="mt-5"
+          loading={saving}
+          disabled={!canSubmit}
+          onClick={submit}
+        >
           יצירת מטלה
         </Button>
       </div>
