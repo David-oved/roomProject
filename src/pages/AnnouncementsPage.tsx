@@ -20,7 +20,7 @@ import { useHintRef } from '../store/HintContext';
  */
 export default function AnnouncementsPage() {
   const navigate = useNavigate();
-  const { roomCode, isAdmin, memberName } = useRoom();
+  const { roomCode, isAdmin, isArchived, memberName } = useRoom();
   const { user, profile } = useAuth();
   const { isOnline } = useConnection();
   const toast = useToast();
@@ -112,12 +112,32 @@ export default function AnnouncementsPage() {
         ) : (
           <ul className="space-y-2.5">
             {sorted.map((a) => (
-              <li key={a.id} className="card p-3.5">
+              /*
+               * ‼️ שידור ממנהל *המערכת* מקבל מסגרת ותג נפרדים. בלי ההבחנה
+               *    הזו, הודעה מערכתית נראית כאילו מנהל החדר כתב אותה —
+               *    ואז מישהו משיב לאדם הלא נכון, או מתעלם מהודעה שחשוב
+               *    שיקרא דווקא בגלל שהוא סומך על מי שלדעתו כתב אותה.
+               */
+              <li
+                key={a.id}
+                className={`card p-3.5 ${
+                  a.fromSystemAdmin ? 'border border-brand-200 bg-brand-50/60' : ''
+                }`}
+              >
+                {a.fromSystemAdmin && (
+                  <span
+                    className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-brand-100
+                               px-2 py-0.5 text-[11px] font-bold text-brand-800"
+                  >
+                    🛡️ מנהל המערכת
+                  </span>
+                )}
                 <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-ink-900">
                   {a.text}
                 </p>
                 <p className="mt-1.5 text-xs text-ink-500">
-                  {memberName(a.senderId)} · {a.sentAt ? formatSmartDate(a.sentAt) : ''}
+                  {a.fromSystemAdmin ? 'הודעת מערכת' : memberName(a.senderId)} ·{' '}
+                  {a.sentAt ? formatSmartDate(a.sentAt) : ''}
                 </p>
               </li>
             ))}
@@ -140,8 +160,8 @@ export default function AnnouncementsPage() {
                   void submit();
                 }
               }}
-              placeholder="הודעה לכל חברי החדר…"
-              disabled={!isOnline}
+              placeholder={isArchived ? 'החדר בארכיון' : 'הודעה לכל חברי החדר…'}
+              disabled={!isOnline || isArchived}
               // ‼️ text-[16px] — ראו ההערה הזהה ב-ChatConversationPage.
               className="h-11 flex-1 rounded-full border border-ink-200 bg-ink-50 px-4 text-[16px]
                          placeholder:text-ink-500 focus:border-brand-400 focus:bg-white
@@ -151,7 +171,7 @@ export default function AnnouncementsPage() {
               ref={sendHintRef}
               type="button"
               onClick={() => void submit()}
-              disabled={!isOnline || text.trim().length === 0}
+              disabled={!isOnline || isArchived || text.trim().length === 0}
               aria-label="שליחה"
               className="tap grid h-11 w-11 shrink-0 place-items-center rounded-full text-white
                          transition-transform duration-150 active:scale-90

@@ -37,6 +37,8 @@ import { CATEGORY_EMOJI, type Category } from '../types/models';
 import { RoomCodeCard } from '../components/rooms/RoomCodeCard';
 import { NotificationPrompt } from '../components/system/NotificationPrompt';
 import { InstallPrompt } from '../components/system/InstallPrompt';
+import { AdminMessageBanner } from '../components/system/AdminMessageBanner';
+import { RoomArchivedBanner } from '../components/system/RoomArchivedBanner';
 import { ReportItemSheet } from '../components/items/ReportItemSheet';
 import { AddTaskSheet } from '../components/tasks/AddTaskSheet';
 import { completeTask } from '../services/taskService';
@@ -56,10 +58,21 @@ export default function DashboardPage() {
   const [reportOpen, setReportOpen] = useState(false);
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const [busyTaskId, setBusyTaskId] = useState<string | null>(null);
-  const { metadata, roomCode, isAdmin, memberName, loading, error: roomError, fromCache } = useRoom();
+  const {
+    metadata,
+    roomCode,
+    isAdmin,
+    isArchived,
+    memberName,
+    loading,
+    error: roomError,
+    fromCache,
+  } = useRoom();
   const { user, profile } = useAuth();
   const { isOnline } = useConnection();
   const toast = useToast();
+  // חדר בארכיון הוא לקריאה בלבד — אותה השבתה בדיוק כמו מצב אופליין
+  const canWrite = isOnline && !isArchived;
   const { items, error: itemsError } = useItems('open');
   const { purchases, pendingApproval } = usePurchases();
   const { myBalance, isConsistent, error: balancesError } = useBalances();
@@ -232,6 +245,12 @@ export default function DashboardPage() {
       />
 
       <div className="space-y-4 pt-4">
+        {/* ‼️ שני הבאנרים לפני כל השאר: הודעה ממנהל המערכת וחדר בארכיון
+            הם דברים שמשנים מה אפשר לעשות במסך הזה, ולכן הם חייבים
+            להופיע לפני הפעולות ולא אחריהן. */}
+        <AdminMessageBanner />
+        <RoomArchivedBanner />
+
         {justCreated && roomCode && (
           <div className="animate-slide-up">
             <div className="mb-2 flex items-center gap-2">
@@ -303,8 +322,10 @@ export default function DashboardPage() {
           <button
             ref={reportShortcutHintRef}
             onClick={() => setReportOpen(true)}
+            disabled={!canWrite}
+            title={isArchived ? 'החדר בארכיון — לצפייה בלבד' : undefined}
             className="flex flex-col items-center gap-2 rounded-2xl bg-brand-700 py-3.5 text-white
-                       transition active:scale-[.97]"
+                       transition active:scale-[.97] disabled:bg-ink-300 disabled:active:scale-100"
           >
             <PlusIcon width={19} height={19} />
             <span className="text-xs font-semibold">דיווח מוצר</span>
@@ -498,7 +519,7 @@ export default function DashboardPage() {
                 <button
                   ref={addTaskHintRef}
                   onClick={() => setAddTaskOpen(true)}
-                  disabled={!isOnline}
+                  disabled={!canWrite}
                   className="tap-area text-xs font-semibold text-brand-700 disabled:text-ink-300"
                 >
                   + מטלה
@@ -541,7 +562,7 @@ export default function DashboardPage() {
                       ref={idx === 0 ? taskCompleteHintRef : undefined}
                       size="sm"
                       variant="secondary"
-                      disabled={!isOnline || busyTaskId === t.id}
+                      disabled={!canWrite || busyTaskId === t.id}
                       loading={busyTaskId === t.id}
                       onClick={async () => {
                         setBusyTaskId(t.id);

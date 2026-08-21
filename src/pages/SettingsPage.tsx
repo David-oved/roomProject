@@ -3,6 +3,7 @@ import { PlainShell } from '../components/layout/AppShell';
 import { TopBar } from '../components/layout/TopBar';
 import { ChevronIcon } from '../components/ui/icons';
 import { useRoom } from '../store/RoomContext';
+import { useAdminMessages } from '../hooks/useAdminMessages';
 
 interface SettingsCategory {
   key: string;
@@ -27,6 +28,7 @@ const CATEGORIES: SettingsCategory[] = [
  */
 export default function SettingsPage() {
   const { roomCode, isAdmin } = useRoom();
+  const { unreadCount } = useAdminMessages();
 
   return (
     <>
@@ -53,6 +55,55 @@ export default function SettingsPage() {
               </Link>
             </li>
           ))}
+
+          {/* ── הערוץ מול מנהל המערכת ── */}
+          <li className="pt-2">
+            <Link
+              to="/messages"
+              className="card flex items-center gap-3.5 p-4 transition active:scale-[.99] hover:shadow-lifted"
+            >
+              <span
+                aria-hidden
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-ink-50 text-xl"
+              >
+                📬
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold text-ink-900">הודעות ממנהל המערכת</span>
+                <span className="block truncate text-xs text-ink-500">
+                  עדכוני מערכת ותשובות לפניות ששלחתם
+                </span>
+              </span>
+              {unreadCount > 0 && (
+                <span className="grid h-6 min-w-[1.5rem] shrink-0 place-items-center rounded-full
+                                 bg-brand-600 px-1.5 text-xs font-bold text-white">
+                  {unreadCount}
+                </span>
+              )}
+              <ChevronIcon width={18} height={18} className="shrink-0 rotate-180 text-ink-300" />
+            </Link>
+          </li>
+
+          <li>
+            <Link
+              to={`/feedback?room=${roomCode ?? ''}`}
+              className="card flex items-center gap-3.5 p-4 transition active:scale-[.99] hover:shadow-lifted"
+            >
+              <span
+                aria-hidden
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-ink-50 text-xl"
+              >
+                💬
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold text-ink-900">פנייה למנהל המערכת</span>
+                <span className="block truncate text-xs text-ink-500">
+                  תקלה, רעיון, שאלה — או סתם מילה טובה
+                </span>
+              </span>
+              <ChevronIcon width={18} height={18} className="shrink-0 rotate-180 text-ink-300" />
+            </Link>
+          </li>
 
           {isAdmin && (
             <li>

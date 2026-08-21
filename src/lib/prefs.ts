@@ -12,6 +12,7 @@ const KEYS = {
   tutorialSeen: 'rm:tutorial-seen',
   hintsSeen: 'rm:hints-seen',
   installPromptDismissed: 'rm:install-prompt-dismissed',
+  sentFeedback: 'rm:sent-feedback',
 } as const;
 
 function read(key: string): string | null {
@@ -74,4 +75,41 @@ export function clearPrefs(): void {
   // tutorialSeen, hintsSeen ו-installPromptDismissed נשארים גם הם — אין
   // סיבה להטריד משתמש חוזר בדברים שכבר ראה/סגר, רק כי הוא התנתק והתחבר
   // שוב באותו מכשיר
+}
+
+/**
+ * הפניות שנשלחו מהמכשיר הזה.
+ *
+ * ‼️ מקומי ולא מהשרת, בכוונה: כללי האבטחה מתירים קריאה של פנייה
+ *    בודדת לפי מזהה, אבל לא סריקה של כל אוסף המשוב — ובצדק, כי בו
+ *    יושבות גם הפניות של כל שאר המשתמשים. לכן "מה שלחתי" הוא רשימה
+ *    שהמכשיר זוכר. מחיקת נתוני הדפדפן מוחקת אותה, והפנייה עצמה
+ *    נשארת אצל המנהל — זה המחיר, והוא זול מהחלופה.
+ */
+export interface SentFeedbackEntry {
+  id: string;
+  roomCode: string;
+  type: string;
+  subject: string;
+  createdAt: number;
+}
+
+const MAX_SENT_FEEDBACK = 30;
+
+export function getSentFeedback(): SentFeedbackEntry[] {
+  try {
+    const raw = read(KEYS.sentFeedback);
+    const list = raw ? (JSON.parse(raw) as SentFeedbackEntry[]) : [];
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+export function rememberSentFeedback(entry: SentFeedbackEntry): void {
+  const list = [entry, ...getSentFeedback().filter((e) => e.id !== entry.id)].slice(
+    0,
+    MAX_SENT_FEEDBACK
+  );
+  write(KEYS.sentFeedback, JSON.stringify(list));
 }

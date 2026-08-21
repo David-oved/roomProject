@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AppShell } from '../components/layout/AppShell';
+import { RoomArchivedBanner } from '../components/system/RoomArchivedBanner';
 import { TopBar } from '../components/layout/TopBar';
 import { Avatar } from '../components/ui/Avatar';
 import { Badge } from '../components/ui/Badge';
@@ -71,6 +72,7 @@ export default function BalancesPage() {
   return (
     <AppShell>
       <TopBar title="חשבון והוצאות" />
+      <RoomArchivedBanner />
 
       <div className="pt-4">
         {/* כרטיס המאזן האישי */}
@@ -163,7 +165,7 @@ function SummaryTab({
   memberAvatar: (uid: string) => string | null;
 }) {
   const { user, profile } = useAuth();
-  const { roomCode, memberName: roomMemberName, memberAvatar: roomMemberAvatar } = useRoom();
+  const { roomCode, isArchived, memberName: roomMemberName, memberAvatar: roomMemberAvatar } = useRoom();
   const { isOnline } = useConnection();
   const toast = useToast();
   const confirm = useConfirm();
@@ -217,7 +219,7 @@ function SummaryTab({
                 <Button
                   ref={confirmSettlementHintRef}
                   size="sm"
-                  disabled={!isOnline || busy === s.id}
+                  disabled={!isOnline || isArchived || busy === s.id}
                   loading={busy === s.id}
                   onClick={async () => {
                     setBusy(s.id);
@@ -274,7 +276,7 @@ function SummaryTab({
                       ref={paySettlementHintRef}
                       size="sm"
                       variant="secondary"
-                      disabled={!isOnline || busy === key}
+                      disabled={!isOnline || isArchived || busy === key}
                       loading={busy === key}
                       onClick={async () => {
                         const ok = await confirm({
@@ -445,7 +447,7 @@ function ContributionsSection() {
 
 function PendingTab({ isAdmin }: { isAdmin: boolean }) {
   const { pendingApproval } = usePurchases();
-  const { roomCode, memberName, memberAvatar } = useRoom();
+  const { roomCode, isArchived, memberName, memberAvatar } = useRoom();
   const { profile } = useAuth();
   const { user } = useAuth();
   const { isOnline } = useConnection();
@@ -507,7 +509,7 @@ function PendingTab({ isAdmin }: { isAdmin: boolean }) {
                 ref={approveHintRef}
                 size="sm"
                 fullWidth
-                disabled={!isOnline || busy === p.id}
+                disabled={!isOnline || isArchived || busy === p.id}
                 loading={busy === p.id}
                 onClick={async () => {
                   setBusy(p.id);
@@ -523,7 +525,7 @@ function PendingTab({ isAdmin }: { isAdmin: boolean }) {
                 ref={rejectHintRef}
                 size="sm"
                 variant="secondary"
-                disabled={!isOnline || busy === p.id}
+                disabled={!isOnline || isArchived || busy === p.id}
                 onClick={async () => {
                   const reason = await confirm.prompt({
                     title: 'דחיית קנייה',

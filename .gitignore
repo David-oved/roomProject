@@ -46,3 +46,9 @@ tsconfig.tsbuildinfo
 # תלויות ה-Worker
 worker/node_modules/
 worker/.wrangler/
+
+# Admin console — local secrets and local data
+admin/service-account.json
+admin/.data/
+admin/dist/
+admin/.env.local

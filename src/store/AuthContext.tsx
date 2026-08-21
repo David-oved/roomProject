@@ -5,7 +5,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { get, onValue, ref, serverTimestamp, set } from 'firebase/database';
+import { get, onValue, ref, serverTimestamp, set, update } from 'firebase/database';
 import type { User } from 'firebase/auth';
 import { db, isFirebaseConfigured } from '../config/firebase';
 import { isRegistrationInProgress, subscribeToAuth } from '../services/authService';
@@ -19,6 +19,28 @@ interface AuthState {
 
 const Ctx = createContext<AuthState>({ user: null, profile: null, loading: true });
 export const useAuth = () => useContext(Ctx);
+
+/**
+ * דופק "נראה לאחרונה".
+ *
+ * ‼️ נכתב בכל *פתיחה* של האפליקציה ולא רק בהתחברות. authService מעדכן
+ *    את lastActiveAt בכניסה עם סיסמה, אבל המשתמש הטיפוסי מתחבר פעם
+ *    אחת ואז נשאר מחובר חודשים — ולכן בלי הדופק הזה כל מי שלא התנתק
+ *    נראה כ"לא פעיל" בקונסולת הניהול, וחדר חי היה מסומן כנטוש.
+ *
+ * ‼️ מווסת לשעה: המטרה היא לדעת שהמשתמש חי, לא לתעד כל רענון מסך.
+ */
+const ACTIVE_THROTTLE_MS = 60 * 60 * 1000;
+let lastTouchedAt = 0;
+
+function touchLastActive(uid: string): void {
+  const now = Date.now();
+  if (now - lastTouchedAt < ACTIVE_THROTTLE_MS) return;
+  lastTouchedAt = now;
+  void update(ref(db, `users/${uid}`), { lastActiveAt: serverTimestamp() }).catch(() => {
+    /* נוחות ניטור בלבד — כישלון כאן לא אמור להפריע לאף אחד */
+  });
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ user: null, profile: null, loading: true });
@@ -71,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
           }
           setState({ user, profile: snap.val() as UserProfile, loading: false });
+          touchLastActive(user.uid);
         },
         () => setState({ user, profile: null, loading: false })
       );

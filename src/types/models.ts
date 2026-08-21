@@ -33,6 +33,12 @@ export interface RoomMetadata {
   createdAt: number;
   createdBy: string;
   adminId: string;
+  /**
+   * חדר שאורכב על ידי מנהל המערכת מקונסולת הניהול.
+   * הנתונים נשמרים במלואם — מה שנחסם הוא כתיבה חדשה בלבד.
+   * ראו docs/13-admin-console.md.
+   */
+  archivedAt?: number;
 }
 
 export interface Member {
@@ -146,6 +152,12 @@ export interface Announcement {
   senderId: string;
   text: string;
   sentAt: number;
+  /**
+   * שידור שהגיע ממנהל *המערכת* (קונסולת הניהול) ולא ממנהל החדר.
+   * מוצג עם תג נפרד — חבר שחושב שמנהל החדר כתב את זה עלול להשיב
+   * לאדם הלא נכון, או להתעלם מהודעה מערכתית שחשוב שיקרא.
+   */
+  fromSystemAdmin?: boolean;
 }
 
 export interface JoinRequest {
@@ -181,6 +193,77 @@ export interface AppNotification {
   createdAt: number;
   readBy?: Record<string, true>;
 }
+
+/* ═══════════ הערוץ מול מנהל המערכת ═══════════ */
+/*
+ * שלושת הצמתים הבאים הם החוזה מול קונסולת הניהול המקומית.
+ * המבנה המלא, כולל מי כותב לכל שדה, מתועד ב-docs/13-admin-console.md.
+ */
+
+export type FeedbackType = 'bug' | 'feature' | 'issue' | 'question' | 'compliment' | 'other';
+
+/**
+ * משוב שנשלח מהאפליקציה למנהל המערכת.
+ *
+ * ‼️ הרשומה נעולה אחרי היצירה: אין עריכה ואין מחיקה מהלקוח. הסטטוס,
+ *    העדיפות והתשובה של המנהל נשמרים בצומת נפרד שהלקוח אינו רואה —
+ *    כך שמה שכתוב כאן הוא תמיד מה שהמשתמש עצמו כתב.
+ */
+export interface Feedback {
+  roomCode: string;
+  userId: string;
+  type: FeedbackType;
+  /** 3–80 תווים */
+  subject: string;
+  /** עד 2000 תווים */
+  body: string;
+  createdAt: number;
+  /** פרטי המכשיר — מה שהופך "לא עובד" לדיווח שאפשר לשחזר */
+  environment?: Record<string, string>;
+  attachments?: Array<{ name: string; size: number; url?: string }>;
+}
+
+export type AdminMessageKind = 'info' | 'success' | 'warning' | 'error' | 'maintenance';
+
+/**
+ * הודעה מהמנהל בתיבה האישית: שידור כללי, הודעה אישית או תשובה למשוב.
+ * המשתמש כותב כאן שני שדות בלבד — readAt ו-clickedAt.
+ */
+export interface AdminMessage {
+  title: string;
+  body: string;
+  kind: AdminMessageKind;
+  cta?: { text: string; url: string } | null;
+  sentAt: number;
+  readAt: number | null;
+  clickedAt?: number | null;
+  /** מזהה המשוב שההודעה הזו עונה עליו, אם היא תשובה */
+  relatedFeedback?: string;
+}
+
+/** חסימת משתמש. קיים = חסום. הלקוח קורא בלבד. */
+export interface Suspension {
+  at: number;
+  reason: string | null;
+}
+
+export const FEEDBACK_TYPE_LABELS: Record<FeedbackType, string> = {
+  bug: 'משהו לא עובד',
+  feature: 'רעיון לשיפור',
+  issue: 'בעיה בחדר',
+  question: 'שאלה',
+  compliment: 'מחמאה',
+  other: 'אחר',
+};
+
+export const FEEDBACK_TYPE_EMOJI: Record<FeedbackType, string> = {
+  bug: '🐛',
+  feature: '💡',
+  issue: '⚠️',
+  question: '❓',
+  compliment: '💚',
+  other: '📝',
+};
 
 /** לכל ישות שנקראת מ-RTDB מתווסף id מהמפתח */
 export type WithId<T> = T & { id: string };

@@ -32,6 +32,8 @@ const SettingsMembersPage = lazy(() => import('./pages/SettingsMembersPage'));
 const SettingsNotificationsPage = lazy(() => import('./pages/SettingsNotificationsPage'));
 const SettingsAboutPage = lazy(() => import('./pages/SettingsAboutPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const AdminMessagesPage = lazy(() => import('./pages/AdminMessagesPage'));
+const FeedbackPage = lazy(() => import('./pages/FeedbackPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 /**
@@ -81,6 +83,12 @@ export function AppRoutes() {
           <Route element={<RequireAuth />}>
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            {/* ‼️ מחוץ ל-RoomLayout בכוונה: הודעה ממנהל המערכת ופנייה אליו
+                שייכות למשתמש ולא לחדר. מי שנמצא בשלושה חדרים אמור לראות
+                הודעה פעם אחת, ומי שעזב את כולם עדיין צריך לקבל תשובה
+                לפנייה ששלח. */}
+            <Route path="/messages" element={<AdminMessagesPage />} />
+            <Route path="/feedback" element={<FeedbackPage />} />
             <Route path="/rooms/create" element={<CreateRoomPage />} />
             <Route path="/rooms/join" element={<JoinRoomPage />} />
             <Route path="/rooms/:code/pending" element={<PendingApprovalPage />} />

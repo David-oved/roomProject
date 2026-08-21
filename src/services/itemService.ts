@@ -1,6 +1,6 @@
 import { push, ref, remove, runTransaction, serverTimestamp, update } from 'firebase/database';
 import { db } from '../config/firebase';
-import { assertOnline } from './guard';
+import { assertOnline, assertRoomWritable } from './guard';
 import { enqueueNotification } from './outboxService';
 import type { Category, Item, Priority } from '../types/models';
 
@@ -22,6 +22,7 @@ export async function reportItem(
   draft: ItemDraft
 ): Promise<string> {
   assertOnline('לדווח על מוצר'); // ← 🔴 ללא רשת נעצרים כאן
+  assertRoomWritable(code, 'לדווח על מוצר');
 
   const itemId = push(ref(db, itemsPath(code))).key!;
   const notifId = push(ref(db, `rooms/${code}/notifications`)).key!;
@@ -77,6 +78,7 @@ export async function reportItem(
  */
 export async function claimItem(code: string, itemId: string, userId: string): Promise<void> {
   assertOnline('לתפוס מוצר');
+  assertRoomWritable(code, 'לתפוס מוצר');
 
   const itemRef = ref(db, `${itemsPath(code)}/${itemId}`);
   const result = await runTransaction(itemRef, (item: Item | null) => {
@@ -95,6 +97,7 @@ export async function claimItem(code: string, itemId: string, userId: string): P
 
 export async function unclaimItem(code: string, itemId: string): Promise<void> {
   assertOnline('לבטל תפיסה');
+  assertRoomWritable(code, 'לבטל תפיסה');
   await update(ref(db, `${itemsPath(code)}/${itemId}`), {
     status: 'needed',
     assignedTo: null,
@@ -107,6 +110,7 @@ export async function updateItem(
   patch: Partial<Pick<Item, 'name' | 'category' | 'priority' | 'notes'>>
 ): Promise<void> {
   assertOnline('לערוך מוצר');
+  assertRoomWritable(code, 'לערוך מוצר');
 
   const clean: Record<string, unknown> = { ...patch };
   if (typeof patch.name === 'string') {
@@ -121,5 +125,6 @@ export async function updateItem(
 /** מנהל בלבד — נאכף ב-Security Rules. */
 export async function deleteItem(code: string, itemId: string): Promise<void> {
   assertOnline('למחוק מוצר');
+  assertRoomWritable(code, 'למחוק מוצר');
   await remove(ref(db, `${itemsPath(code)}/${itemId}`));
 }

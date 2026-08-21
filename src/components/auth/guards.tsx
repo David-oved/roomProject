@@ -1,7 +1,12 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../../store/AuthContext';
 import { useRoom } from '../../store/RoomContext';
+import { useSuspension } from '../../hooks/useAdminMessages';
 import { FullPageSpinner } from '../ui/Spinner';
+
+// נטען עצלה — רוב המשתמשים לעולם לא יראו את המסך הזה
+const SuspendedPage = lazy(() => import('../../pages/SuspendedPage'));
 
 /**
  * ⚠️ שומרי הסף הם **חוויית משתמש בלבד**, לא אבטחה.
@@ -9,13 +14,32 @@ import { FullPageSpinner } from '../ui/Spinner';
  * נתונים, כי האכיפה האמיתית היא ב-Security Rules.
  */
 
-/** דורש התחברות */
+/** דורש התחברות — ושהמשתמש אינו חסום */
 export function RequireAuth() {
   const { user, loading } = useAuth();
+  const { isSuspended, loading: suspensionLoading } = useSuspension();
   const location = useLocation();
 
   if (loading) return <FullPageSpinner />;
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
+
+  /**
+   * ‼️ ממתינים לתשובה על החסימה לפני שמציגים תוכן, אבל *רק* כשיש
+   *    משתמש. אחרת מסכי האורח היו תלויים בקריאה שאין להם בכלל
+   *    הרשאה לבצע.
+   *
+   * ‼️ שגיאת קריאה (רשת) אינה נחשבת לחסימה — ראו useSuspension.
+   *    אחרת נפילת רשת רגעית הייתה נועלת משתמש תקין מחוץ לאפליקציה.
+   */
+  if (suspensionLoading) return <FullPageSpinner />;
+  if (isSuspended) {
+    return (
+      <Suspense fallback={<FullPageSpinner />}>
+        <SuspendedPage />
+      </Suspense>
+    );
+  }
+
   return <Outlet />;
 }
 
