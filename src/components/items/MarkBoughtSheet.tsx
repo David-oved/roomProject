@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode, type Ref } from 'react';
 import { GlassModal } from '../ui/GlassModal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -7,6 +7,7 @@ import { CheckIcon, ExchangeIcon, UserIcon, UsersIcon } from '../ui/icons';
 import { useAuth } from '../../store/AuthContext';
 import { useRoom } from '../../store/RoomContext';
 import { useToast } from '../../store/ToastContext';
+import { useHintRef } from '../../store/HintContext';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useBalances } from '../../hooks/useRoomData';
 import { createPurchase } from '../../services/purchaseService';
@@ -57,6 +58,31 @@ export function MarkBoughtSheet({
 
   /** החוב הנוכחי של הקונה, כמספר חיובי. 0 = לא חייב כלום. */
   const myDebt = Math.max(0, -myBalance);
+
+  const coveredHintRef = useHintRef<HTMLButtonElement>(
+    'markBought.mode.covered',
+    'רושם על שמכם בלי שהמאזנים של אף אחד ישתנו'
+  );
+  const offsetHintRef = useHintRef<HTMLButtonElement>(
+    'markBought.mode.offset',
+    'משתמש בקנייה הזו כדי לכסות חלק מהחוב שלכם'
+  );
+  const splitHintRef = useHintRef<HTMLButtonElement>(
+    'markBought.mode.split',
+    'מחלק את עלות הקנייה בין השותפים שתבחרו'
+  );
+  const splitStyleHintRef = useHintRef<HTMLButtonElement>(
+    'markBought.splitStyle',
+    'בוחרים איך לחלק: שווה, לפי אחוזים, או סכום ידני'
+  );
+  const participantHintRef = useHintRef<HTMLButtonElement>(
+    'markBought.participant',
+    'מוסיף או מסיר שותף מרשימת מי שמשלם'
+  );
+  const submitHintRef = useHintRef<HTMLButtonElement>(
+    'markBought.submit',
+    'שומר את הקנייה והמאזנים מתעדכנים מיד'
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -238,6 +264,7 @@ export function MarkBoughtSheet({
           <legend className="mb-2 block text-sm font-medium text-ink-700">איך לרשום?</legend>
           <div className={`grid gap-2 ${myDebt > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <ModeCard
+              hintRef={coveredHintRef}
               active={mode === 'covered'}
               onClick={() => setMode('covered')}
               icon={<UserIcon width={16} height={16} />}
@@ -250,6 +277,7 @@ export function MarkBoughtSheet({
 
             {myDebt > 0 && (
               <ModeCard
+                hintRef={offsetHintRef}
                 active={mode === 'offset'}
                 onClick={() => setMode('offset')}
                 icon={<ExchangeIcon width={16} height={16} />}
@@ -262,6 +290,7 @@ export function MarkBoughtSheet({
             )}
 
             <ModeCard
+              hintRef={splitHintRef}
               active={mode === 'split'}
               onClick={() => setMode('split')}
               icon={<UsersIcon width={16} height={16} />}
@@ -302,9 +331,10 @@ export function MarkBoughtSheet({
           <fieldset>
             <legend className="mb-2 block text-sm font-medium text-ink-700">שיטת החלוקה</legend>
             <div className="grid grid-cols-3 gap-2">
-              {SPLIT_STYLES.map((m) => (
+              {SPLIT_STYLES.map((m, idx) => (
                 <button
                   key={m}
+                  ref={idx === 0 ? splitStyleHintRef : undefined}
                   type="button"
                   onClick={() => setSplitStyle(m)}
                   aria-pressed={splitStyle === m}
@@ -329,7 +359,7 @@ export function MarkBoughtSheet({
               בין מי לחלק? (<span className="num">{participants.length}</span>)
             </legend>
             <ul className="space-y-1.5">
-              {activeMembers.map((m) => {
+              {activeMembers.map((m, idx) => {
                 const on = participants.includes(m.id);
                 return (
                   <li key={m.id}>
@@ -340,6 +370,7 @@ export function MarkBoughtSheet({
                       ].join(' ')}
                     >
                       <button
+                        ref={idx === 0 ? participantHintRef : undefined}
                         type="button"
                         onClick={() => toggleParticipant(m.id)}
                         aria-pressed={on}
@@ -439,7 +470,14 @@ export function MarkBoughtSheet({
             : 'הקנייה תירשם מיד והמאזנים יתעדכנו באותה שנייה.'}
         </p>
 
-        <Button size="lg" fullWidth loading={busy} disabled={!canSubmit} onClick={submit}>
+        <Button
+          ref={submitHintRef}
+          size="lg"
+          fullWidth
+          loading={busy}
+          disabled={!canSubmit}
+          onClick={submit}
+        >
           {amount > 0
             ? `${mode === 'covered' ? 'רשום על חשבוני' : 'שמור קנייה'} · ${formatILS(amount)}`
             : 'שמור קנייה'}
@@ -466,6 +504,7 @@ function ModeCard({
   delta,
   balance,
   show,
+  hintRef,
 }: {
   active: boolean;
   onClick: () => void;
@@ -475,11 +514,13 @@ function ModeCard({
   delta: Agorot;
   balance: Agorot;
   show: boolean;
+  hintRef?: Ref<HTMLButtonElement>;
 }) {
   const after = balance + delta;
 
   return (
     <button
+      ref={hintRef}
       type="button"
       onClick={onClick}
       aria-pressed={active}
