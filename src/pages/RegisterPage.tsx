@@ -10,10 +10,12 @@ import { authErrorCode, authErrorMessage, register } from '../services/authServi
 import { uploadAvatar } from '../services/avatarService';
 import { useConnection } from '../store/ConnectionContext';
 import { setLastEmail } from '../lib/prefs';
+import { useInstallGuide } from '../store/InstallGuideContext';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { isOnline } = useConnection();
+  const { openGuide: openInstallGuide } = useInstallGuide();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -57,7 +59,19 @@ export default function RegisterPage() {
   }
 
   if (newUid) {
-    return <AvatarPromptStep uid={newUid} name={name} onDone={() => navigate('/onboarding', { replace: true })} />;
+    return (
+      <AvatarPromptStep
+        uid={newUid}
+        name={name}
+        // ‼️ ההסבר "איך מתקינים למסך הבית" נפתח כאן ולא בעמוד ה-onboarding
+        // עצמו — זו הנקודה שמסמנת "סיום ההרשמה", לפני שהמשתמש כבר עסוק
+        // בבחירת/יצירת חדר.
+        onDone={() => {
+          openInstallGuide();
+          navigate('/onboarding', { replace: true });
+        }}
+      />
+    );
   }
 
   return (

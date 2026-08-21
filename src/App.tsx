@@ -4,6 +4,8 @@ import { ConnectionProvider } from './store/ConnectionContext';
 import { ToastProvider } from './store/ToastContext';
 import { ConfirmProvider } from './store/ConfirmContext';
 import { HintProvider } from './store/HintContext';
+import { InstallGuideProvider } from './store/InstallGuideContext';
+import { InstallGuideModal } from './components/onboarding/InstallGuideModal';
 import { UpdateProvider } from './store/UpdateContext';
 import { UpdateNotice } from './components/system/UpdateNotice';
 import { RootErrorBoundary } from './components/system/ErrorBoundary';
@@ -48,9 +50,14 @@ export default function App() {
                       הערות-הקשר חלות על כל מסך באפליקציה, כולל התחברות
                       ויצירת/הצטרפות לחדר, שקודמים לכניסה לחדר עצמו. */}
                   <HintProvider>
-                    <HashRouter>
-                      <AppRoutes />
-                    </HashRouter>
+                    {/* גם היא ברמת השורש: ההרשמה, שמפעילה את הפתיחה
+                        האוטומטית הראשונה שלה, קודמת לכניסה לחדר */}
+                    <InstallGuideProvider>
+                      <HashRouter>
+                        <AppRoutes />
+                      </HashRouter>
+                      <InstallGuideModal />
+                    </InstallGuideProvider>
                   </HintProvider>
                 </ConnectionProvider>
               </AuthProvider>
