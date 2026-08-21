@@ -62,3 +62,31 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # ‼️ הפריסה הזו פורסת רק את הקבצים הסטטיים ל-Pages. חוקי האבטחה של
+  # ה-Realtime Database (database.rules.json) הם קובץ נפרד שדורש פריסה
+  # נפרדת ל-Firebase — נתגלה בפועל ב-v1.22.0: נתיבים חדשים בכללים
+  # (feedback / adminMessages / suspensions) עלו לאוויר בקוד, אבל הכללים
+  # עצמם נשארו הגרסה הישנה, וכל קריאה/כתיבה אליהם נדחתה PERMISSION_DENIED
+  # על ידי כלל ברירת המחדל — למשתמש בקצה השני של דלת נעולה, בלי שום
+  # הודעה שמסבירה למה. הג'וב הזה סוגר את הפער: כל push ל-main פורס גם
+  # את הכללים, לא רק את הממשק.
+  deploy-rules:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: כתיבת ה-service account לקובץ זמני
+        run: echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: פריסת database.rules.json
+        run: npx --yes firebase-tools@13 deploy --only database --non-interactive
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
+
+      - name: ניקוי הקובץ הזמני
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firebase-sa.json"

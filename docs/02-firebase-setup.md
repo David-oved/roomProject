@@ -180,6 +180,17 @@ firebase deploy --only database,storage
 
 **אימות שזה עבד:** Console → Realtime Database → לשונית **Rules** → צריך להופיע ה-JSON שלכם. אם רואים `".read": true` — משהו לא עלה, אל תמשיכו.
 
+> **‼️ מ-v1.22.0: `database.rules.json` נפרס אוטומטית ב-CI.** ג'וב
+> `deploy-rules` ב-`.github/workflows/deploy.yml` רץ על כל `push` ל-`main`
+> ומריץ בדיוק את הפקודה הזו (`--only database`, לא `storage`) עם
+> `FIREBASE_SERVICE_ACCOUNT` שכבר מוגדר כ-secret. **הפקודה הידנית עדיין
+> נחוצה**: (א) בפעם הראשונה, לפני שה-secret קיים, (ב) לשינויים
+> ב-`storage.rules` — שאינם חלק מהאוטומציה, ו-(ג) כמוצא חירום אם ה-CI
+> נכשל. נולד מבאג אמיתי: v1.22.0 עלתה עם נתיבי כללים חדשים (`feedback`,
+> `adminMessages`, `suspensions`) שהקוד כבר תלוי בהם, בזמן שה-Rules
+> בייצור נשארו הגרסה הישנה — משתמשים קיבלו `PERMISSION_DENIED` על כל
+> קריאה/כתיבה לנתיבים האלה, כי דלת נעולה חסמה קוד שכבר היה חי.
+
 ---
 
 ## שלב 7 · האמולטורים — הכלי החשוב ביותר לפיתוח
