@@ -137,7 +137,8 @@ export default function AnnouncementsPage() {
               }}
               placeholder="הודעה לכל חברי החדר…"
               disabled={!isOnline}
-              className="h-11 flex-1 rounded-full border border-ink-200 bg-ink-50 px-4 text-[15px]
+              // ‼️ text-[16px] — ראו ההערה הזהה ב-ChatConversationPage.
+              className="h-11 flex-1 rounded-full border border-ink-200 bg-ink-50 px-4 text-[16px]
                          placeholder:text-ink-500 focus:border-brand-400 focus:bg-white
                          focus:outline-none focus:ring-2 focus:ring-brand-500/25"
             />

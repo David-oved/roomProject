@@ -332,7 +332,11 @@ const Composer = memo(function Composer({
         }}
         placeholder="הודעה…"
         disabled={!isOnline}
-        className="h-11 flex-1 rounded-full border border-ink-200 bg-ink-50 px-4 text-[15px]
+        // ‼️ text-[16px] ולא 15 — מתחת ל-16px זה מפעיל זום אוטומטי של
+        // iOS Safari בכל פוקוס על השדה (ראו index.css:44-50, Input.tsx:26).
+        // מחלקת ה-Tailwind גוברת על הכלל הגלובלי, ולכן 15px כאן היה שובר
+        // את ההגנה בכל שדה שלא עובר דרך הרכיב Input.
+        className="h-11 flex-1 rounded-full border border-ink-200 bg-ink-50 px-4 text-[16px]
                    placeholder:text-ink-500 focus:border-brand-400 focus:bg-white
                    focus:outline-none focus:ring-2 focus:ring-brand-500/25"
       />
