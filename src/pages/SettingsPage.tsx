@@ -1,9 +1,21 @@
 import { Link } from 'react-router-dom';
-import type { ReactNode } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { PlainShell } from '../components/layout/AppShell';
 import { TopBar } from '../components/layout/TopBar';
 import { Avatar } from '../components/ui/Avatar';
-import { ChevronIcon } from '../components/ui/icons';
+import {
+  BellIcon,
+  ChatIcon,
+  ChevronIcon,
+  ContrastIcon,
+  HomeIcon,
+  InfoIcon,
+  MailIcon,
+  MegaphoneIcon,
+  UsersIcon,
+  WrenchIcon,
+  type IconProps,
+} from '../components/ui/icons';
 import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
 import { useAdminMessages } from '../hooks/useAdminMessages';
@@ -14,7 +26,7 @@ interface Row {
   to: string;
   label: string;
   hint: string;
-  icon: string;
+  icon: ComponentType<IconProps>;
   /** גוון אריח האייקון — כל הגוונים כבר מותאמים אוטומטית למצב כהה */
   tone: 'brand' | 'rose' | 'emerald' | 'amber' | 'sky' | 'violet' | 'ink';
   badge?: number;
@@ -47,13 +59,13 @@ export default function SettingsPage() {
   const email = profile?.email || user?.email || '';
 
   const preferences: Row[] = [
-    { key: 'display', to: `/r/${roomCode}/settings/display`, label: 'תצוגה', hint: 'בהיר, כהה או לפי המכשיר', icon: '🌗', tone: 'violet' },
-    { key: 'notifications', to: `/r/${roomCode}/settings/notifications`, label: 'התראות', hint: 'מה ומתי תרצו לקבל התראה', icon: '🔔', tone: 'amber' },
+    { key: 'display', to: `/r/${roomCode}/settings/display`, label: 'תצוגה', hint: 'בהיר, כהה או לפי המכשיר', icon: ContrastIcon, tone: 'violet' },
+    { key: 'notifications', to: `/r/${roomCode}/settings/notifications`, label: 'התראות', hint: 'מה ומתי תרצו לקבל התראה', icon: BellIcon, tone: 'amber' },
   ];
 
   const room: Row[] = [
-    { key: 'room', to: `/r/${roomCode}/settings/room`, label: 'החדר', hint: 'פרטי החדר, ניהול וגיבוי', icon: '🏠', tone: 'sky' },
-    { key: 'members', to: `/r/${roomCode}/settings/members`, label: 'חברים', hint: 'רשימת חברים ובקשות הצטרפות', icon: '👥', tone: 'emerald' },
+    { key: 'room', to: `/r/${roomCode}/settings/room`, label: 'החדר', hint: 'פרטי החדר, ניהול וגיבוי', icon: HomeIcon, tone: 'sky' },
+    { key: 'members', to: `/r/${roomCode}/settings/members`, label: 'חברים', hint: 'רשימת חברים ובקשות הצטרפות', icon: UsersIcon, tone: 'emerald' },
   ];
   if (isAdmin) {
     room.push({
@@ -61,7 +73,7 @@ export default function SettingsPage() {
       to: `/r/${roomCode}/announcements`,
       label: 'הודעה לחברי החדר',
       hint: 'שליחת הודעת שידור לכל החברים',
-      icon: '📢',
+      icon: MegaphoneIcon,
       tone: 'rose',
     });
   }
@@ -72,12 +84,12 @@ export default function SettingsPage() {
       to: '/messages',
       label: 'הודעות ממנהל המערכת',
       hint: 'עדכוני מערכת ותשובות לפניות ששלחתם',
-      icon: '📬',
+      icon: MailIcon,
       tone: 'brand',
       badge: unreadCount,
     },
-    { key: 'feedback', to: `/feedback?room=${roomCode ?? ''}`, label: 'פנייה למנהל המערכת', hint: 'תקלה, רעיון, שאלה — או סתם מילה טובה', icon: '💬', tone: 'violet' },
-    { key: 'about', to: `/r/${roomCode}/settings/about`, label: 'אודות', hint: 'גרסה, עדכונים ומידע נוסף', icon: 'ℹ️', tone: 'ink' },
+    { key: 'feedback', to: `/feedback?room=${roomCode ?? ''}`, label: 'פנייה למנהל המערכת', hint: 'תקלה, רעיון, שאלה — או סתם מילה טובה', icon: ChatIcon, tone: 'violet' },
+    { key: 'about', to: `/r/${roomCode}/settings/about`, label: 'אודות', hint: 'גרסה, עדכונים ומידע נוסף', icon: InfoIcon, tone: 'ink' },
   ];
 
   return (
@@ -112,7 +124,7 @@ export default function SettingsPage() {
                   to: '/developer',
                   label: 'פאנל מפתח',
                   hint: 'סקירת כל החדרים והמשתמשים במערכת',
-                  icon: '🛠️',
+                  icon: WrenchIcon,
                   tone: 'ink',
                 },
               ]}
@@ -137,9 +149,9 @@ function SettingsSection({ title, rows }: { title: string; rows: Row[] }) {
             >
               <span
                 aria-hidden
-                className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg ${TONE_TILE[row.tone]}`}
+                className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${TONE_TILE[row.tone]}`}
               >
-                {row.icon}
+                <row.icon width={19} height={19} />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-bold text-ink-900">{row.label}</span>

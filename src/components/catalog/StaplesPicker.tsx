@@ -1,16 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Sheet } from '../ui/Sheet';
 import { Button } from '../ui/Button';
-import { CheckIcon, ChevronIcon } from '../ui/icons';
+import { CheckIcon, ChevronIcon, PlusIcon, SearchIcon } from '../ui/icons';
 import { AddProductForm } from './AddProductForm';
 import { useCatalog, type RoomProduct } from '../../hooks/useCatalog';
 import { formatILS } from '../../lib/format';
-import {
-  ALL_CATEGORIES,
-  CATEGORY_EMOJI,
-  CATEGORY_LABELS,
-  type Category,
-} from '../../types/models';
+import { ALL_CATEGORIES, CATEGORY_LABELS, type Category } from '../../types/models';
+import { CATEGORY_ICON } from '../../lib/categoryIcons';
 
 /**
  * בורר מוצרי בסיס.
@@ -140,7 +136,7 @@ export function StaplesPicker({
               className="pointer-events-none absolute inset-y-0 start-3 grid place-items-center
                          text-ink-400"
             >
-              🔍
+              <SearchIcon width={17} height={17} />
             </span>
           </div>
         </div>
@@ -165,10 +161,11 @@ export function StaplesPicker({
                 <button
                   type="button"
                   onClick={() => setAddingProduct(true)}
-                  className="rounded-xl bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-800
-                             transition hover:bg-brand-100"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-brand-50 px-4 py-2
+                             text-sm font-semibold text-brand-800 transition hover:bg-brand-100"
                 >
-                  ➕ הוספת "{query.trim()}" כמוצר חדש
+                  <PlusIcon width={14} height={14} />
+                  הוספת "{query.trim()}" כמוצר חדש
                 </button>
               </div>
             ) : (
@@ -204,6 +201,7 @@ export function StaplesPicker({
             {byCategory.map(({ category, list, chosen }) => {
               const isOpen = expanded === category;
               const allChosen = chosen === list.length;
+              const CatIcon = CATEGORY_ICON[category];
 
               return (
                 <li
@@ -217,8 +215,11 @@ export function StaplesPicker({
                     className={`tap flex w-full items-center gap-3 px-3.5 text-start transition
                                 ${isOpen ? 'bg-brand-50/60' : 'hover:bg-ink-50'}`}
                   >
-                    <span aria-hidden className="text-xl">
-                      {CATEGORY_EMOJI[category]}
+                    <span
+                      aria-hidden
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-700"
+                    >
+                      <CatIcon width={16} height={16} />
                     </span>
 
                     <span className="min-w-0 flex-1">
@@ -315,7 +316,7 @@ function ProductRow({
           <span className="text-xs text-ink-500">
             {showCategory && (
               <>
-                {CATEGORY_EMOJI[product.category]} {CATEGORY_LABELS[product.category]}
+                {CATEGORY_LABELS[product.category]}
                 {product.unit && ' · '}
               </>
             )}

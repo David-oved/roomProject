@@ -4,7 +4,9 @@ import { Input } from '../ui/Input';
 import { useAuth } from '../../store/AuthContext';
 import { useToast } from '../../store/ToastContext';
 import { addGlobalProduct } from '../../services/catalogService';
-import { ALL_CATEGORIES, CATEGORY_EMOJI, CATEGORY_LABELS, type Category } from '../../types/models';
+import { ALL_CATEGORIES, CATEGORY_LABELS, type Category } from '../../types/models';
+import { CATEGORY_ICON } from '../../lib/categoryIcons';
+import { PlusIcon } from '../ui/icons';
 
 /**
  * טופס הוספת מוצר חדש לקטלוג המשותף.
@@ -50,7 +52,10 @@ export function AddProductForm({
 
   return (
     <div className="space-y-3 rounded-xl border border-brand-200 bg-brand-50/50 p-3.5">
-      <p className="text-xs font-semibold text-brand-800">➕ מוצר חדש לקטלוג המשותף</p>
+      <p className="flex items-center gap-1.5 text-xs font-semibold text-brand-800">
+        <PlusIcon width={13} height={13} />
+        מוצר חדש לקטלוג המשותף
+      </p>
 
       <Input
         label="שם המוצר"
@@ -63,24 +68,27 @@ export function AddProductForm({
       <div>
         <p className="mb-1.5 text-sm font-medium text-ink-700">קטגוריה</p>
         <div className="grid grid-cols-2 gap-2">
-          {ALL_CATEGORIES.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setCategory(c)}
-              aria-pressed={category === c}
-              className={[
-                'tap flex items-center gap-2 rounded-xl border px-3 text-sm font-medium',
-                'transition active:scale-[.98]',
-                category === c
-                  ? 'border-brand-500 bg-surface text-brand-900 ring-1 ring-brand-500/30'
-                  : 'border-ink-200 bg-surface text-ink-600',
-              ].join(' ')}
-            >
-              <span aria-hidden>{CATEGORY_EMOJI[c]}</span>
-              {CATEGORY_LABELS[c]}
-            </button>
-          ))}
+          {ALL_CATEGORIES.map((c) => {
+            const CatIcon = CATEGORY_ICON[c];
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCategory(c)}
+                aria-pressed={category === c}
+                className={[
+                  'tap flex items-center gap-2 rounded-xl border px-3 text-sm font-medium',
+                  'transition active:scale-[.98]',
+                  category === c
+                    ? 'border-brand-500 bg-surface text-brand-900 ring-1 ring-brand-500/30'
+                    : 'border-ink-200 bg-surface text-ink-600',
+                ].join(' ')}
+              >
+                <CatIcon width={15} height={15} className="shrink-0" />
+                {CATEGORY_LABELS[c]}
+              </button>
+            );
+          })}
         </div>
       </div>
 

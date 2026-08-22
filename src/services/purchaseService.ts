@@ -203,7 +203,7 @@ export async function approvePurchase(
   // הקונה ממתין לתשובה — זו הפרעה שהוא רוצה לקבל
   void enqueueNotification({
     roomCode: code,
-    title: 'הקנייה שלך אושרה ✅',
+    title: 'הקנייה שלך אושרה',
     body: `${purchase.title} — ${formatILS(purchase.amount)}`,
     url: `/r/${code}/balances`,
     tag: `purchase-${purchaseId}`,
@@ -346,7 +346,7 @@ export async function confirmSettlement(
 
   void enqueueNotification({
     roomCode: code,
-    title: 'התשלום שלך אושר ✅',
+    title: 'התשלום שלך אושר',
     body: `${confirmerName} אישר/ה שקיבל/ה ${formatILS(amount)}`,
     url: `/r/${code}/balances`,
     tag: `settlement-confirm-${settlementId}`,

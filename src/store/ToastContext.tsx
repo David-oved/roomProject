@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { OfflineError } from '../services/guard';
 import { friendlyError } from '../lib/errors';
+import { CheckIcon, CloseIcon, InfoIcon, OfflineIcon, type IconProps } from '../components/ui/icons';
 
 type ToastTone = 'success' | 'error' | 'warn' | 'info';
 
@@ -53,11 +54,11 @@ const TONE_STYLES: Record<ToastTone, string> = {
   info: 'bg-ink-800 text-white',
 };
 
-const TONE_ICONS: Record<ToastTone, string> = {
-  success: '✓',
-  error: '✕',
-  warn: '📡',
-  info: 'ℹ',
+const TONE_ICONS: Record<ToastTone, (p: IconProps) => JSX.Element> = {
+  success: CheckIcon,
+  error: CloseIcon,
+  warn: OfflineIcon,
+  info: InfoIcon,
 };
 
 const DURATION_MS = 3800;
@@ -121,7 +122,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         aria-live="polite"
         aria-atomic="false"
       >
-        {toasts.map((t) => (
+        {toasts.map((t) => {
+          const Icon = TONE_ICONS[t.tone];
+          return (
           <div
             key={t.id}
             role={t.tone === 'error' ? 'alert' : 'status'}
@@ -129,12 +132,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                         rounded-xl px-4 py-3 text-sm font-medium shadow-lifted ${TONE_STYLES[t.tone]}`}
           >
             <span aria-hidden className="grid h-5 w-5 shrink-0 place-items-center
-                                         rounded-full bg-white/20 text-xs">
-              {TONE_ICONS[t.tone]}
+                                         rounded-full bg-white/20">
+              <Icon width={12} height={12} strokeWidth={2.6} />
             </span>
             <span className="flex-1 leading-snug">{t.message}</span>
           </div>
-        ))}
+          );
+        })}
       </div>
     </Ctx.Provider>
   );

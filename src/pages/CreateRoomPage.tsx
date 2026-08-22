@@ -8,10 +8,11 @@ import { createRoom } from '../services/roomService';
 import { friendlyError } from '../lib/errors';
 import { useAuth } from '../store/AuthContext';
 import { useConnection } from '../store/ConnectionContext';
-import { ALL_CATEGORIES, CATEGORY_EMOJI, CATEGORY_LABELS, type Category } from '../types/models';
+import { ALL_CATEGORIES, CATEGORY_LABELS, type Category } from '../types/models';
+import { CATEGORY_ICON } from '../lib/categoryIcons';
 import { StaplesPicker } from '../components/catalog/StaplesPicker';
 import { DEFAULT_STAPLES } from '../data/catalog';
-import { ChevronIcon } from '../components/ui/icons';
+import { BasketIcon, ChevronIcon, LightbulbIcon } from '../components/ui/icons';
 
 export default function CreateRoomPage() {
   const navigate = useNavigate();
@@ -82,6 +83,7 @@ export default function CreateRoomPage() {
             <div className="grid grid-cols-2 gap-2">
               {ALL_CATEGORIES.map((c) => {
                 const on = categories.includes(c);
+                const CatIcon = CATEGORY_ICON[c];
                 return (
                   <button
                     key={c}
@@ -96,9 +98,7 @@ export default function CreateRoomPage() {
                         : 'border-ink-200 bg-surface text-ink-600',
                     ].join(' ')}
                   >
-                    <span aria-hidden className="text-lg">
-                      {CATEGORY_EMOJI[c]}
-                    </span>
+                    <CatIcon width={16} height={16} className="shrink-0" />
                     {CATEGORY_LABELS[c]}
                   </button>
                 );
@@ -121,8 +121,8 @@ export default function CreateRoomPage() {
                          bg-surface p-3.5 text-start transition active:scale-[.99] hover:bg-ink-50"
             >
               <span aria-hidden className="grid h-10 w-10 shrink-0 place-items-center
-                                           rounded-xl bg-brand-50 text-xl">
-                🧺
+                                           rounded-xl bg-brand-50 text-brand-700">
+                <BasketIcon width={19} height={19} />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-semibold text-ink-900">
@@ -146,9 +146,12 @@ export default function CreateRoomPage() {
             </p>
           )}
 
-          <div className="rounded-xl bg-brand-50/70 px-3.5 py-3 text-xs leading-relaxed text-brand-900">
-            💡 עם יצירת החדר תקבלו <b>קוד בן 6 תווים</b>. שתפו אותו עם השותפים כדי שיוכלו
-            לבקש להצטרף. אתם תאשרו כל בקשה.
+          <div className="flex items-start gap-1.5 rounded-xl bg-brand-50/70 px-3.5 py-3 text-xs leading-relaxed text-brand-900">
+            <LightbulbIcon width={14} height={14} className="mt-0.5 shrink-0" />
+            <span>
+              עם יצירת החדר תקבלו <b>קוד בן 6 תווים</b>. שתפו אותו עם השותפים כדי שיוכלו
+              לבקש להצטרף. אתם תאשרו כל בקשה.
+            </span>
           </div>
 
           <Button type="submit" size="lg" fullWidth loading={busy} disabled={!canSubmit}>

@@ -5,7 +5,7 @@ import { Avatar } from '../components/ui/Avatar';
 import { Badge } from '../components/ui/Badge';
 import { EmptyState, ErrorState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
-import { ChevronIcon, RefreshIcon } from '../components/ui/icons';
+import { ChevronIcon, HomeIcon, RefreshIcon, UserIcon } from '../components/ui/icons';
 import { useDeveloperOverview, type DeveloperRoom } from '../hooks/useDeveloperOverview';
 import { formatFullDate, formatRelativeTime } from '../lib/format';
 import { friendlyError } from '../lib/errors';
@@ -115,7 +115,7 @@ export default function DeveloperPage() {
             <ErrorState message={friendlyError(error)} onRetry={() => void reload()} />
           ) : tab === 'rooms' ? (
             rooms.length === 0 ? (
-              <EmptyState icon="🏠" title="אין חדרים במערכת" />
+              <EmptyState icon={<HomeIcon width={30} height={30} />} title="אין חדרים במערכת" />
             ) : (
               <ul className="space-y-2.5">
                 {rooms.map((room) => (
@@ -129,7 +129,7 @@ export default function DeveloperPage() {
               </ul>
             )
           ) : users.length === 0 ? (
-            <EmptyState icon="👤" title="אין משתמשים רשומים" />
+            <EmptyState icon={<UserIcon width={30} height={30} />} title="אין משתמשים רשומים" />
           ) : (
             <ul className="space-y-2.5">
               {users.map((user) => (

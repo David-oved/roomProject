@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { PlainShell } from '../components/layout/AppShell';
 import { Button } from '../components/ui/Button';
 import { FullPageSpinner } from '../components/ui/Spinner';
+import { ClockIcon, DoorIcon } from '../components/ui/icons';
 import { useAuth } from '../store/AuthContext';
 import { useRtdbValue } from '../hooks/useRtdb';
 import { useToast } from '../store/ToastContext';
@@ -42,7 +43,7 @@ export default function PendingApprovalPage() {
 
   useEffect(() => {
     if (data?.status === 'approved' && isMember && code) {
-      toast.success('הבקשה אושרה! ברוכים הבאים 🎉');
+      toast.success('הבקשה אושרה! ברוכים הבאים');
       navigate(`/r/${code}`, { replace: true });
     }
   }, [data?.status, isMember, code, navigate, toast]);
@@ -60,8 +61,8 @@ export default function PendingApprovalPage() {
     return (
       <PlainShell>
         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-          <div aria-hidden className="text-5xl">
-            🚪
+          <div aria-hidden className="text-ink-300">
+            <DoorIcon width={44} height={44} />
           </div>
           <h1 className="text-xl font-bold text-ink-900">הבקשה נדחתה</h1>
           <p className="max-w-xs text-sm leading-relaxed text-ink-500">
@@ -89,7 +90,9 @@ export default function PendingApprovalPage() {
     <PlainShell>
       <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
         <div className="relative" aria-hidden>
-          <div className="text-5xl">⏳</div>
+          <div className="text-brand-600">
+            <ClockIcon width={44} height={44} />
+          </div>
           <span className="absolute -inset-3 animate-ping rounded-full bg-brand-200/30" />
         </div>
 

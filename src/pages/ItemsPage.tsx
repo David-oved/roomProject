@@ -21,8 +21,9 @@ import { formatILS, formatRelativeTime, formatTime } from '../lib/format';
 import { friendlyError } from '../lib/errors';
 import { useCatalog, type RoomProduct } from '../hooks/useCatalog';
 import { useHintRef } from '../store/HintContext';
+import { CATEGORY_ICON } from '../lib/categoryIcons';
+import { BasketIcon, BoxIcon, SparklesIcon } from '../components/ui/icons';
 import {
-  CATEGORY_EMOJI,
   CATEGORY_LABELS,
   PRIORITY_LABELS,
   type Item,
@@ -32,9 +33,9 @@ import {
 
 type Filter = 'open' | 'needed' | 'buying' | 'done' | 'staples';
 
-const FILTERS: { key: Filter; label: string }[] = [
+const FILTERS: { key: Filter; label: string; icon?: typeof BasketIcon }[] = [
   { key: 'open', label: 'פעילים' },
-  { key: 'staples', label: '🧺 מלאי הבית' },
+  { key: 'staples', label: 'מלאי הבית', icon: BasketIcon },
   { key: 'needed', label: 'חסרים' },
   { key: 'buying', label: 'בקנייה' },
   { key: 'done', label: 'הושלמו' },
@@ -136,12 +137,13 @@ export default function ItemsPage() {
             onClick={() => setFilter(f.key)}
             aria-pressed={filter === f.key}
             className={[
-              'tap shrink-0 rounded-full px-4 text-sm font-semibold transition',
+              'tap flex shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition',
               filter === f.key
                 ? 'bg-brand-700 text-white shadow-sm'
                 : 'bg-surface text-ink-600 ring-1 ring-ink-200',
             ].join(' ')}
           >
+            {f.icon && <f.icon width={15} height={15} />}
             {f.label}
           </button>
         ))}
@@ -164,7 +166,13 @@ export default function ItemsPage() {
           <ErrorState message={friendlyError(error)} onRetry={() => location.reload()} />
         ) : items.length === 0 ? (
           <EmptyState
-            icon={filter === 'done' ? '📦' : '🎉'}
+            icon={
+              filter === 'done' ? (
+                <BoxIcon width={30} height={30} />
+              ) : (
+                <SparklesIcon width={30} height={30} />
+              )
+            }
             title={filter === 'done' ? 'אין קניות שהושלמו' : 'אין מוצרים חסרים'}
             body={
               filter === 'done'
@@ -255,11 +263,16 @@ function ItemCard({
     setBusy(false);
   }
 
+  const CategoryIcon = CATEGORY_ICON[item.category];
+
   return (
     <article className="card p-4">
       <div className="flex items-start gap-3">
-        <span aria-hidden className="mt-0.5 text-2xl">
-          {CATEGORY_EMOJI[item.category]}
+        <span
+          aria-hidden
+          className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-700"
+        >
+          <CategoryIcon width={16} height={16} />
         </span>
 
         <div className="min-w-0 flex-1">

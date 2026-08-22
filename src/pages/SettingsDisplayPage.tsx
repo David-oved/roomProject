@@ -1,13 +1,19 @@
+import type { ComponentType } from 'react';
 import { PlainShell } from '../components/layout/AppShell';
 import { TopBar } from '../components/layout/TopBar';
-import { CheckIcon } from '../components/ui/icons';
+import { CartIcon, CheckIcon, DeviceIcon, MoonIcon, SunIcon, type IconProps } from '../components/ui/icons';
 import { useRoom } from '../store/RoomContext';
 import { useTheme, type ThemePreference } from '../store/ThemeContext';
 
-const OPTIONS: Array<{ value: ThemePreference; label: string; hint: string; icon: string }> = [
-  { value: 'system', label: 'מערכת', hint: 'לפי הגדרת המכשיר', icon: '📱' },
-  { value: 'light', label: 'בהיר', hint: 'רקע לבן, תמיד', icon: '☀️' },
-  { value: 'dark', label: 'כהה', hint: 'נוח לעיניים בלילה', icon: '🌙' },
+const OPTIONS: Array<{
+  value: ThemePreference;
+  label: string;
+  hint: string;
+  icon: ComponentType<IconProps>;
+}> = [
+  { value: 'system', label: 'מערכת', hint: 'לפי הגדרת המכשיר', icon: DeviceIcon },
+  { value: 'light', label: 'בהיר', hint: 'רקע לבן, תמיד', icon: SunIcon },
+  { value: 'dark', label: 'כהה', hint: 'נוח לעיניים בלילה', icon: MoonIcon },
 ];
 
 /**
@@ -50,8 +56,8 @@ export default function SettingsDisplayPage() {
                       <CheckIcon width={12} height={12} strokeWidth={3} />
                     </span>
                   )}
-                  <span aria-hidden className="text-2xl">
-                    {opt.icon}
+                  <span aria-hidden className={selected ? 'text-brand-700' : 'text-ink-500'}>
+                    <opt.icon width={24} height={24} />
                   </span>
                   <span className={`text-sm font-bold ${selected ? 'text-brand-800' : 'text-ink-800'}`}>
                     {opt.label}
@@ -72,8 +78,8 @@ export default function SettingsDisplayPage() {
               </span>
             </div>
             <div className="flex items-center gap-3 rounded-xl border border-ink-200/70 bg-ink-50 p-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-lg">
-                🛒
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700">
+                <CartIcon width={18} height={18} />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-ink-900">חלב 3%</p>

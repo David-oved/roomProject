@@ -63,7 +63,7 @@ export function NotificationPrompt() {
     try {
       await subscribeToPush(user.uid);
       await update(ref(db, `users/${user.uid}`), { pushEnabled: true });
-      toast.success('התראות הופעלו 🔔');
+      toast.success('התראות הופעלו');
       setState(await getState());
     } catch (err) {
       toast.error((err as Error).message);

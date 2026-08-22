@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
+import { MailIcon, WarningIcon } from './icons';
 
 export function EmptyState({
-  icon = '📭',
+  icon = <MailIcon width={30} height={30} />,
   title,
   body,
   action,
@@ -13,7 +14,7 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
-      <div aria-hidden className="text-4xl">
+      <div aria-hidden className="text-ink-300">
         {icon}
       </div>
       <h3 className="text-base font-bold text-ink-800">{title}</h3>
@@ -26,7 +27,7 @@ export function EmptyState({
 export function ErrorState({ message, onRetry }: { message?: string; onRetry?: () => void }) {
   return (
     <EmptyState
-      icon="⚠️"
+      icon={<WarningIcon width={30} height={30} />}
       title="משהו השתבש"
       body={message || 'לא הצלחנו לטעון את הנתונים.'}
       action={

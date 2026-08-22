@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { GlassModal } from '../ui/GlassModal';
 import { Button } from '../ui/Button';
-import { ChevronIcon } from '../ui/icons';
+import { ChevronIcon, LightbulbIcon, ShieldIcon } from '../ui/icons';
 import { useRoom } from '../../store/RoomContext';
 import { useTutorial } from '../../store/TutorialContext';
 import { TUTORIAL_TABS } from '../../data/onboardingTutorial';
@@ -73,8 +73,8 @@ export function TutorialModal() {
         {/* ── תוכן הטאב — key=tab.id מפעיל מחדש את האנימציה בכל מעבר ── */}
         <div key={tab.id} className="animate-fade-in">
           <div className="mb-3 flex items-start gap-3 pe-12">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-50 text-2xl">
-              {tab.icon}
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700">
+              <tab.icon width={22} height={22} />
             </span>
             <h2 id="tutorial-title" className="mt-1.5 text-lg font-bold leading-tight text-ink-900">
               {tab.title}
@@ -91,7 +91,10 @@ export function TutorialModal() {
                        bg-ink-50 px-3.5 py-2.5 text-start text-sm font-semibold text-brand-800
                        transition hover:bg-ink-100"
           >
-            <span className="inline-flex items-center gap-1.5">💡 עוד פרטים</span>
+            <span className="inline-flex items-center gap-1.5">
+              <LightbulbIcon width={15} height={15} />
+              עוד פרטים
+            </span>
             <ChevronIcon
               width={16}
               height={16}
@@ -103,7 +106,10 @@ export function TutorialModal() {
             <div className="animate-slide-up mt-3 whitespace-pre-line text-sm leading-relaxed text-ink-600">
               {tab.learnMore}
               {isAdmin && tab.adminExtra && (
-                <p className="mt-3 rounded-xl bg-brand-50 p-3 text-brand-900">🛡️ {tab.adminExtra}</p>
+                <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-brand-50 p-3 text-brand-900">
+                  <ShieldIcon width={14} height={14} className="mt-0.5 shrink-0" />
+                  <span>{tab.adminExtra}</span>
+                </p>
               )}
             </div>
           )}

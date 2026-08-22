@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '../ui/Button';
-import { CloseIcon } from '../ui/icons';
+import { CloseIcon, DeviceIcon } from '../ui/icons';
 import { useInstallGuide } from '../../store/InstallGuideContext';
 import { getInstallPromptDismissed, setInstallPromptDismissed } from '../../lib/prefs';
 import { useHintRef } from '../../store/HintContext';
@@ -40,9 +40,9 @@ export function InstallPrompt() {
       <div className="flex items-start gap-3">
         <span
           aria-hidden
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-100 text-xl"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700"
         >
-          📲
+          <DeviceIcon width={20} height={20} />
         </span>
 
         <div className="min-w-0 flex-1 pe-6">

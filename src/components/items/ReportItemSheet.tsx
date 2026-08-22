@@ -3,7 +3,7 @@ import { GlassModal } from '../ui/GlassModal';
 import { Button } from '../ui/Button';
 import { Textarea } from '../ui/Input';
 import { Badge } from '../ui/Badge';
-import { CheckIcon } from '../ui/icons';
+import { BasketIcon, BoxIcon, CheckIcon, PlusIcon, WarningIcon } from '../ui/icons';
 import { AddProductForm } from '../catalog/AddProductForm';
 import { reportItem } from '../../services/itemService';
 import { useAuth } from '../../store/AuthContext';
@@ -12,7 +12,8 @@ import { useToast } from '../../store/ToastContext';
 import { useItems } from '../../hooks/useRoomData';
 import { useCatalog, type RoomProduct } from '../../hooks/useCatalog';
 import { formatILS } from '../../lib/format';
-import { CATEGORY_EMOJI, PRIORITY_LABELS, type Priority } from '../../types/models';
+import { PRIORITY_LABELS, type Priority } from '../../types/models';
+import { CATEGORY_ICON } from '../../lib/categoryIcons';
 import { useHintRef } from '../../store/HintContext';
 
 const PRIORITY_TONES: Record<Priority, string> = {
@@ -106,6 +107,8 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
     setNotes('');
   }, [open]);
 
+  const PickedIcon = picked ? CATEGORY_ICON[picked.category] : BoxIcon;
+
   function choose(p: RoomProduct) {
     setPicked(p);
     setFreeName(null);
@@ -179,8 +182,14 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
           </div>
 
           {duplicate && (
-            <div role="alert" className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
-              ⚠️ <b>{duplicate.name}</b> כבר ברשימה — דיווח {memberName(duplicate.reportedBy)}.
+            <div
+              role="alert"
+              className="mt-3 flex items-start gap-1.5 rounded-xl bg-amber-50 p-3 text-xs text-amber-900"
+            >
+              <WarningIcon width={14} height={14} className="mt-0.5 shrink-0" />
+              <span>
+                <b>{duplicate.name}</b> כבר ברשימה — דיווח {memberName(duplicate.reportedBy)}.
+              </span>
             </div>
           )}
 
@@ -202,31 +211,41 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
             </div>
           ) : (
             <>
-              <p className="mb-2 mt-4 px-0.5 text-xs font-medium text-ink-500">
-                {query.trim().length === 0 ? '🧺 מוצרי הבסיס של החדר' : `תוצאות עבור "${query.trim()}"`}
+              <p className="mb-2 mt-4 flex items-center gap-1.5 px-0.5 text-xs font-medium text-ink-500">
+                {query.trim().length === 0 ? (
+                  <>
+                    <BasketIcon width={13} height={13} className="shrink-0" />
+                    מוצרי הבסיס של החדר
+                  </>
+                ) : (
+                  `תוצאות עבור "${query.trim()}"`
+                )}
               </p>
 
               <div className="grid grid-cols-2 gap-2.5">
-                {results.map((p, idx) => (
-                  <button
-                    key={p.id}
-                    ref={idx === 0 ? pickProductHintRef : undefined}
-                    type="button"
-                    onClick={() => choose(p)}
-                    className="flex flex-col items-start gap-1 rounded-2xl border border-ink-100
-                               bg-surface/70 p-3.5 text-start shadow-sm backdrop-blur transition
-                               duration-150 hover:-translate-y-0.5 hover:border-brand-300
-                               hover:shadow-card active:scale-[.96] active:duration-75"
-                  >
-                    <span aria-hidden className="text-2xl">
-                      {CATEGORY_EMOJI[p.category]}
-                    </span>
-                    <span className="line-clamp-2 text-sm font-semibold leading-tight text-ink-900">
-                      {p.name}
-                    </span>
-                    <span className="num text-xs text-ink-500">{formatILS(p.price)}</span>
-                  </button>
-                ))}
+                {results.map((p, idx) => {
+                  const ProductIcon = CATEGORY_ICON[p.category];
+                  return (
+                    <button
+                      key={p.id}
+                      ref={idx === 0 ? pickProductHintRef : undefined}
+                      type="button"
+                      onClick={() => choose(p)}
+                      className="flex flex-col items-start gap-1 rounded-2xl border border-ink-100
+                                 bg-surface/70 p-3.5 text-start shadow-sm backdrop-blur transition
+                                 duration-150 hover:-translate-y-0.5 hover:border-brand-300
+                                 hover:shadow-card active:scale-[.96] active:duration-75"
+                    >
+                      <span aria-hidden className="text-ink-500">
+                        <ProductIcon width={22} height={22} />
+                      </span>
+                      <span className="line-clamp-2 text-sm font-semibold leading-tight text-ink-900">
+                        {p.name}
+                      </span>
+                      <span className="num text-xs text-ink-500">{formatILS(p.price)}</span>
+                    </button>
+                  );
+                })}
               </div>
 
               {results.length === 0 && query.trim().length === 0 && (
@@ -253,10 +272,12 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
                     ref={addToCatalogHintRef}
                     type="button"
                     onClick={() => setAddingProduct(true)}
-                    className="w-full rounded-2xl px-4 py-2.5 text-center text-xs font-semibold
-                               text-brand-700 transition hover:bg-brand-50/60"
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-2xl
+                               px-4 py-2.5 text-center text-xs font-semibold text-brand-700
+                               transition hover:bg-brand-50/60"
                   >
-                    ➕ הוספת "{query.trim()}" כמוצר קבוע בקטלוג
+                    <PlusIcon width={13} height={13} />
+                    הוספת "{query.trim()}" כמוצר קבוע בקטלוג
                   </button>
                 </div>
               )}
@@ -272,8 +293,8 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
             className="mb-3 flex items-center gap-2 rounded-2xl bg-ink-50/80 px-3.5 py-2.5
                        text-start backdrop-blur transition hover:bg-ink-100/80"
           >
-            <span aria-hidden className="text-xl">
-              {picked ? CATEGORY_EMOJI[picked.category] : '📦'}
+            <span aria-hidden className="text-ink-600">
+              <PickedIcon width={19} height={19} />
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-bold text-ink-900">{name}</span>

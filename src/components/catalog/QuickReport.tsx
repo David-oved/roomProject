@@ -7,7 +7,8 @@ import { useAuth } from '../../store/AuthContext';
 import { useConnection } from '../../store/ConnectionContext';
 import { useToast } from '../../store/ToastContext';
 import { reportItem } from '../../services/itemService';
-import { CATEGORY_EMOJI } from '../../types/models';
+import { CATEGORY_ICON } from '../../lib/categoryIcons';
+import { BasketIcon } from '../ui/icons';
 import { Spinner } from '../ui/Spinner';
 
 /**
@@ -61,8 +62,9 @@ export function QuickReport() {
   return (
     <section>
       <div className="mb-2 flex items-center justify-between px-1">
-        <h2 className="text-sm font-bold text-ink-700">
-          🧺 מלאי הבית
+        <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-ink-700">
+          <BasketIcon width={15} height={15} className="shrink-0" />
+          מלאי הבית
           {missingCount > 0 && (
             <span className="ms-1.5 font-normal text-ink-500">
               · <span className="num text-amber-700">{missingCount}</span> חסרים
@@ -88,25 +90,30 @@ export function QuickReport() {
               נגמר משהו? לחיצה אחת מדווחת עליו
             </p>
             <div className="flex flex-wrap gap-2">
-              {available.slice(0, 10).map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => void report(p.id, p.name, p.category)}
-                  disabled={!isOnline || busyId !== null}
-                  title={isOnline ? `דיווח שנגמר ${p.name}` : 'פעולה זו דורשת חיבור לאינטרנט'}
-                  className="tap inline-flex items-center gap-1.5 rounded-full border
-                             border-ink-200 bg-surface px-3 text-sm font-medium text-ink-700
-                             transition active:scale-95 hover:border-brand-300 hover:bg-brand-50
-                             disabled:opacity-50 disabled:active:scale-100"
-                >
-                  {busyId === p.id ? (
-                    <Spinner size={14} />
-                  ) : (
-                    <span aria-hidden>{CATEGORY_EMOJI[p.category]}</span>
-                  )}
-                  {p.name}
-                </button>
-              ))}
+              {available.slice(0, 10).map((p) => {
+                const ProductIcon = CATEGORY_ICON[p.category];
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => void report(p.id, p.name, p.category)}
+                    disabled={!isOnline || busyId !== null}
+                    title={isOnline ? `דיווח שנגמר ${p.name}` : 'פעולה זו דורשת חיבור לאינטרנט'}
+                    className="tap inline-flex items-center gap-1.5 rounded-full border
+                               border-ink-200 bg-surface px-3 text-sm font-medium text-ink-700
+                               transition active:scale-95 hover:border-brand-300 hover:bg-brand-50
+                               disabled:opacity-50 disabled:active:scale-100"
+                  >
+                    {busyId === p.id ? (
+                      <Spinner size={14} />
+                    ) : (
+                      <span aria-hidden className="text-ink-500">
+                        <ProductIcon width={14} height={14} />
+                      </span>
+                    )}
+                    {p.name}
+                  </button>
+                );
+              })}
             </div>
           </>
         )}

@@ -5,8 +5,9 @@ import { useAuth } from '../store/AuthContext';
 import { useRtdbValue } from '../hooks/useRtdb';
 import { FullPageSpinner } from '../components/ui/Spinner';
 import { Badge } from '../components/ui/Badge';
-import { ChevronIcon } from '../components/ui/icons';
+import { ChevronIcon, HomeIcon, KeyIcon, SparklesIcon, type IconProps } from '../components/ui/icons';
 import { getLastRoom } from '../lib/prefs';
+import type { ComponentType } from 'react';
 
 interface JoinRequestMirror {
   status: 'pending' | 'approved' | 'rejected';
@@ -40,7 +41,7 @@ export default function OnboardingPage() {
         <AppLogo showVersion={false} />
 
         <h1 className="mt-7 text-center text-2xl font-bold text-ink-900">
-          שלום {profile?.displayName?.split(' ')[0] ?? ''} 👋
+          שלום {profile?.displayName?.split(' ')[0] ?? ''}
         </h1>
         <p className="mt-1.5 text-center text-sm leading-relaxed text-ink-500">
           כדי להתחיל, צרו חדר חדש או הצטרפו לחדר קיים באמצעות קוד
@@ -49,14 +50,14 @@ export default function OnboardingPage() {
         <div className="mt-8 space-y-3">
           <ChoiceCard
             to="/rooms/create"
-            emoji="✨"
+            icon={SparklesIcon}
             title="יצירת חדר חדש"
             body="אתם תהיו מנהלי החדר ותקבלו קוד לשיתוף עם השותפים"
             primary
           />
           <ChoiceCard
             to="/rooms/join"
-            emoji="🔑"
+            icon={KeyIcon}
             title="הצטרפות לחדר קיים"
             body="יש לכם קוד חדר מהשותפים? הזינו אותו כאן"
           />
@@ -124,9 +125,9 @@ function RoomOption({ code, isLast }: { code: string; isLast: boolean }) {
     >
       <span
         aria-hidden
-        className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-xl"
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"
       >
-        🏠
+        <HomeIcon width={20} height={20} />
       </span>
 
       <span className="min-w-0 flex-1">
@@ -151,13 +152,13 @@ function RoomOption({ code, isLast }: { code: string; isLast: boolean }) {
 
 function ChoiceCard({
   to,
-  emoji,
+  icon: Icon,
   title,
   body,
   primary,
 }: {
   to: string;
-  emoji: string;
+  icon: ComponentType<IconProps>;
   title: string;
   body: string;
   primary?: boolean;
@@ -174,10 +175,10 @@ function ChoiceCard({
     >
       <span
         aria-hidden
-        className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl text-2xl
-                    ${primary ? 'bg-brand-50' : 'bg-ink-100'}`}
+        className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl
+                    ${primary ? 'bg-brand-50 text-brand-700' : 'bg-ink-100 text-ink-600'}`}
       >
-        {emoji}
+        <Icon width={22} height={22} />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block font-bold text-ink-900">{title}</span>

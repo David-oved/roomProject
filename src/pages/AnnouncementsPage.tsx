@@ -7,7 +7,7 @@ import { useToast } from '../store/ToastContext';
 import { useVisualViewportBounds } from '../hooks/useVisualViewportBounds';
 import { useAnnouncements } from '../hooks/useRoomData';
 import { sendAnnouncement } from '../services/announcementService';
-import { MegaphoneIcon, ChevronIcon } from '../components/ui/icons';
+import { MegaphoneIcon, ChevronIcon, ShieldIcon } from '../components/ui/icons';
 import { ErrorState } from '../components/ui/EmptyState';
 import { formatSmartDate } from '../lib/format';
 import { friendlyError } from '../lib/errors';
@@ -129,7 +129,8 @@ export default function AnnouncementsPage() {
                     className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-brand-100
                                px-2 py-0.5 text-[11px] font-bold text-brand-800"
                   >
-                    🛡️ מנהל המערכת
+                    <ShieldIcon width={12} height={12} />
+                    מנהל המערכת
                   </span>
                 )}
                 <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-ink-900">

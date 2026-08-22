@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
-import { CheckIcon, CloseIcon, SettingsIcon } from '../ui/icons';
+import { BasketIcon, CheckIcon, CloseIcon, SettingsIcon } from '../ui/icons';
 import { StaplesPicker } from './StaplesPicker';
 import { useCatalog, type RoomProduct } from '../../hooks/useCatalog';
 import { useItems } from '../../hooks/useRoomData';
@@ -13,7 +13,8 @@ import { useToast } from '../../store/ToastContext';
 import { clearRoomPrice, setRoomPrice, toggleStaple } from '../../services/catalogService';
 import { reportItem } from '../../services/itemService';
 import { formatILS } from '../../lib/format';
-import { CATEGORY_EMOJI, CATEGORY_LABELS, type Category } from '../../types/models';
+import { CATEGORY_LABELS, type Category } from '../../types/models';
+import { CATEGORY_ICON } from '../../lib/categoryIcons';
 import { useHintRef } from '../../store/HintContext';
 
 /**
@@ -54,7 +55,7 @@ export function StaplesView() {
     return (
       <>
         <EmptyState
-          icon="🧺"
+          icon={<BasketIcon width={30} height={30} />}
           title={syncing ? 'טוען…' : 'עוד לא הוגדרו מוצרי בסיס'}
           body="בחרו מהקטלוג את המוצרים שתמיד צריכים להיות בבית. אחר כך דיווח על מוצר שנגמר הוא לחיצה אחת."
           action={
@@ -100,7 +101,14 @@ export function StaplesView() {
         {grouped.map(([category, list], groupIdx) => (
           <section key={category}>
             <h3 className="mb-1.5 flex items-center gap-1.5 px-1 text-xs font-bold text-ink-500">
-              <span aria-hidden>{CATEGORY_EMOJI[category]}</span>
+              {(() => {
+                const CatIcon = CATEGORY_ICON[category];
+                return (
+                  <span aria-hidden>
+                    <CatIcon width={13} height={13} />
+                  </span>
+                );
+              })()}
               {CATEGORY_LABELS[category]}
               <span className="num font-normal text-ink-500">({list.length})</span>
             </h3>

@@ -1,5 +1,6 @@
 import { useUpdate } from '../../store/UpdateContext';
 import { useHintRef } from '../../store/HintContext';
+import { RefreshIcon, SparklesIcon, WarningIcon } from '../ui/icons';
 
 /**
  * שני מצבי תצוגה:
@@ -29,7 +30,9 @@ export function UpdateNotice() {
                    bg-gradient-to-b from-brand-50 to-ink-50 px-8 text-center"
       >
         <div className="relative">
-          <div className="text-5xl">🔄</div>
+          <div className="text-brand-600">
+            <RefreshIcon width={44} height={44} className="animate-spin" />
+          </div>
           <span className="absolute -inset-4 animate-ping rounded-full bg-brand-200/40" />
         </div>
         <h2 className="text-lg font-bold text-brand-900">מעדכן את האפליקציה…</h2>
@@ -61,9 +64,9 @@ export function UpdateNotice() {
         <div className="flex items-start gap-3">
           <div
             aria-hidden
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-xl"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"
           >
-            ✨
+            <SparklesIcon width={19} height={19} />
           </div>
 
           <div className="min-w-0 flex-1">
@@ -90,9 +93,11 @@ export function UpdateNotice() {
             )}
 
             {forceLoopDetected && (
-              <p className="mt-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-800">
-                ⚠️ ניסיון העדכון האוטומטי לא הצליח. אם ההודעה חוזרת, סגרו את האפליקציה
-                ופתחו מחדש.
+              <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-50 p-2 text-xs text-amber-800">
+                <WarningIcon width={13} height={13} className="mt-0.5 shrink-0" />
+                <span>
+                  ניסיון העדכון האוטומטי לא הצליח. אם ההודעה חוזרת, סגרו את האפליקציה ופתחו מחדש.
+                </span>
               </p>
             )}
           </div>

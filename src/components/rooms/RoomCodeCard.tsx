@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CopyIcon, ShareIcon } from '../ui/icons';
+import { CheckIcon, CopyIcon, ShareIcon } from '../ui/icons';
 import { useToast } from '../../store/ToastContext';
 import { useHintRef } from '../../store/HintContext';
 
@@ -80,8 +80,8 @@ export function RoomCodeCard({
                      bg-surface px-3 text-sm font-semibold text-ink-700 transition
                      active:scale-95 hover:bg-ink-50"
         >
-          <CopyIcon width={17} height={17} />
-          {copied ? 'הועתק ✓' : 'העתק'}
+          {copied ? <CheckIcon width={17} height={17} /> : <CopyIcon width={17} height={17} />}
+          {copied ? 'הועתק' : 'העתק'}
         </button>
         <button
           ref={shareHintRef}

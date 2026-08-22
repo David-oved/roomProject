@@ -7,7 +7,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { EmptyState, ErrorState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
-import { ExchangeIcon } from '../components/ui/icons';
+import { CheckIcon, CleaningIcon, ExchangeIcon } from '../components/ui/icons';
 import { AddTaskSheet } from '../components/tasks/AddTaskSheet';
 import { TransferRequestSheet } from '../components/tasks/TransferRequestSheet';
 import { useTasks, useTaskTransfers, useTaskFairness } from '../hooks/useRoomData';
@@ -19,7 +19,8 @@ import { useConfirm } from '../store/ConfirmContext';
 import { completeTask, deleteTask, respondTaskTransfer } from '../services/taskService';
 import { formatSmartDate } from '../lib/format';
 import { friendlyError } from '../lib/errors';
-import { CATEGORY_EMOJI, CATEGORY_LABELS, type Task, type TaskTransfer, type WithId } from '../types/models';
+import { CATEGORY_LABELS, type Task, type TaskTransfer, type WithId } from '../types/models';
+import { CATEGORY_ICON } from '../lib/categoryIcons';
 import { useHintRef } from '../store/HintContext';
 
 export default function TasksPage() {
@@ -155,7 +156,7 @@ export default function TasksPage() {
             <ErrorState message={friendlyError(error)} onRetry={() => location.reload()} />
           ) : tasks.length === 0 ? (
             <EmptyState
-              icon="🧹"
+              icon={<CleaningIcon width={30} height={30} />}
               title="עדיין אין מטלות קבועות"
               body={isAdmin ? 'הוסיפו מטלה ראשונה — למשל שטיפת כלים או פינוי אשפה.' : 'המנהל עדיין לא הוסיף מטלות קבועות.'}
               action={
@@ -171,11 +172,15 @@ export default function TasksPage() {
               {tasks.map((t, idx) => {
                 const mine = t.currentAssignee === user?.uid;
                 const overdue = (t.dueAt ?? 0) < Date.now();
+                const TaskIcon = CATEGORY_ICON[t.category];
                 return (
                   <li key={t.id} className="card p-4">
                     <div className="flex items-start gap-3">
-                      <span aria-hidden className="mt-0.5 text-2xl">
-                        {CATEGORY_EMOJI[t.category]}
+                      <span
+                        aria-hidden
+                        className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-700"
+                      >
+                        <TaskIcon width={17} height={17} />
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -208,7 +213,10 @@ export default function TasksPage() {
                               )
                             }
                           >
-                            בוצע ✓
+                            <span className="inline-flex items-center gap-1.5">
+                              בוצע
+                              <CheckIcon width={14} height={14} />
+                            </span>
                           </Button>
                           <Button
                             ref={idx === firstMineIdx ? requestTransferHintRef : undefined}

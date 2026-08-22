@@ -1,5 +1,5 @@
 import { Button } from '../ui/Button';
-import { RefreshIcon } from '../ui/icons';
+import { CheckIcon, DeviceIcon, GraduationCapIcon, RefreshIcon } from '../ui/icons';
 import { useConnection } from '../../store/ConnectionContext';
 import { useUpdate } from '../../store/UpdateContext';
 import { useTutorial } from '../../store/TutorialContext';
@@ -55,7 +55,14 @@ export function AboutSettings() {
             onClick={checkNow}
             icon={<RefreshIcon width={18} height={18} />}
           >
-            {status === 'current' ? 'האפליקציה מעודכנת ✓' : 'בדוק אם יש עדכון'}
+            {status === 'current' ? (
+              <span className="inline-flex items-center gap-1.5">
+                האפליקציה מעודכנת
+                <CheckIcon width={14} height={14} />
+              </span>
+            ) : (
+              'בדוק אם יש עדכון'
+            )}
           </Button>
         )}
       </div>
@@ -65,12 +72,22 @@ export function AboutSettings() {
       </p>
 
       <div className="mt-4 space-y-2 border-t border-ink-100 pt-4">
-        <Button variant="secondary" fullWidth onClick={openTutorial}>
-          🎓 הצגת ההדרכה מחדש
+        <Button
+          variant="secondary"
+          fullWidth
+          onClick={openTutorial}
+          icon={<GraduationCapIcon width={17} height={17} />}
+        >
+          הצגת ההדרכה מחדש
         </Button>
         {!installed && (
-          <Button variant="secondary" fullWidth onClick={openGuide}>
-            📲 איך מתקינים למסך הבית
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={openGuide}
+            icon={<DeviceIcon width={17} height={17} />}
+          >
+            איך מתקינים למסך הבית
           </Button>
         )}
       </div>

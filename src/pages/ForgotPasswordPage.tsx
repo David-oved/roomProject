@@ -4,6 +4,7 @@ import { PlainShell } from '../components/layout/AppShell';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { authErrorMessage, resetPassword } from '../services/authService';
+import { MailIcon } from '../components/ui/icons';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -30,8 +31,8 @@ export default function ForgotPasswordPage() {
       <div className="flex flex-1 flex-col justify-center py-6">
         {sent ? (
           <div className="text-center">
-            <div aria-hidden className="text-5xl">
-              📬
+            <div aria-hidden className="flex justify-center text-brand-600">
+              <MailIcon width={40} height={40} />
             </div>
             <h1 className="mt-4 text-xl font-bold text-ink-900">המייל נשלח</h1>
             <p className="mt-2 text-sm leading-relaxed text-ink-500">

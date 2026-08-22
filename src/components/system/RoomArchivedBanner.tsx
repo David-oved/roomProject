@@ -1,5 +1,6 @@
 import { useRoom } from '../../store/RoomContext';
 import { formatFullDate } from '../../lib/format';
+import { ArchiveIcon } from '../ui/icons';
 
 /**
  * באנר "החדר בארכיון".
@@ -21,8 +22,8 @@ export function RoomArchivedBanner() {
       className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3.5 text-start"
     >
       <div className="flex items-start gap-2.5">
-        <span aria-hidden className="text-lg leading-none">
-          🗄️
+        <span aria-hidden className="mt-0.5 shrink-0 text-amber-700">
+          <ArchiveIcon width={17} height={17} />
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-amber-900">החדר הועבר לארכיון</p>

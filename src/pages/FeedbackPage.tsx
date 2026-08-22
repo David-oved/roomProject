@@ -19,11 +19,9 @@ import {
 } from '../services/feedbackService';
 import { getSentFeedback } from '../lib/prefs';
 import { formatSmartDate } from '../lib/format';
-import {
-  FEEDBACK_TYPE_EMOJI,
-  FEEDBACK_TYPE_LABELS,
-  type FeedbackType,
-} from '../types/models';
+import { FEEDBACK_TYPE_LABELS, type FeedbackType } from '../types/models';
+import { FEEDBACK_TYPE_ICON } from '../lib/categoryIcons';
+import { CheckIcon, NoteIcon } from '../components/ui/icons';
 
 const TYPES: FeedbackType[] = ['bug', 'feature', 'issue', 'question', 'compliment', 'other'];
 
@@ -116,8 +114,8 @@ export default function FeedbackPage() {
         <div className="space-y-4 py-4">
           {sentId ? (
             <div className="card bg-emerald-50 p-5 text-center">
-              <div aria-hidden className="text-3xl">
-                ✅
+              <div aria-hidden className="flex justify-center text-emerald-700">
+                <CheckIcon width={28} height={28} />
               </div>
               <h2 className="mt-2 text-base font-bold text-emerald-900">הפנייה נשלחה</h2>
               <p className="mt-1.5 text-sm leading-relaxed text-emerald-800">
@@ -147,23 +145,26 @@ export default function FeedbackPage() {
               <div className="card p-4">
                 <h2 className="text-sm font-bold text-ink-900">על מה מדובר?</h2>
                 <div className="mt-3 grid grid-cols-2 gap-2">
-                  {TYPES.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setType(t)}
-                      aria-pressed={type === t}
-                      className={`tap flex items-center gap-2 rounded-xl border px-3 py-2.5 text-start text-sm
-                                  transition ${
-                                    type === t
-                                      ? 'border-brand-600 bg-brand-50 font-bold text-brand-800'
-                                      : 'border-ink-200 bg-surface text-ink-700 hover:bg-ink-50'
-                                  }`}
-                    >
-                      <span aria-hidden>{FEEDBACK_TYPE_EMOJI[t]}</span>
-                      <span className="truncate">{FEEDBACK_TYPE_LABELS[t]}</span>
-                    </button>
-                  ))}
+                  {TYPES.map((t) => {
+                    const TypeIcon = FEEDBACK_TYPE_ICON[t];
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setType(t)}
+                        aria-pressed={type === t}
+                        className={`tap flex items-center gap-2 rounded-xl border px-3 py-2.5 text-start text-sm
+                                    transition ${
+                                      type === t
+                                        ? 'border-brand-600 bg-brand-50 font-bold text-brand-800'
+                                        : 'border-ink-200 bg-surface text-ink-700 hover:bg-ink-50'
+                                    }`}
+                      >
+                        <TypeIcon width={16} height={16} className="shrink-0" />
+                        <span className="truncate">{FEEDBACK_TYPE_LABELS[t]}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -252,11 +253,12 @@ export default function FeedbackPage() {
               <ul className="mt-3 space-y-2">
                 {sentHistory.map((entry) => {
                   const reply = repliesByFeedback.get(entry.id);
+                  const EntryIcon = FEEDBACK_TYPE_ICON[entry.type as FeedbackType] ?? NoteIcon;
                   return (
                     <li key={entry.id} className="rounded-xl bg-ink-50 p-3">
                       <div className="flex items-start gap-2">
-                        <span aria-hidden>
-                          {FEEDBACK_TYPE_EMOJI[entry.type as FeedbackType] ?? '📝'}
+                        <span aria-hidden className="mt-0.5 shrink-0 text-ink-500">
+                          <EntryIcon width={15} height={15} />
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold text-ink-800">

@@ -7,6 +7,7 @@ import { authErrorMessage, login } from '../services/authService';
 import { getLastEmail, setLastEmail } from '../lib/prefs';
 import { useConnection } from '../store/ConnectionContext';
 import { AppLogo } from '../components/layout/AppLogo';
+import { OfflineIcon } from '../components/ui/icons';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -44,7 +45,7 @@ export default function LoginPage() {
       <div className="flex flex-1 flex-col justify-center py-6">
         <AppLogo />
 
-        <h1 className="mt-7 text-2xl font-bold text-ink-900">ברוכים השבים 👋</h1>
+        <h1 className="mt-7 text-2xl font-bold text-ink-900">ברוכים השבים</h1>
         <p className="mt-1 text-sm text-ink-500">התחברו כדי להמשיך לנהל את החדר</p>
 
         <form onSubmit={handleSubmit} className="mt-7 space-y-4" noValidate>
@@ -79,8 +80,9 @@ export default function LoginPage() {
           )}
 
           {!isOnline && (
-            <p className="rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
-              📡 אין חיבור לאינטרנט. התחברות ראשונה דורשת חיבור.
+            <p className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+              <OfflineIcon width={16} height={16} className="shrink-0" />
+              אין חיבור לאינטרנט. התחברות ראשונה דורשת חיבור.
             </p>
           )}
 

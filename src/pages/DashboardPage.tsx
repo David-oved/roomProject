@@ -7,16 +7,15 @@ import { Button } from '../components/ui/Button';
 import { ErrorState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import {
-  BathroomIcon,
   BellIcon,
-  BoxIcon,
   CartIcon,
-  CleaningIcon,
   ExchangeIcon,
-  KitchenIcon,
   MegaphoneIcon,
   PlusIcon,
   SettingsIcon,
+  SparklesIcon,
+  WarningIcon,
+  WaveIcon,
 } from '../components/ui/icons';
 import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
@@ -33,7 +32,7 @@ import {
 } from '../hooks/useRoomData';
 import { formatAmount, formatILS, formatRelativeTime, formatSmartDate } from '../lib/format';
 import { friendlyError } from '../lib/errors';
-import { CATEGORY_EMOJI, type Category } from '../types/models';
+import { CATEGORY_ICON } from '../lib/categoryIcons';
 import { RoomCodeCard } from '../components/rooms/RoomCodeCard';
 import { NotificationPrompt } from '../components/system/NotificationPrompt';
 import { InstallPrompt } from '../components/system/InstallPrompt';
@@ -45,13 +44,6 @@ import { completeTask } from '../services/taskService';
 import { useToast } from '../store/ToastContext';
 import { useConnection } from '../store/ConnectionContext';
 import { useHintRef } from '../store/HintContext';
-
-const CATEGORY_ICON: Record<Category, typeof KitchenIcon> = {
-  kitchen: KitchenIcon,
-  bathroom: BathroomIcon,
-  cleaning: CleaningIcon,
-  other: BoxIcon,
-};
 
 export default function DashboardPage() {
   const [params, setParams] = useSearchParams();
@@ -254,8 +246,8 @@ export default function DashboardPage() {
         {justCreated && roomCode && (
           <div className="animate-slide-up">
             <div className="mb-2 flex items-center gap-2">
-              <span aria-hidden className="text-lg">
-                🎉
+              <span aria-hidden className="text-brand-600">
+                <SparklesIcon width={19} height={19} />
               </span>
               <p className="text-sm font-semibold text-ink-800">החדר נוצר! שתפו את הקוד</p>
               <button
@@ -311,8 +303,9 @@ export default function DashboardPage() {
           </Link>
 
           {!isConsistent && (
-            <p className="mt-3 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs text-rose-700">
-              ⚠️ זוהתה אי-התאמה בחישוב המאזנים. פנו למנהל החדר.
+            <p className="mt-3 flex items-center gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs text-rose-700">
+              <WarningIcon width={14} height={14} className="shrink-0" />
+              זוהתה אי-התאמה בחישוב המאזנים. פנו למנהל החדר.
             </p>
           )}
         </section>
@@ -408,7 +401,7 @@ export default function DashboardPage() {
                 className="flex items-center gap-3 border-b border-ink-100 p-4 transition last:border-b-0 hover:bg-ink-50"
               >
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-sky-50 text-sky-700">
-                  👋
+                  <WaveIcon width={17} height={17} />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-semibold text-ink-900">
@@ -546,10 +539,11 @@ export default function DashboardPage() {
             <ul className="overflow-hidden rounded-card border border-ink-200/70 bg-surface shadow-card">
               {myTasks.slice(0, 4).map((t, idx) => {
                 const overdue = (t.dueAt ?? 0) < Date.now();
+                const TaskIcon = CATEGORY_ICON[t.category];
                 return (
                   <li key={t.id} className="flex items-center gap-3 border-b border-ink-100 p-3.5 last:border-b-0">
-                    <span aria-hidden className="text-xl">
-                      {CATEGORY_EMOJI[t.category]}
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-700">
+                      <TaskIcon width={16} height={16} />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-semibold text-ink-900">{t.name}</span>

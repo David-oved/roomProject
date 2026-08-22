@@ -256,15 +256,6 @@ export const FEEDBACK_TYPE_LABELS: Record<FeedbackType, string> = {
   other: 'אחר',
 };
 
-export const FEEDBACK_TYPE_EMOJI: Record<FeedbackType, string> = {
-  bug: '🐛',
-  feature: '💡',
-  issue: '⚠️',
-  question: '❓',
-  compliment: '💚',
-  other: '📝',
-};
-
 /** לכל ישות שנקראת מ-RTDB מתווסף id מהמפתח */
 export type WithId<T> = T & { id: string };
 
@@ -275,13 +266,6 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   bathroom: 'אמבטיה',
   cleaning: 'ניקיון',
   other: 'אחר',
-};
-
-export const CATEGORY_EMOJI: Record<Category, string> = {
-  kitchen: '🍳',
-  bathroom: '🚿',
-  cleaning: '🧽',
-  other: '📦',
 };
 
 export const PRIORITY_LABELS: Record<Priority, string> = {

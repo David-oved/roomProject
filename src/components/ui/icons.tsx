@@ -234,3 +234,211 @@ export const MegaphoneIcon = (p: IconProps) => (
     <path d="M19 9.5a3.5 3.5 0 0 1 0 5" />
   </svg>
 );
+
+/* ═══════════════════════════════════════════════════════════
+   אייקוני החלפה לאימוג'י — קו דק בלבד, בלי מילוי צבע, כדי שכל
+   הסמלים באפליקציה יהיו עקביים (currentColor, אותו סגנון).
+   ═══════════════════════════════════════════════════════════ */
+
+export const InfoIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v5.5" />
+    <path d="M12 7.5h.01" />
+  </svg>
+);
+
+export const WarningIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 4 3 20h18L12 4Z" />
+    <path d="M12 10v4" />
+    <path d="M12 17h.01" />
+  </svg>
+);
+
+export const StopIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M8 3h8l5 5v8l-5 5H8l-5-5V8l5-5Z" />
+    <path d="M12 8v5" />
+    <path d="M12 16h.01" />
+  </svg>
+);
+
+export const WrenchIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2-2 2.6-2.6Z" />
+  </svg>
+);
+
+export const MailIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="m4 7 8 6 8-6" />
+  </svg>
+);
+
+export const SunIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" />
+  </svg>
+);
+
+export const MoonIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" />
+  </svg>
+);
+
+export const ContrastIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const DeviceIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="7" y="2" width="10" height="20" rx="2" />
+    <path d="M11 18h2" />
+  </svg>
+);
+
+export const DesktopIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3" y="4" width="18" height="12" rx="1.5" />
+    <path d="M8 20h8M12 16v4" />
+  </svg>
+);
+
+export const KeyIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="7.5" cy="15.5" r="4.5" />
+    <path d="M11 12 20 3M17 6l2 2M14 9l2 2" />
+  </svg>
+);
+
+export const DoorIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="5" y="3" width="14" height="18" rx="1" />
+    <path d="M14.5 12h.01" />
+  </svg>
+);
+
+export const BanIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M5.5 5.5l13 13" />
+  </svg>
+);
+
+export const CompassIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M14.5 9.5 13 13l-3.5 1.5L11 11l3.5-1.5Z" />
+  </svg>
+);
+
+export const BasketIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 10h16l-1.5 9a2 2 0 0 1-2 1.7H7.5a2 2 0 0 1-2-1.7L4 10Z" />
+    <path d="M8 10 9 5h6l1 5" />
+    <path d="M9 13.5v3M12 13.5v3M15 13.5v3" />
+  </svg>
+);
+
+export const SparklesIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 2c.6 3.6 2.4 6 6 6.6-3.6.6-5.4 3-6 6.6-.6-3.6-2.4-6-6-6.6 3.6-.6 5.4-3 6-6.6Z" />
+  </svg>
+);
+
+export const WaveIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M7 13V6a1.5 1.5 0 0 1 3 0v5" />
+    <path d="M10 11V4.5a1.5 1.5 0 0 1 3 0V11" />
+    <path d="M13 11V6a1.5 1.5 0 0 1 3 0v7" />
+    <path d="M16 12V9a1.5 1.5 0 0 1 3 0v6c0 3.5-2.5 6-6 6h-1c-2 0-3-.7-4.2-2.2L4 14.5c-.6-.8-.4-1.8.4-2.2.7-.4 1.5-.2 2 .4L8 14" />
+  </svg>
+);
+
+export const ShieldIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 3l7 3v6c0 5-3 8-7 9-4-1-7-4-7-9V6l7-3Z" />
+  </svg>
+);
+
+export const HeartIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 20s-7-4.4-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 5c-2.5 4.6-9.5 9-9.5 9Z" />
+  </svg>
+);
+
+export const BugIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="7" y="8" width="10" height="9" rx="4" />
+    <path d="M12 8V5M9 5l1.5 2M15 5l-1.5 2" />
+    <path d="M4 11h3M4 15h3M17 11h3M17 15h3" />
+    <path d="M9 17.5 8 21M15 17.5l1 3.5" />
+  </svg>
+);
+
+export const QuestionIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9.5 9.2a2.5 2.5 0 1 1 3.7 2.2c-.9.5-1.2 1-1.2 2" />
+    <path d="M12 17h.01" />
+  </svg>
+);
+
+export const LightbulbIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M9 18h6" />
+    <path d="M10 21h4" />
+    <path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3Z" />
+  </svg>
+);
+
+export const NoteIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+    <path d="M14 3v4h5" />
+    <path d="M8 12h7M8 15.5h7" />
+  </svg>
+);
+
+export const ArchiveIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3" y="4" width="18" height="4.5" rx="1" />
+    <path d="M4.5 8.5V19a1 1 0 0 0 1 1h13a1 1 0 0 0 1-1V8.5" />
+    <path d="M10 13h4" />
+  </svg>
+);
+
+export const GraduationCapIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 4 2 9l10 5 10-5-10-5Z" />
+    <path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5" />
+  </svg>
+);
+
+export const LockIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="5" y="10.5" width="14" height="9.5" rx="2" />
+    <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+  </svg>
+);
+
+export const SearchIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="10.5" cy="10.5" r="6.5" />
+    <path d="M20 20l-4.8-4.8" />
+  </svg>
+);
+
+export const ClockIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3.5 2" />
+  </svg>
+);

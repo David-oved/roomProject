@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { PlainShell } from '../components/layout/AppShell';
 import { Button } from '../components/ui/Button';
 import { Textarea } from '../components/ui/Input';
+import { BanIcon } from '../components/ui/icons';
 import { useAuth } from '../store/AuthContext';
 import { useToast } from '../store/ToastContext';
 import { useSuspension } from '../hooks/useAdminMessages';
@@ -61,8 +62,8 @@ export default function SuspendedPage() {
     <PlainShell>
       <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col justify-center gap-4 px-4 py-10">
         <div className="card p-6 text-center">
-          <div aria-hidden className="text-4xl">
-            🚫
+          <div aria-hidden className="text-rose-600">
+            <BanIcon width={38} height={38} />
           </div>
           <h1 className="mt-3 text-lg font-bold text-ink-900">החשבון שלך מושהה</h1>
           <p className="mt-2 text-sm leading-relaxed text-ink-600">

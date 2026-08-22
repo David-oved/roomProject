@@ -8,7 +8,8 @@ import { createTask } from '../../services/taskService';
 import { useAuth } from '../../store/AuthContext';
 import { useRoom } from '../../store/RoomContext';
 import { useToast } from '../../store/ToastContext';
-import { ALL_CATEGORIES, CATEGORY_EMOJI, CATEGORY_LABELS, type Category } from '../../types/models';
+import { ALL_CATEGORIES, CATEGORY_LABELS, type Category } from '../../types/models';
+import { CATEGORY_ICON } from '../../lib/categoryIcons';
 import { useHintRef } from '../../store/HintContext';
 
 const INTERVAL_PRESETS: { label: string; days: number }[] = [
@@ -97,26 +98,29 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
         <fieldset className="mt-4">
           <legend className="mb-2 text-sm font-medium text-ink-700">קטגוריה</legend>
           <div className="grid grid-cols-4 gap-2">
-            {ALL_CATEGORIES.map((c, idx) => (
-              <button
-                key={c}
-                ref={idx === 0 ? categoryHintRef : undefined}
-                type="button"
-                onClick={() => setCategory(c)}
-                aria-pressed={category === c}
-                className={[
-                  'tap flex flex-col items-center gap-1 rounded-2xl border py-2.5 text-xs font-semibold transition',
-                  category === c
-                    ? 'border-brand-500 bg-brand-50 text-brand-900 ring-1 ring-brand-500/30'
-                    : 'border-ink-200 bg-surface text-ink-500',
-                ].join(' ')}
-              >
-                <span aria-hidden className="text-lg">
-                  {CATEGORY_EMOJI[c]}
-                </span>
-                {CATEGORY_LABELS[c]}
-              </button>
-            ))}
+            {ALL_CATEGORIES.map((c, idx) => {
+              const CatIcon = CATEGORY_ICON[c];
+              return (
+                <button
+                  key={c}
+                  ref={idx === 0 ? categoryHintRef : undefined}
+                  type="button"
+                  onClick={() => setCategory(c)}
+                  aria-pressed={category === c}
+                  className={[
+                    'tap flex flex-col items-center gap-1 rounded-2xl border py-2.5 text-xs font-semibold transition',
+                    category === c
+                      ? 'border-brand-500 bg-brand-50 text-brand-900 ring-1 ring-brand-500/30'
+                      : 'border-ink-200 bg-surface text-ink-500',
+                  ].join(' ')}
+                >
+                  <span aria-hidden>
+                    <CatIcon width={17} height={17} />
+                  </span>
+                  {CATEGORY_LABELS[c]}
+                </button>
+              );
+            })}
           </div>
         </fieldset>
 

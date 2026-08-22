@@ -1,6 +1,20 @@
+import type { ComponentType } from 'react';
+import {
+  CartIcon,
+  ChatIcon,
+  CheckIcon,
+  CleaningIcon,
+  HomeIcon,
+  SparklesIcon,
+  UsersIcon,
+  WalletIcon,
+  WaveIcon,
+  type IconProps,
+} from '../components/ui/icons';
+
 export interface TutorialTab {
   id: string;
-  icon: string;
+  icon: ComponentType<IconProps>;
   title: string;
   /** משפט־שניים, תמיד גלוי */
   short: string;
@@ -17,7 +31,7 @@ export interface TutorialTab {
 export const TUTORIAL_TABS: TutorialTab[] = [
   {
     id: 'welcome',
-    icon: '👋',
+    icon: WaveIcon,
     title: 'ברוכים הבאים ל-RoomMate',
     short: 'האפליקציה שעוזרת לחדר המשותף שלכם לנהל קניות, הוצאות וחלוקת כסף — בלי ויכוחים.',
     learnMore:
@@ -29,7 +43,7 @@ export const TUTORIAL_TABS: TutorialTab[] = [
   },
   {
     id: 'dashboard',
-    icon: '🏠',
+    icon: HomeIcon,
     title: 'מסך הבית',
     short: 'זה המסך הראשון שתראו בכל כניסה לחדר — תמונת מצב מהירה של הכול.',
     learnMore:
@@ -40,7 +54,7 @@ export const TUTORIAL_TABS: TutorialTab[] = [
   },
   {
     id: 'balance',
-    icon: '💰',
+    icon: WalletIcon,
     title: 'היתרה שלכם',
     short: 'מספר אחד שאומר הכול: אדום = אתם חייבים, ירוק = מגיע לכם.',
     learnMore:
@@ -53,7 +67,7 @@ export const TUTORIAL_TABS: TutorialTab[] = [
   },
   {
     id: 'report',
-    icon: '🛒',
+    icon: CartIcon,
     title: 'דיווח על מוצר חסר',
     short: 'משהו נגמר בבית? דווחו מהלשונית "חסרים" — לוקח כמה שניות.',
     learnMore:
@@ -65,7 +79,7 @@ export const TUTORIAL_TABS: TutorialTab[] = [
   },
   {
     id: 'buy',
-    icon: '✅',
+    icon: CheckIcon,
     title: 'קניתי — מה עכשיו?',
     short: 'אחרי שקניתם משהו, מסמנים "קניתי" ובוחרים איך לחלק את העלות.',
     learnMore:
@@ -78,7 +92,7 @@ export const TUTORIAL_TABS: TutorialTab[] = [
   },
   {
     id: 'tasks',
-    icon: '🧹',
+    icon: CleaningIcon,
     title: 'מטלות ותורנות',
     short: 'ניקיון, זבל, ועוד — מתחלק אוטומטית בסבב בין חברי החדר.',
     learnMore:
@@ -89,7 +103,7 @@ export const TUTORIAL_TABS: TutorialTab[] = [
   },
   {
     id: 'members',
-    icon: '👥',
+    icon: UsersIcon,
     title: 'הזמנת שותפים לחדר',
     short: 'שתפו את קוד החדר או קישור ישיר, וחברים חדשים יוכלו להצטרף.',
     learnMore:
@@ -102,7 +116,7 @@ export const TUTORIAL_TABS: TutorialTab[] = [
   },
   {
     id: 'chat',
-    icon: '💬',
+    icon: ChatIcon,
     title: "צ'אט והודעות שידור",
     short: 'צ׳אט קבוצתי ופרטי לתיאומים יומיומיים, והודעות שידור לעדכונים חשובים.',
     learnMore:
@@ -114,12 +128,12 @@ export const TUTORIAL_TABS: TutorialTab[] = [
   },
   {
     id: 'finish',
-    icon: '🎉',
+    icon: SparklesIcon,
     title: 'מוכנים להתחיל!',
     short: 'זהו — עברתם על כל מה שצריך כדי להתחיל להשתמש ב-RoomMate.',
     learnMore:
       'אפשר תמיד לחזור להדרכה הזו מ"הגדרות ← אודות". ' +
       'ובהגדרות תמצאו גם ניהול חשבון, פרטי החדר, רשימת חברים, והעדפות התראות.\n\n' +
-      'בהצלחה עם החדר! 🏠',
+      'בהצלחה עם החדר!',
   },
 ];

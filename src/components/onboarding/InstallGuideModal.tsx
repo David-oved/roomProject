@@ -22,8 +22,8 @@ export function InstallGuideModal() {
     <GlassModal open={open} onClose={closeGuide} labelledBy="install-guide-title">
       <div className="flex flex-col p-5 pt-4">
         <div className="mb-3 flex items-start gap-3 pe-12">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-50 text-2xl">
-            {content.emoji}
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700">
+            <content.icon width={22} height={22} />
           </span>
           <h2 id="install-guide-title" className="mt-1.5 text-lg font-bold leading-tight text-ink-900">
             {content.headline}

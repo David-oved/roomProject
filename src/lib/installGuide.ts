@@ -1,4 +1,6 @@
+import type { ComponentType } from 'react';
 import { isIOS, isStandalone } from '../services/pushService';
+import { DesktopIcon, DeviceIcon, type IconProps } from '../components/ui/icons';
 
 export { isStandalone };
 
@@ -34,7 +36,7 @@ export type InstallGuideKind =
 
 export interface InstallGuideContent {
   kind: InstallGuideKind;
-  emoji: string;
+  icon: ComponentType<IconProps>;
   headline: string;
   steps: string[];
   note?: string;
@@ -51,7 +53,7 @@ export function getInstallGuideContent(canNativeInstall: boolean): InstallGuideC
   if (isIOS()) {
     return {
       kind: 'ios',
-      emoji: '📲',
+      icon: DeviceIcon,
       headline: 'הוספה למסך הבית',
       steps: [
         'לחצו על כפתור השיתוף (ריבוע עם חץ כלפי מעלה) בסרגל הדפדפן',
@@ -67,7 +69,7 @@ export function getInstallGuideContent(canNativeInstall: boolean): InstallGuideC
     if (isFirefox()) {
       return {
         kind: 'android-manual',
-        emoji: '📲',
+        icon: DeviceIcon,
         headline: 'התקנה על מסך הבית',
         steps: ['לחצו על תפריט שלוש הנקודות ⋮ בפינה', 'בחרו "התקנה" (Install)'],
         offersNativeButton: false,
@@ -75,7 +77,7 @@ export function getInstallGuideContent(canNativeInstall: boolean): InstallGuideC
     }
     return {
       kind: 'android-native',
-      emoji: '📲',
+      icon: DeviceIcon,
       headline: 'התקנה על מסך הבית',
       steps: canNativeInstall
         ? ['לחצו על כפתור ההתקנה למטה ואשרו בבקשה שתופיע']
@@ -91,7 +93,7 @@ export function getInstallGuideContent(canNativeInstall: boolean): InstallGuideC
   if (isDesktopSafari()) {
     return {
       kind: 'desktop-safari',
-      emoji: '💻',
+      icon: DesktopIcon,
       headline: 'הוספה לדוק',
       steps: [
         'בשורת התפריטים למעלה: קובץ ← הוספה לדוק…',
@@ -104,7 +106,7 @@ export function getInstallGuideContent(canNativeInstall: boolean): InstallGuideC
   if (isFirefox()) {
     return {
       kind: 'desktop-manual',
-      emoji: '💻',
+      icon: DesktopIcon,
       headline: 'התקנה בדסקטופ',
       steps: [],
       note: 'פיירפוקס לדסקטופ עדיין לא תומך בהתקנת אפליקציות אינטרנט. אפשר להמשיך להשתמש דרך הדפדפן כרגיל, או לפתוח את הקישור בכרום/edge כדי להתקין.',
@@ -115,7 +117,7 @@ export function getInstallGuideContent(canNativeInstall: boolean): InstallGuideC
   // כרום, edge, ודומיהם — היחידים שתומכים ב-beforeinstallprompt
   return {
     kind: 'desktop-native',
-    emoji: '💻',
+    icon: DesktopIcon,
     headline: 'התקנה על המחשב',
     steps: canNativeInstall
       ? ['לחצו על כפתור ההתקנה למטה ואשרו בחלון שייפתח']

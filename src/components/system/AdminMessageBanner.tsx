@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAdminMessages } from '../../hooks/useAdminMessages';
 import { formatRelativeTime } from '../../lib/format';
+import { ADMIN_MESSAGE_KIND_ICON } from '../../lib/adminMessageIcons';
 
 const TONE = {
   info: 'border-brand-200 bg-brand-50 text-brand-900',
@@ -8,14 +9,6 @@ const TONE = {
   warning: 'border-amber-200 bg-amber-50 text-amber-900',
   error: 'border-rose-200 bg-rose-50 text-rose-900',
   maintenance: 'border-amber-200 bg-amber-50 text-amber-900',
-} as const;
-
-const ICON = {
-  info: 'ℹ️',
-  success: '✅',
-  warning: '⚠️',
-  error: '🛑',
-  maintenance: '🛠️',
 } as const;
 
 /**
@@ -33,7 +26,7 @@ export function AdminMessageBanner() {
   if (!latestUnread) return null;
 
   const tone = TONE[latestUnread.kind] ?? TONE.info;
-  const icon = ICON[latestUnread.kind] ?? ICON.info;
+  const Icon = ADMIN_MESSAGE_KIND_ICON[latestUnread.kind] ?? ADMIN_MESSAGE_KIND_ICON.info;
 
   return (
     <Link
@@ -41,8 +34,8 @@ export function AdminMessageBanner() {
       className={`mt-3 flex items-start gap-2.5 rounded-2xl border p-3.5 transition
                   active:scale-[.99] ${tone}`}
     >
-      <span aria-hidden className="text-lg leading-none">
-        {icon}
+      <span aria-hidden className="mt-0.5 shrink-0">
+        <Icon width={19} height={19} />
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">

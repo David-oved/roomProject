@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PlainShell } from '../components/layout/AppShell';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
-import { CopyIcon } from '../components/ui/icons';
+import { CopyIcon, KeyIcon } from '../components/ui/icons';
 import { requestToJoin } from '../services/roomService';
 import { friendlyError } from '../lib/errors';
 import { useAuth } from '../store/AuthContext';
@@ -104,8 +104,8 @@ export default function JoinRoomPage() {
       <PlainShell hasTopBar>
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col py-6" noValidate>
           <div className="text-center">
-            <div aria-hidden className="text-5xl">
-              🔑
+            <div aria-hidden className="flex justify-center text-brand-600">
+              <KeyIcon width={44} height={44} />
             </div>
             <h2 className="mt-3 text-lg font-bold text-ink-900">הזינו את קוד החדר</h2>
             <p className="mt-1 text-sm leading-relaxed text-ink-500">

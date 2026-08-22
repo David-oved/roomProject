@@ -5,6 +5,7 @@ import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
 import { Input, Textarea } from '../components/ui/Input';
 import { Avatar } from '../components/ui/Avatar';
+import { LockIcon } from '../components/ui/icons';
 import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
 import { useConnection } from '../store/ConnectionContext';
@@ -202,8 +203,10 @@ export default function SettingsRoomPage() {
                 </p>
 
                 {openDebts.length > 0 ? (
-                  <div className="mt-3 rounded-xl bg-surface p-3 text-xs text-rose-800">
-                    🔒 לא ניתן למחוק חדר עם חובות פתוחים. סגרו קודם את החשבונות:
+                  <div className="mt-3 flex items-start gap-1.5 rounded-xl bg-surface p-3 text-xs text-rose-800">
+                    <LockIcon width={14} height={14} className="mt-0.5 shrink-0" />
+                    <span>
+                    לא ניתן למחוק חדר עם חובות פתוחים. סגרו קודם את החשבונות:
                     <ul className="mt-1.5 space-y-0.5">
                       {openDebts.map(([uid, v]) => (
                         <li key={uid} className="num flex justify-between">
@@ -212,6 +215,7 @@ export default function SettingsRoomPage() {
                         </li>
                       ))}
                     </ul>
+                    </span>
                   </div>
                 ) : (
                   <>

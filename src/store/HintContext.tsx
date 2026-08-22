@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { getHintsSeen, markHintSeen } from '../lib/prefs';
+import { CloseIcon, LightbulbIcon } from '../components/ui/icons';
 
 interface HintEntry {
   text: string;
@@ -180,7 +181,9 @@ function HintPopover({
                    p-3 shadow-lifted"
       >
         <div className="flex items-start gap-2">
-          <span className="mt-0.5 shrink-0 text-base">💡</span>
+          <span className="mt-0.5 shrink-0 text-brand-600">
+            <LightbulbIcon width={16} height={16} />
+          </span>
           <p className="flex-1 text-[13px] leading-relaxed text-ink-800">{text}</p>
           <button
             type="button"
@@ -191,7 +194,7 @@ function HintPopover({
             aria-label="סגירה"
             className="tap-area -m-1 shrink-0 text-ink-400 hover:text-ink-700"
           >
-            ✕
+            <CloseIcon width={14} height={14} />
           </button>
         </div>
       </div>

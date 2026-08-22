@@ -232,7 +232,7 @@ export async function approveJoinRequest(
   // המצטרף ממתין לאישור הזה — זו ההתראה החשובה ביותר באפליקציה
   void enqueueNotification({
     roomCode: code,
-    title: 'הבקשה שלך אושרה 🎉',
+    title: 'הבקשה שלך אושרה',
     body: 'ברוכים הבאים לחדר',
     url: `/r/${code}`,
     tag: `join-${code}`,

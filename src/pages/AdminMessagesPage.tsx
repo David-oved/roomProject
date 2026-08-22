@@ -10,24 +10,22 @@ import { markAdminMessageClicked, markAdminMessageRead } from '../services/admin
 import { formatSmartDate } from '../lib/format';
 import { friendlyError } from '../lib/errors';
 import type { AdminMessageKind } from '../types/models';
+import { ADMIN_MESSAGE_KIND_ICON } from '../lib/adminMessageIcons';
 
-const KIND_STYLE: Record<AdminMessageKind, { icon: string; ring: string; chip: string; label: string }> = {
-  info: { icon: 'ℹ️', ring: 'border-ink-200', chip: 'bg-ink-100 text-ink-700', label: 'עדכון' },
+const KIND_STYLE: Record<AdminMessageKind, { ring: string; chip: string; label: string }> = {
+  info: { ring: 'border-ink-200', chip: 'bg-ink-100 text-ink-700', label: 'עדכון' },
   success: {
-    icon: '✅',
     ring: 'border-emerald-200',
     chip: 'bg-emerald-50 text-emerald-800',
     label: 'הודעה טובה',
   },
   warning: {
-    icon: '⚠️',
     ring: 'border-amber-200',
     chip: 'bg-amber-50 text-amber-900',
     label: 'שימו לב',
   },
-  error: { icon: '🛑', ring: 'border-rose-200', chip: 'bg-rose-50 text-rose-800', label: 'תקלה' },
+  error: { ring: 'border-rose-200', chip: 'bg-rose-50 text-rose-800', label: 'תקלה' },
   maintenance: {
-    icon: '🛠️',
     ring: 'border-amber-200',
     chip: 'bg-amber-50 text-amber-900',
     label: 'תחזוקה',
@@ -81,15 +79,12 @@ export default function AdminMessagesPage() {
           ) : error && !fromCache ? (
             <ErrorState message={friendlyError(error)} onRetry={() => location.reload()} />
           ) : messages.length === 0 ? (
-            <EmptyState
-              icon="📭"
-              title="אין הודעות"
-              body="כאן יופיעו עדכוני מערכת ותשובות לפניות ששלחת."
-            />
+            <EmptyState title="אין הודעות" body="כאן יופיעו עדכוני מערכת ותשובות לפניות ששלחת." />
           ) : (
             <ul className="space-y-2.5">
               {messages.map((m) => {
                 const style = KIND_STYLE[m.kind] ?? KIND_STYLE.info;
+                const Icon = ADMIN_MESSAGE_KIND_ICON[m.kind] ?? ADMIN_MESSAGE_KIND_ICON.info;
                 const isOpen = openId === m.id;
                 const unread = !m.readAt;
 
@@ -101,8 +96,8 @@ export default function AdminMessagesPage() {
                       aria-expanded={isOpen}
                       className="flex w-full items-start gap-3 p-4 text-start transition active:bg-ink-50"
                     >
-                      <span aria-hidden className="text-xl leading-none">
-                        {style.icon}
+                      <span aria-hidden className="mt-0.5 shrink-0 text-ink-500">
+                        <Icon width={18} height={18} />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center gap-2">

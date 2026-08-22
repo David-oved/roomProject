@@ -6,6 +6,7 @@ import { Avatar } from '../components/ui/Avatar';
 import { EmptyState, ErrorState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import {
+  BellIcon,
   CartIcon,
   ChecklistIcon,
   CheckIcon,
@@ -86,7 +87,7 @@ export default function NotificationsPage() {
           <ErrorState message={friendlyError(error)} onRetry={() => location.reload()} />
         ) : notifications.length === 0 ? (
           <EmptyState
-            icon="🔔"
+            icon={<BellIcon width={30} height={30} />}
             title="אין התראות"
             body="כאן יופיע כל מה שקורה בחדר — דיווחים, קניות ואישורים."
           />

@@ -6,6 +6,7 @@ import { Avatar } from '../components/ui/Avatar';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { EmptyState, ErrorState } from '../components/ui/EmptyState';
+import { CheckIcon, LightbulbIcon, NoteIcon, WarningIcon } from '../components/ui/icons';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import { useBalances, useContributions, usePurchases, useSettlements } from '../hooks/useRoomData';
 import { ContributionChart } from '../components/balances/ContributionChart';
@@ -92,8 +93,9 @@ export default function BalancesPage() {
             ₪{formatAmount(myBalance)}
           </p>
           {!isConsistent && (
-            <p className="mt-3 rounded-lg bg-black/20 px-2.5 py-1.5 text-xs">
-              ⚠️ סכום המאזנים בחדר אינו מתאפס. ייתכן שנתון חסר.
+            <p className="mt-3 flex items-center gap-1.5 rounded-lg bg-black/20 px-2.5 py-1.5 text-xs">
+              <WarningIcon width={13} height={13} className="shrink-0" />
+              סכום המאזנים בחדר אינו מתאפס. ייתכן שנתון חסר.
             </p>
           )}
         </section>
@@ -192,7 +194,9 @@ function SummaryTab({
       {/* ── הכל מאוזן — לא מחליף את שאר המסך, רק מודיע ── */}
       {nothingPending && (
         <div className="card flex items-center gap-2.5 p-4 text-sm text-ink-600">
-          <span aria-hidden>✅</span>
+          <span aria-hidden className="text-emerald-600">
+            <CheckIcon width={17} height={17} />
+          </span>
           אין חובות פתוחים בחדר כרגע
         </div>
       )}
@@ -417,8 +421,8 @@ function ContributionsSection() {
 
           {next && (
             <div className="mt-2 flex items-start gap-2.5 rounded-card bg-amber-50 px-3.5 py-3">
-              <span aria-hidden className="text-lg">
-                👉
+              <span aria-hidden className="mt-0.5 shrink-0 text-amber-700">
+                <LightbulbIcon width={17} height={17} />
               </span>
               <p className="text-sm leading-relaxed text-amber-900">
                 <b>{memberName(next.userId)}</b> נשא ב־
@@ -468,7 +472,7 @@ function PendingTab({ isAdmin }: { isAdmin: boolean }) {
   );
 
   if (pendingApproval.length === 0) {
-    return <EmptyState icon="📭" title="אין קניות ממתינות" body="כל הקניות טופלו." />;
+    return <EmptyState title="אין קניות ממתינות" body="כל הקניות טופלו." />;
   }
 
   return (
@@ -568,7 +572,13 @@ function HistoryTab({
   const done = purchases.filter((p) => p.status !== 'pending');
 
   if (done.length === 0) {
-    return <EmptyState icon="🧾" title="אין היסטוריה עדיין" body="קניות שיאושרו יופיעו כאן." />;
+    return (
+      <EmptyState
+        icon={<NoteIcon width={30} height={30} />}
+        title="אין היסטוריה עדיין"
+        body="קניות שיאושרו יופיעו כאן."
+      />
+    );
   }
 
   const total = done
@@ -604,7 +614,7 @@ function HistoryTab({
             <div className="shrink-0 text-end">
               <p className="num text-sm font-bold text-ink-900">{formatILS(p.amount)}</p>
               <p ref={idx === 0 ? entryHintRef : undefined} className="text-[11px] text-ink-500">
-                {p.splitMethod === 'covered' ? '🙋 על חשבונו' : PURCHASE_STATUS_LABELS[p.status]}
+                {p.splitMethod === 'covered' ? 'על חשבונו' : PURCHASE_STATUS_LABELS[p.status]}
               </p>
             </div>
           </li>

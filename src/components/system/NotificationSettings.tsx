@@ -45,7 +45,7 @@ export function NotificationSettings() {
     try {
       await subscribeToPush(user.uid);
       await update(ref(db, `users/${user.uid}`), { pushEnabled: true });
-      toast.success('התראות הופעלו 🔔');
+      toast.success('התראות הופעלו');
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
