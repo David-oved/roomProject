@@ -30,6 +30,7 @@ const SettingsAccountPage = lazy(() => import('./pages/SettingsAccountPage'));
 const SettingsRoomPage = lazy(() => import('./pages/SettingsRoomPage'));
 const SettingsMembersPage = lazy(() => import('./pages/SettingsMembersPage'));
 const SettingsNotificationsPage = lazy(() => import('./pages/SettingsNotificationsPage'));
+const SettingsDisplayPage = lazy(() => import('./pages/SettingsDisplayPage'));
 const SettingsAboutPage = lazy(() => import('./pages/SettingsAboutPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const AdminMessagesPage = lazy(() => import('./pages/AdminMessagesPage'));
@@ -118,6 +119,7 @@ export function AppRoutes() {
                 <Route path="settings/room" element={<SettingsRoomPage />} />
                 <Route path="settings/members" element={<SettingsMembersPage />} />
                 <Route path="settings/notifications" element={<SettingsNotificationsPage />} />
+                <Route path="settings/display" element={<SettingsDisplayPage />} />
                 <Route path="settings/about" element={<SettingsAboutPage />} />
               </Route>
             </Route>

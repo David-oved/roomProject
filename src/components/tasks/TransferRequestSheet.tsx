@@ -59,7 +59,7 @@ export function TransferRequestSheet({
                   disabled={sendingTo !== null}
                   onClick={() => send(m.id)}
                   className="tap flex w-full items-center gap-3 rounded-xl border border-ink-200
-                             bg-white px-3 py-2.5 text-start transition hover:border-brand-300
+                             bg-surface px-3 py-2.5 text-start transition hover:border-brand-300
                              hover:bg-brand-50/60 disabled:opacity-50"
                 >
                   <Avatar name={m.name} uid={m.id} src={m.avatar} size="xs" />

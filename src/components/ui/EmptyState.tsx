@@ -33,7 +33,7 @@ export function ErrorState({ message, onRetry }: { message?: string; onRetry?: (
         onRetry && (
           <button
             onClick={onRetry}
-            className="tap rounded-xl border border-ink-200 bg-white px-4 text-sm font-semibold
+            className="tap rounded-xl border border-ink-200 bg-surface px-4 text-sm font-semibold
                        text-ink-700 transition hover:bg-ink-50"
           >
             נסה שוב

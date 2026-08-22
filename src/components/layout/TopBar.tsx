@@ -22,7 +22,7 @@ export function TopBar({
 
   return (
     <header
-      className="sticky top-0 z-40 border-b border-ink-200/70 bg-white/85
+      className="sticky top-0 z-40 border-b border-ink-200/70 bg-surface/85
                  backdrop-blur-xl backdrop-saturate-150"
       style={{ paddingTop: 'var(--safe-top)' }}
     >

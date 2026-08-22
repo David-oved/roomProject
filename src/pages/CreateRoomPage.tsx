@@ -93,7 +93,7 @@ export default function CreateRoomPage() {
                       'transition active:scale-[.98]',
                       on
                         ? 'border-brand-500 bg-brand-50 text-brand-900 ring-1 ring-brand-500/30'
-                        : 'border-ink-200 bg-white text-ink-600',
+                        : 'border-ink-200 bg-surface text-ink-600',
                     ].join(' ')}
                   >
                     <span aria-hidden className="text-lg">
@@ -118,7 +118,7 @@ export default function CreateRoomPage() {
               type="button"
               onClick={() => setPickerOpen(true)}
               className="flex w-full items-center gap-3 rounded-xl border border-ink-200
-                         bg-white p-3.5 text-start transition active:scale-[.99] hover:bg-ink-50"
+                         bg-surface p-3.5 text-start transition active:scale-[.99] hover:bg-ink-50"
             >
               <span aria-hidden className="grid h-10 w-10 shrink-0 place-items-center
                                            rounded-xl bg-brand-50 text-xl">

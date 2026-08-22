@@ -342,7 +342,7 @@ export function MarkBoughtSheet({
                     'tap rounded-xl border px-2 text-xs font-semibold transition active:scale-[.98]',
                     splitStyle === m
                       ? 'border-brand-500 bg-brand-50 text-brand-900 ring-1 ring-brand-500/30'
-                      : 'border-ink-200 bg-white text-ink-500',
+                      : 'border-ink-200 bg-surface text-ink-500',
                   ].join(' ')}
                 >
                   {SPLIT_METHOD_LABELS[m]}
@@ -366,7 +366,7 @@ export function MarkBoughtSheet({
                     <div
                       className={[
                         'flex items-center gap-3 rounded-xl border px-3 py-2.5 transition',
-                        on ? 'border-brand-300 bg-brand-50/60' : 'border-ink-200 bg-white',
+                        on ? 'border-brand-300 bg-brand-50/60' : 'border-ink-200 bg-surface',
                       ].join(' ')}
                     >
                       <button
@@ -528,7 +528,7 @@ function ModeCard({
         'rounded-xl border p-2.5 text-start transition active:scale-[.98]',
         active
           ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-500/30'
-          : 'border-ink-200 bg-white',
+          : 'border-ink-200 bg-surface',
       ].join(' ')}
     >
       <span

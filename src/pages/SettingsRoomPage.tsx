@@ -202,7 +202,7 @@ export default function SettingsRoomPage() {
                 </p>
 
                 {openDebts.length > 0 ? (
-                  <div className="mt-3 rounded-xl bg-white p-3 text-xs text-rose-800">
+                  <div className="mt-3 rounded-xl bg-surface p-3 text-xs text-rose-800">
                     🔒 לא ניתן למחוק חדר עם חובות פתוחים. סגרו קודם את החשבונות:
                     <ul className="mt-1.5 space-y-0.5">
                       {openDebts.map(([uid, v]) => (

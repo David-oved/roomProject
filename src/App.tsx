@@ -1,4 +1,5 @@
 import { HashRouter } from 'react-router-dom';
+import { ThemeProvider } from './store/ThemeContext';
 import { AuthProvider } from './store/AuthContext';
 import { ConnectionProvider } from './store/ConnectionContext';
 import { ToastProvider } from './store/ToastContext';
@@ -32,6 +33,7 @@ export default function App() {
      * נשאר תקוע בה לצמיתות. מנגנון העדכון הוא פתח המילוט של
      * האפליקציה, ולכן הוא חייב לרוץ בכל מצב שהוא.
      */
+    <ThemeProvider>
     <UpdateProvider>
       <ToastProvider>
         <ConfirmProvider>
@@ -74,5 +76,6 @@ export default function App() {
         </ConfirmProvider>
       </ToastProvider>
     </UpdateProvider>
+    </ThemeProvider>
   );
 }

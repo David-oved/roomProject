@@ -270,7 +270,7 @@ export default function DashboardPage() {
         )}
 
         {/* ── כרטיס יתרה — בסגנון דוח, לא כרטיס גרדיאנט ── */}
-        <section className="rounded-card border border-ink-200/70 bg-white p-5 shadow-card">
+        <section className="rounded-card border border-ink-200/70 bg-surface p-5 shadow-card">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-ink-600">היתרה שלי</p>
             <Badge tone={myBalance === 0 ? 'neutral' : myBalance > 0 ? 'success' : 'danger'}>
@@ -333,7 +333,7 @@ export default function DashboardPage() {
           <Link
             ref={buyShortcutHintRef}
             to={`/r/${roomCode}/items`}
-            className="flex flex-col items-center gap-2 rounded-2xl border border-ink-200 bg-white
+            className="flex flex-col items-center gap-2 rounded-2xl border border-ink-200 bg-surface
                        py-3.5 text-ink-700 transition active:scale-[.97]"
           >
             <CartIcon width={19} height={19} />
@@ -342,7 +342,7 @@ export default function DashboardPage() {
           <Link
             ref={settleShortcutHintRef}
             to={`/r/${roomCode}/balances`}
-            className="flex flex-col items-center gap-2 rounded-2xl border border-ink-200 bg-white
+            className="flex flex-col items-center gap-2 rounded-2xl border border-ink-200 bg-surface
                        py-3.5 text-ink-700 transition active:scale-[.97]"
           >
             <ExchangeIcon width={19} height={19} />
@@ -352,7 +352,7 @@ export default function DashboardPage() {
 
         {/* ── פעולות שדורשות תשומת לב ── */}
         {hasAttentionItems && (
-          <section className="overflow-hidden rounded-card border border-ink-200/70 bg-white shadow-card">
+          <section className="overflow-hidden rounded-card border border-ink-200/70 bg-surface shadow-card">
             <p className="border-b border-ink-100 px-4 py-2.5 text-sm font-bold text-ink-700">
               דורש את אישורך
             </p>
@@ -465,12 +465,12 @@ export default function DashboardPage() {
           </div>
 
           {items.length === 0 ? (
-            <div className="rounded-card border border-ink-200/70 bg-white px-4 py-8 text-center">
+            <div className="rounded-card border border-ink-200/70 bg-surface px-4 py-8 text-center">
               <p className="text-sm font-semibold text-ink-800">אין מוצרים חסרים</p>
               <p className="mt-0.5 text-xs text-ink-500">הכל מלא. אפשר לנוח.</p>
             </div>
           ) : (
-            <ul className="overflow-hidden rounded-card border border-ink-200/70 bg-white shadow-card">
+            <ul className="overflow-hidden rounded-card border border-ink-200/70 bg-surface shadow-card">
               {items.slice(0, 4).map((item, idx) => {
                 const Icon = CATEGORY_ICON[item.category];
                 return (
@@ -536,14 +536,14 @@ export default function DashboardPage() {
           </div>
 
           {myTasks.length === 0 ? (
-            <div className="rounded-card border border-ink-200/70 bg-white px-4 py-8 text-center">
+            <div className="rounded-card border border-ink-200/70 bg-surface px-4 py-8 text-center">
               <p className="text-sm font-semibold text-ink-800">אין לך מטלות ממתינות</p>
               <p className="mt-0.5 text-xs text-ink-500">
                 {isAdmin ? 'אפשר להוסיף מטלה קבועה חדשה.' : 'תורך יופיע כאן כשיגיע.'}
               </p>
             </div>
           ) : (
-            <ul className="overflow-hidden rounded-card border border-ink-200/70 bg-white shadow-card">
+            <ul className="overflow-hidden rounded-card border border-ink-200/70 bg-surface shadow-card">
               {myTasks.slice(0, 4).map((t, idx) => {
                 const overdue = (t.dueAt ?? 0) < Date.now();
                 return (
@@ -600,7 +600,7 @@ export default function DashboardPage() {
         )}
 
         {roomCode && !justCreated && (
-          <details className="overflow-hidden rounded-card border border-ink-200/70 bg-white">
+          <details className="overflow-hidden rounded-card border border-ink-200/70 bg-surface">
             <summary
               ref={roomCodeDetailsHintRef}
               className="cursor-pointer list-none px-4 py-3.5 text-sm font-semibold text-ink-700"

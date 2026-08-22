@@ -43,9 +43,10 @@
          אחרת הפוש המיידי ייחסם. (לא נפילה: ההתראה עדיין תצא תוך 5
          דקות מה-GitHub Action, ראו worker/src/index.js.)
 
-      'unsafe-inline' ב-script-src נדרש לסקריפט המילוט שבתחתית הקובץ.
-      הוא חייב להיות inline מעצם תפקידו — הוא רץ כשקוד ה-Service Worker
-      שבור, ולכן אסור לו להיות תלוי בשום קובץ חיצוני.
+      'unsafe-inline' ב-script-src נדרש לשני סקריפטים מוטבעים ב-<head>/
+      <body>: קביעת מצב כהה/בהיר לפני הציור הראשון (למה למטה), וסקריפט
+      המילוט שבתחתית הקובץ — האחרון חייב להיות inline מעצם תפקידו, הוא
+      רץ כשקוד ה-Service Worker שבור, ולכן אסור לו להיות תלוי בקובץ חיצוני.
       ב-style-src נדרש בגלל style={{...}} של React ותוספות זמן-ריצה.
 
       ⚠️ frame-ancestors **מתעלמים ממנו** ב-meta (כך בתקן; רק
@@ -90,7 +91,37 @@
     />
     <meta name="theme-color" content="#0f766e" />
     <meta name="description" content="ניהול קניות, מוצרים חסרים וחלוקת הוצאות בחדר משותף" />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="light dark" />
+
+    <!--
+      ‼️ קביעת מצב כהה/בהיר *לפני* שהדפדפן מצייר פיקסל ראשון.
+
+      חייב לרוץ inline וסינכרוני, ולא לחכות ל-React (src/store/
+      ThemeContext.tsx): src="/src/main.tsx" בתחתית הקובץ הוא module,
+      שנטען אסינכרונית ותמיד אחרי שהדפדפן כבר ציין את ה-HTML לצייר.
+      בלעדי הסקריפט הזה, כל טעינה במצב כהה הייתה מתחילה ברקע לבן בוהק
+      (מסך הפתיחה הסטטי + הצבע ההתחלתי של הגוף) ורק "קופצת" לכהה רגע
+      אחרי שריאקט עולה — בדיוק המבזק שהמשתמש ביקש למנוע.
+
+      המפתח (rm:theme) והלוגיקה כאן חייבים להישאר זהים בדיוק ל-
+      ThemeContext.tsx. try/catch כי localStorage יכול להיות חסום
+      (מצב פרטי מחמיר), ואז נופלים בשקט להעדפת המערכת.
+    -->
+    <script>
+      (function () {
+        try {
+          var v = localStorage.getItem('rm:theme');
+          var dark =
+            v === 'dark' ||
+            (v !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) {
+            document.documentElement.classList.add('dark');
+            var m = document.querySelector('meta[name="theme-color"]');
+            if (m) m.setAttribute('content', '#0f172a');
+          }
+        } catch (e) {}
+      })();
+    </script>
 
     <!-- iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes" />

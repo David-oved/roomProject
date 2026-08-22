@@ -17,7 +17,7 @@ const VARIANTS: Record<Variant, string> = {
     'bg-brand-700 text-white shadow-sm hover:bg-brand-800 active:bg-brand-900 ' +
     'disabled:bg-ink-200 disabled:text-ink-400 disabled:shadow-none',
   secondary:
-    'bg-white text-ink-800 border border-ink-200 hover:bg-ink-50 active:bg-ink-100 ' +
+    'bg-surface text-ink-800 border border-ink-200 hover:bg-ink-50 active:bg-ink-100 ' +
     'disabled:bg-ink-50 disabled:text-ink-300 disabled:border-ink-100',
   ghost:
     'bg-transparent text-ink-600 hover:bg-ink-100 active:bg-ink-200 ' +

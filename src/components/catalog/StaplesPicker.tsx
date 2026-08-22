@@ -120,7 +120,7 @@ export function StaplesPicker({
         </p>
 
         {/* ── חיפוש מהיר ── */}
-        <div className="sticky top-0 z-10 -mx-1 bg-white px-1 pb-1 pt-0.5">
+        <div className="sticky top-0 z-10 -mx-1 bg-surface px-1 pb-1 pt-0.5">
           <div className="relative">
             <input
               value={query}
@@ -131,7 +131,7 @@ export function StaplesPicker({
               placeholder="חיפוש מהיר…"
               type="search"
               enterKeyHint="search"
-              className="w-full rounded-xl border border-ink-200 bg-white ps-10 pe-3 py-3
+              className="w-full rounded-xl border border-ink-200 bg-surface ps-10 pe-3 py-3
                          text-[16px] placeholder:text-ink-500 focus:border-brand-500
                          focus:outline-none focus:ring-2 focus:ring-brand-500/30"
             />
@@ -176,7 +176,7 @@ export function StaplesPicker({
                 <p className="mb-1.5 px-1 text-xs text-ink-500">
                   <span className="num">{results.length}</span> תוצאות
                 </p>
-                <ul className="divide-y divide-ink-100 overflow-hidden rounded-xl border border-ink-200 bg-white">
+                <ul className="divide-y divide-ink-100 overflow-hidden rounded-xl border border-ink-200 bg-surface">
                   {results.map((p) => (
                     <ProductRow
                       key={p.id}
@@ -208,7 +208,7 @@ export function StaplesPicker({
               return (
                 <li
                   key={category}
-                  className="overflow-hidden rounded-xl border border-ink-200 bg-white"
+                  className="overflow-hidden rounded-xl border border-ink-200 bg-surface"
                 >
                   <button
                     type="button"

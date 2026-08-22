@@ -108,7 +108,7 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
                   'tap flex flex-col items-center gap-1 rounded-2xl border py-2.5 text-xs font-semibold transition',
                   category === c
                     ? 'border-brand-500 bg-brand-50 text-brand-900 ring-1 ring-brand-500/30'
-                    : 'border-ink-200 bg-white text-ink-500',
+                    : 'border-ink-200 bg-surface text-ink-500',
                 ].join(' ')}
               >
                 <span aria-hidden className="text-lg">
@@ -134,7 +134,7 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
                   'tap rounded-2xl border px-1 text-xs font-semibold transition',
                   intervalDays === p.days
                     ? 'border-brand-500 bg-brand-50 text-brand-900 ring-1 ring-brand-500/30'
-                    : 'border-ink-200 bg-white text-ink-500',
+                    : 'border-ink-200 bg-surface text-ink-500',
                 ].join(' ')}
               >
                 {p.label}
@@ -171,7 +171,7 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
                     aria-pressed={on}
                     className={[
                       'flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-start transition',
-                      on ? 'border-brand-300 bg-brand-50/60' : 'border-ink-200 bg-white',
+                      on ? 'border-brand-300 bg-brand-50/60' : 'border-ink-200 bg-surface',
                     ].join(' ')}
                   >
                     <span

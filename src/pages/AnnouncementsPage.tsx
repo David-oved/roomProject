@@ -71,7 +71,7 @@ export default function AnnouncementsPage() {
     >
       <header
         className="sticky top-0 z-10 flex shrink-0 items-center gap-2.5 border-b border-ink-200/70
-                   bg-white/90 px-2 backdrop-blur-xl safe-x"
+                   bg-surface/90 px-2 backdrop-blur-xl safe-x"
         style={{ paddingTop: 'var(--safe-top)', height: 'calc(var(--header-height) + var(--safe-top))' }}
       >
         <button
@@ -147,7 +147,7 @@ export default function AnnouncementsPage() {
 
       {isAdmin && (
         <div
-          className="shrink-0 border-t border-ink-200/70 bg-white px-3 py-2.5 safe-x"
+          className="shrink-0 border-t border-ink-200/70 bg-surface px-3 py-2.5 safe-x"
           style={{ paddingBottom: 'calc(var(--safe-bottom) + 0.625rem)' }}
         >
           <div className="flex items-end gap-2">
@@ -164,7 +164,7 @@ export default function AnnouncementsPage() {
               disabled={!isOnline || isArchived}
               // ‼️ text-[16px] — ראו ההערה הזהה ב-ChatConversationPage.
               className="h-11 flex-1 rounded-full border border-ink-200 bg-ink-50 px-4 text-[16px]
-                         placeholder:text-ink-500 focus:border-brand-400 focus:bg-white
+                         placeholder:text-ink-500 focus:border-brand-400 focus:bg-surface
                          focus:outline-none focus:ring-2 focus:ring-brand-500/25"
             />
             <button

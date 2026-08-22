@@ -157,7 +157,7 @@ export default function FeedbackPage() {
                                   transition ${
                                     type === t
                                       ? 'border-brand-600 bg-brand-50 font-bold text-brand-800'
-                                      : 'border-ink-200 bg-white text-ink-700 hover:bg-ink-50'
+                                      : 'border-ink-200 bg-surface text-ink-700 hover:bg-ink-50'
                                   }`}
                     >
                       <span aria-hidden>{FEEDBACK_TYPE_EMOJI[t]}</span>
@@ -197,7 +197,7 @@ export default function FeedbackPage() {
                       id="fb-room"
                       value={effectiveRoom}
                       onChange={(e) => setRoomCode(e.target.value)}
-                      className="w-full rounded-xl border border-ink-200 bg-white px-3.5 py-3 text-[16px]
+                      className="w-full rounded-xl border border-ink-200 bg-surface px-3.5 py-3 text-[16px]
                                  text-ink-900 focus:border-brand-600 focus:outline-none focus:ring-2
                                  focus:ring-brand-600"
                     >

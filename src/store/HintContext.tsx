@@ -164,7 +164,7 @@ function HintPopover({
       {/* הילה סביב האלמנט עצמו — כדי שברור בדיוק "למה" מתייחסת ההערה */}
       <div
         aria-hidden
-        className="pointer-events-none fixed z-[85] animate-fade-in rounded-xl ring-2 ring-brand-500 ring-offset-2 ring-offset-white/40"
+        className="pointer-events-none fixed z-[85] animate-fade-in rounded-xl ring-2 ring-brand-500 ring-offset-2 ring-offset-surface/40"
         style={{
           top: rect.top - 4,
           left: rect.left - 4,
@@ -176,7 +176,7 @@ function HintPopover({
       <div
         role="status"
         style={{ top, bottom, left, width: POPOVER_WIDTH }}
-        className="animate-slide-up fixed z-[85] rounded-2xl border border-brand-200 bg-white
+        className="animate-slide-up fixed z-[85] rounded-2xl border border-brand-200 bg-surface
                    p-3 shadow-lifted"
       >
         <div className="flex items-start gap-2">

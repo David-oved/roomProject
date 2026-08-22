@@ -138,7 +138,7 @@ export default function JoinRoomPage() {
               placeholder="ABC123"
               aria-invalid={!!error}
               disabled={busy}
-              className="w-full rounded-2xl border-2 border-ink-200 bg-white py-5 text-center
+              className="w-full rounded-2xl border-2 border-ink-200 bg-surface py-5 text-center
                          font-mono text-3xl tracking-[0.35em] text-ink-900 placeholder:text-ink-300
                          transition-colors focus:border-brand-500 focus:outline-none
                          focus:ring-4 focus:ring-brand-500/20 disabled:bg-ink-50"
@@ -162,7 +162,7 @@ export default function JoinRoomPage() {
                 type="button"
                 onClick={pasteFromClipboard}
                 className="tap mx-auto mt-4 flex items-center gap-2 rounded-xl border
-                           border-ink-200 bg-white px-4 text-sm font-semibold text-ink-700
+                           border-ink-200 bg-surface px-4 text-sm font-semibold text-ink-700
                            transition active:scale-95 hover:bg-ink-50"
               >
                 <CopyIcon width={17} height={17} />

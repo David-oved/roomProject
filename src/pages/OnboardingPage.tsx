@@ -119,7 +119,7 @@ function RoomOption({ code, isLast }: { code: string; isLast: boolean }) {
   return (
     <Link
       to={`/r/${code}`}
-      className="flex items-center gap-3 rounded-card border border-ink-200 bg-white p-4
+      className="flex items-center gap-3 rounded-card border border-ink-200 bg-surface p-4
                  shadow-card transition active:scale-[.99] hover:border-brand-300"
     >
       <span
@@ -168,8 +168,8 @@ function ChoiceCard({
       className={[
         'flex items-center gap-4 rounded-card border p-4 transition active:scale-[.99]',
         primary
-          ? 'border-brand-200 bg-white shadow-card hover:border-brand-300 hover:shadow-lifted'
-          : 'border-ink-200 bg-white/70 hover:bg-white hover:shadow-card',
+          ? 'border-brand-200 bg-surface shadow-card hover:border-brand-300 hover:shadow-lifted'
+          : 'border-ink-200 bg-surface/70 hover:bg-surface hover:shadow-card',
       ].join(' ')}
     >
       <span

@@ -73,8 +73,8 @@ export function AddProductForm({
                 'tap flex items-center gap-2 rounded-xl border px-3 text-sm font-medium',
                 'transition active:scale-[.98]',
                 category === c
-                  ? 'border-brand-500 bg-white text-brand-900 ring-1 ring-brand-500/30'
-                  : 'border-ink-200 bg-white text-ink-600',
+                  ? 'border-brand-500 bg-surface text-brand-900 ring-1 ring-brand-500/30'
+                  : 'border-ink-200 bg-surface text-ink-600',
               ].join(' ')}
             >
               <span aria-hidden>{CATEGORY_EMOJI[c]}</span>

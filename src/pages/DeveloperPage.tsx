@@ -101,7 +101,7 @@ export default function DeveloperPage() {
                 aria-pressed={tab === key}
                 className={[
                   'tap flex-1 rounded-xl py-2.5 text-sm font-semibold transition',
-                  tab === key ? 'bg-brand-700 text-white shadow-sm' : 'bg-white text-ink-600 ring-1 ring-ink-200',
+                  tab === key ? 'bg-brand-700 text-white shadow-sm' : 'bg-surface text-ink-600 ring-1 ring-ink-200',
                 ].join(' ')}
               >
                 {label}

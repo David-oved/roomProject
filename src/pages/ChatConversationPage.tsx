@@ -159,7 +159,7 @@ export default function ChatConversationPage() {
       {/* ── כותרת ── */}
       <header
         className="sticky top-0 z-10 flex shrink-0 items-center gap-2.5 border-b border-ink-200/70
-                   bg-white/90 px-2 backdrop-blur-xl safe-x"
+                   bg-surface/90 px-2 backdrop-blur-xl safe-x"
         style={{ paddingTop: 'var(--safe-top)', height: 'calc(var(--header-height) + var(--safe-top))' }}
       >
         <button
@@ -279,7 +279,7 @@ export default function ChatConversationPage() {
           "עולה" רק כי הקונטיינר שמעליה מצטמצם בדיוק לגובה הנראה בפועל —
           ראו ההערה למעלה. ── */}
       <div
-        className="shrink-0 border-t border-ink-200/70 bg-white px-3 py-2.5 safe-x"
+        className="shrink-0 border-t border-ink-200/70 bg-surface px-3 py-2.5 safe-x"
         style={{ paddingBottom: 'calc(var(--safe-bottom) + 0.625rem)' }}
       >
         {/* ‼️ key={path} מחליף את setText('') שהיה כאן: מעבר בין שתי שיחות
@@ -348,7 +348,7 @@ const Composer = memo(function Composer({
         // מחלקת ה-Tailwind גוברת על הכלל הגלובלי, ולכן 15px כאן היה שובר
         // את ההגנה בכל שדה שלא עובר דרך הרכיב Input.
         className="h-11 flex-1 rounded-full border border-ink-200 bg-ink-50 px-4 text-[16px]
-                   placeholder:text-ink-500 focus:border-brand-400 focus:bg-white
+                   placeholder:text-ink-500 focus:border-brand-400 focus:bg-surface
                    focus:outline-none focus:ring-2 focus:ring-brand-500/25"
       />
       <button
@@ -404,7 +404,7 @@ const Bubble = memo(function Bubble({
         'max-w-[78%] rounded-2xl px-3.5 py-2 shadow-sm',
         mine
           ? 'rounded-ee-md bg-gradient-to-br from-brand-600 to-brand-700 text-white'
-          : 'rounded-es-md border border-ink-100 bg-white text-ink-900',
+          : 'rounded-es-md border border-ink-100 bg-surface text-ink-900',
       ].join(' ')}
     >
       {senderName && (

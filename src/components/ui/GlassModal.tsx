@@ -58,7 +58,7 @@ export function GlassModal({
       style={{ top: viewport.top, height: viewport.height }}
     >
       <div
-        className="absolute inset-0 animate-fade-in bg-ink-900/50 backdrop-blur-sm"
+        className="absolute inset-0 animate-fade-in bg-black/50 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden
       />
@@ -71,15 +71,15 @@ export function GlassModal({
         tabIndex={-1}
         style={{ maxHeight: viewport.height * 0.88 }}
         className="relative flex w-full max-w-sm animate-glass-in flex-col
-                   overflow-hidden rounded-[2rem] border border-white/60 bg-white/90
+                   overflow-hidden rounded-[2rem] border border-surface/60 bg-surface/90
                    shadow-lifted outline-none backdrop-blur-2xl"
       >
         <button
           onClick={onClose}
           aria-label="סגור"
           className="tap-area absolute end-3 top-3 z-10 grid h-8 w-8 place-items-center
-                     rounded-full bg-white/70 text-ink-500 backdrop-blur transition
-                     hover:bg-white hover:text-ink-800"
+                     rounded-full bg-surface/70 text-ink-500 backdrop-blur transition
+                     hover:bg-surface hover:text-ink-800"
         >
           <CloseIcon width={17} height={17} />
         </button>

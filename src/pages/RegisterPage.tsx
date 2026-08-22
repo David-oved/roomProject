@@ -151,7 +151,7 @@ export default function RegisterPage() {
                   <Link
                     to="/forgot-password"
                     className="tap inline-flex items-center rounded-lg border border-rose-300
-                               bg-white px-3 text-xs font-semibold text-rose-700
+                               bg-surface px-3 text-xs font-semibold text-rose-700
                                transition hover:bg-rose-50"
                   >
                     הגדרת סיסמה חדשה

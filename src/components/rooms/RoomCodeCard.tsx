@@ -77,7 +77,7 @@ export function RoomCodeCard({
           ref={copyHintRef}
           onClick={copy}
           className="tap inline-flex items-center gap-1.5 rounded-xl border border-ink-200
-                     bg-white px-3 text-sm font-semibold text-ink-700 transition
+                     bg-surface px-3 text-sm font-semibold text-ink-700 transition
                      active:scale-95 hover:bg-ink-50"
         >
           <CopyIcon width={17} height={17} />

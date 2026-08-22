@@ -110,8 +110,8 @@ export default function BalancesPage() {
                 'tap flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3',
                 'text-sm font-semibold transition',
                 tab === t.key
-                  ? 'bg-white text-brand-800 shadow-card ring-1 ring-brand-200'
-                  : 'bg-white/50 text-ink-500',
+                  ? 'bg-surface text-brand-800 shadow-card ring-1 ring-brand-200'
+                  : 'bg-surface/50 text-ink-500',
               ].join(' ')}
             >
               {t.label}

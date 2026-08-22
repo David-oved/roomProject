@@ -56,7 +56,7 @@ export function UpdateNotice() {
         role="status"
         aria-live="polite"
         className="pointer-events-auto w-full max-w-md animate-slide-up rounded-card
-                   border border-brand-200 bg-white p-4 shadow-lifted"
+                   border border-brand-200 bg-surface p-4 shadow-lifted"
       >
         <div className="flex items-start gap-3">
           <div

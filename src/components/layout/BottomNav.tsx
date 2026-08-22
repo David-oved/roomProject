@@ -72,7 +72,7 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
   ];
 
   return (
-    // ‼️ bg-white/95 ולא /80: ב-80% הרקע האפקטיבי של הסרגל תלוי במה
+    // ‼️ bg-surface/95 ולא /80: ב-80% הרקע האפקטיבי של הסרגל תלוי במה
     // שנגלל מתחתיו. מעל כרטיס היתרה הצבעוני תווית לשונית לא-פעילה ירדה
     // ל-2.14:1 — כלומר קריאוּת הניווט השתנתה לפי מיקום הגלילה.
     // (95 ולא 92: 92 אינו בסולם האטימות של Tailwind ולא מייצר כלל CSS
@@ -80,7 +80,7 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
     <nav
       aria-label="ניווט ראשי"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-ink-200/70
-                 bg-white/95 shadow-[0_-8px_24px_-16px_rgba(15,23,42,.15)]
+                 bg-surface/95 shadow-[0_-8px_24px_-16px_rgba(15,23,42,.15)]
                  backdrop-blur-xl backdrop-saturate-150"
       style={{ paddingBottom: 'var(--safe-bottom)' }}
     >

@@ -95,7 +95,7 @@ export function QuickReport() {
                   disabled={!isOnline || busyId !== null}
                   title={isOnline ? `דיווח שנגמר ${p.name}` : 'פעולה זו דורשת חיבור לאינטרנט'}
                   className="tap inline-flex items-center gap-1.5 rounded-full border
-                             border-ink-200 bg-white px-3 text-sm font-medium text-ink-700
+                             border-ink-200 bg-surface px-3 text-sm font-medium text-ink-700
                              transition active:scale-95 hover:border-brand-300 hover:bg-brand-50
                              disabled:opacity-50 disabled:active:scale-100"
                 >

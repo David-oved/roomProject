@@ -1,33 +1,63 @@
+import colors from 'tailwindcss/colors';
+
+/**
+ * ‼️ צבעים דרך משתני CSS, לא הקסים סטטיים — זו התשתית של מצב כהה.
+ *
+ * במקום למרוח `dark:` על אלפי מקומות שימוש בכל הקוד, כל גוון כאן
+ * (ink/brand/rose/emerald/...) מוגדר פעם אחת כ-`rgb(var(--x) / <alpha-value>)`.
+ * הערך בפועל של המשתנה משתנה לפי מחלקת `.dark` על ה-<html> (ראו
+ * src/styles/index.css) — כלומר `bg-ink-50` נשאר `bg-ink-50` בכל הקבצים,
+ * אבל "מה זה בעצם" מתהפך אוטומטית. `<alpha-value>` הוא placeholder
+ * שטיילווינד ממלא בזמן קומפילציה עבור מאפייני אטימות כמו `bg-ink-50/60` —
+ * חובה rgb(var(...) / ...) ולא rgba() ישיר, אחרת מאפייני אטימות נשברים.
+ *
+ * ink הופך בהיפוך מלא של הסולם (50↔900 וכו') — הוא משמש גם לטקסט וגם
+ * לרקעים ניטרליים בכל האפליקציה, כך שהיפוך שלם שומר על אותה סמנטיקה
+ * ("900 = הכי ניגודי") משני צידי החוזה. brand/rose/emerald/amber/sky/
+ * violet הופכים רק בטווח ה"גוון הבהיר" (50-300 ו-700-900) — 400-600
+ * נשארים קבועים, כי אלה הגוונים שמשמשים למילוי אחיד עם טקסט לבן
+ * (כפתורים, תגיות) וצריכים להישאר זהים ומזוהים בשני המצבים.
+ */
+const varColor = (name) => ({
+  50: `rgb(var(--${name}-50) / <alpha-value>)`,
+  100: `rgb(var(--${name}-100) / <alpha-value>)`,
+  200: `rgb(var(--${name}-200) / <alpha-value>)`,
+  300: `rgb(var(--${name}-300) / <alpha-value>)`,
+  400: `rgb(var(--${name}-400) / <alpha-value>)`,
+  500: `rgb(var(--${name}-500) / <alpha-value>)`,
+  600: `rgb(var(--${name}-600) / <alpha-value>)`,
+  700: `rgb(var(--${name}-700) / <alpha-value>)`,
+  800: `rgb(var(--${name}-800) / <alpha-value>)`,
+  900: `rgb(var(--${name}-900) / <alpha-value>)`,
+});
+
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: '#f0fdfa',
-          100: '#ccfbf1',
-          200: '#99f6e4',
-          300: '#5eead4',
-          400: '#2dd4bf',
-          500: '#14b8a6',
-          600: '#0d9488',
-          700: '#0f766e',
-          800: '#115e59',
-          900: '#134e4a',
-        },
-        ink: {
-          50: '#f8fafc',
-          100: '#f1f5f9',
-          200: '#e2e8f0',
-          300: '#cbd5e1',
-          400: '#94a3b8',
-          500: '#64748b',
-          600: '#475569',
-          700: '#334155',
-          800: '#1e293b',
-          900: '#0f172a',
-        },
+        brand: varColor('brand'),
+        // teal-* משמש רק ב-Avatar.tsx (פלטת צבעי ראשי-תיבות) — ומכיוון
+        // ש"brand" הוא בעצם ה-teal של Tailwind בשם אחר, פשוט מצביע על
+        // אותם משתנים. שינוי אחד, שני השמות עדיין מסונכרנים.
+        teal: varColor('brand'),
+        ink: varColor('ink'),
+        rose: varColor('rose'),
+        emerald: varColor('emerald'),
+        amber: varColor('amber'),
+        sky: varColor('sky'),
+        violet: varColor('violet'),
+        // גוונים נוספים בפלטת האווטאר (Avatar.tsx) — רק 100/800 בשימוש,
+        // כך שרק הם הופכים; שאר הסולם נשאר ברירת המחדל של Tailwind.
+        lime: { ...colors.lime, 100: 'rgb(var(--lime-100) / <alpha-value>)', 800: 'rgb(var(--lime-800) / <alpha-value>)' },
+        fuchsia: { ...colors.fuchsia, 100: 'rgb(var(--fuchsia-100) / <alpha-value>)', 800: 'rgb(var(--fuchsia-800) / <alpha-value>)' },
+        cyan: { ...colors.cyan, 100: 'rgb(var(--cyan-100) / <alpha-value>)', 800: 'rgb(var(--cyan-800) / <alpha-value>)' },
+        // משטח כרטיסים/גיליונות/שדות — במקום `bg-white` הליטרלי. "white"
+        // עצמו נשאר ללא נגיעה בכוונה: הוא עדיין נחוץ קבוע (לא הופך) לטקסט
+        // על כפתורים צבעוניים ולמסכי מסך (scrim מאחורי מודאלים).
+        surface: 'rgb(var(--surface) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['Assistant', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],

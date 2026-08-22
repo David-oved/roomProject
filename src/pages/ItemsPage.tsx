@@ -139,7 +139,7 @@ export default function ItemsPage() {
               'tap shrink-0 rounded-full px-4 text-sm font-semibold transition',
               filter === f.key
                 ? 'bg-brand-700 text-white shadow-sm'
-                : 'bg-white text-ink-600 ring-1 ring-ink-200',
+                : 'bg-surface text-ink-600 ring-1 ring-ink-200',
             ].join(' ')}
           >
             {f.label}

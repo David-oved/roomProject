@@ -30,7 +30,7 @@ export function Sheet({
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center">
       <div
-        className="absolute inset-0 animate-fade-in bg-ink-900/40 backdrop-blur-[2px]"
+        className="absolute inset-0 animate-fade-in bg-black/40 backdrop-blur-[2px]"
         onClick={onClose}
         aria-hidden
       />
@@ -42,7 +42,7 @@ export function Sheet({
         aria-label={title}
         tabIndex={-1}
         className="relative flex max-h-[92dvh] w-full max-w-lg animate-sheet-in flex-col
-                   rounded-t-3xl bg-white shadow-lifted outline-none
+                   rounded-t-3xl bg-surface shadow-lifted outline-none
                    sm:rounded-3xl sm:animate-slide-up"
       >
         {/* ידית גרירה — רמז ויזואלי שאפשר לסגור */}

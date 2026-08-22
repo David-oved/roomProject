@@ -48,7 +48,7 @@ export function AdminMessageBanner() {
         <span className="flex items-center gap-2">
           <span className="truncate text-sm font-bold">{latestUnread.title}</span>
           {unreadCount > 1 && (
-            <span className="shrink-0 rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-bold">
+            <span className="shrink-0 rounded-full bg-surface/70 px-2 py-0.5 text-[11px] font-bold">
               +{unreadCount - 1}
             </span>
           )}

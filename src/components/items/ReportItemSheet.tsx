@@ -160,7 +160,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
             מה חסר בבית?
           </h2>
 
-          <div className="sticky top-0 z-10 -mx-1 mt-3 bg-white/0 px-1 pb-1">
+          <div className="sticky top-0 z-10 -mx-1 mt-3 bg-surface/0 px-1 pb-1">
             <input
               value={query}
               onChange={(e) => {
@@ -171,7 +171,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
               type="search"
               enterKeyHint="search"
               autoFocus
-              className="w-full rounded-2xl border border-ink-200 bg-white/80 px-4 py-3.5
+              className="w-full rounded-2xl border border-ink-200 bg-surface/80 px-4 py-3.5
                          text-[16px] shadow-sm backdrop-blur placeholder:text-ink-500
                          transition focus:border-brand-400 focus:outline-none
                          focus:ring-2 focus:ring-brand-500/25"
@@ -214,7 +214,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
                     type="button"
                     onClick={() => choose(p)}
                     className="flex flex-col items-start gap-1 rounded-2xl border border-ink-100
-                               bg-white/70 p-3.5 text-start shadow-sm backdrop-blur transition
+                               bg-surface/70 p-3.5 text-start shadow-sm backdrop-blur transition
                                duration-150 hover:-translate-y-0.5 hover:border-brand-300
                                hover:shadow-card active:scale-[.96] active:duration-75"
                   >
@@ -242,7 +242,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
                       ref={freeTextHintRef}
                       type="button"
                       onClick={chooseFreeText}
-                      className="w-full rounded-2xl border border-dashed border-ink-300 bg-white/50
+                      className="w-full rounded-2xl border border-dashed border-ink-300 bg-surface/50
                                  px-4 py-3 text-sm font-medium text-ink-700 backdrop-blur
                                  transition hover:border-brand-400 hover:bg-brand-50/50"
                     >
@@ -296,7 +296,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
                   aria-pressed={priority === p}
                   className={[
                     'tap rounded-2xl border px-2 text-sm font-semibold transition active:scale-[.97]',
-                    priority === p ? `${PRIORITY_TONES[p]} ring-1` : 'border-ink-200 bg-white/70 text-ink-500',
+                    priority === p ? `${PRIORITY_TONES[p]} ring-1` : 'border-ink-200 bg-surface/70 text-ink-500',
                   ].join(' ')}
                 >
                   {PRIORITY_LABELS[p]}

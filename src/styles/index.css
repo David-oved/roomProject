@@ -18,6 +18,182 @@
     --header-height: 3.5rem;
 
     color-scheme: light;
+
+    /* ═══════════════════════════════════════════════════════
+       משתני צבע — מצב בהיר (ברירת מחדל)
+       ═══════════════════════════════════════════════════════
+       ראו ההסבר המלא ב-tailwind.config.js (varColor). כל שורה כאן
+       היא "R G B" (בלי rgb()/פסיקים) כדי ש-rgb(var(--x) / <alpha-value>)
+       יעבוד גם עם מאפייני אטימות כמו bg-ink-50/60.
+       ‼️ src/lib/theme.ts קורא מ-localStorage ומפעיל מחלקת .dark על
+       ה-<html> *לפני* שה-CSS הזה בכלל נטען (סקריפט מוטבע ב-index.html) —
+       בלעדי זה הייתה מבזק של המסך הלא-נכון בכל טעינה במצב כהה. */
+    --ink-50: 248 250 252;
+    --ink-100: 241 245 249;
+    --ink-200: 226 232 240;
+    --ink-300: 203 213 225;
+    --ink-400: 148 163 184;
+    --ink-500: 100 116 139;
+    --ink-600: 71 85 105;
+    --ink-700: 51 65 85;
+    --ink-800: 30 41 59;
+    --ink-900: 15 23 42;
+    --surface: 255 255 255;
+
+    --brand-50: 240 253 250;
+    --brand-100: 204 251 241;
+    --brand-200: 153 246 228;
+    --brand-300: 94 234 212;
+    --brand-400: 45 212 191;
+    --brand-500: 20 184 166;
+    --brand-600: 13 148 136;
+    --brand-700: 15 118 110;
+    --brand-800: 17 94 89;
+    --brand-900: 19 78 74;
+
+    --rose-50: 255 241 242;
+    --rose-100: 255 228 230;
+    --rose-200: 254 205 211;
+    --rose-300: 253 164 175;
+    --rose-400: 251 113 133;
+    --rose-500: 244 63 94;
+    --rose-600: 225 29 72;
+    --rose-700: 190 18 60;
+    --rose-800: 159 18 57;
+    --rose-900: 136 19 55;
+
+    --emerald-50: 236 253 245;
+    --emerald-100: 209 250 229;
+    --emerald-200: 167 243 208;
+    --emerald-300: 110 231 183;
+    --emerald-400: 52 211 153;
+    --emerald-500: 16 185 129;
+    --emerald-600: 5 150 105;
+    --emerald-700: 4 120 87;
+    --emerald-800: 6 95 70;
+    --emerald-900: 6 78 59;
+
+    --amber-50: 255 251 235;
+    --amber-100: 254 243 199;
+    --amber-200: 253 230 138;
+    --amber-300: 252 211 77;
+    --amber-400: 251 191 36;
+    --amber-500: 245 158 11;
+    --amber-600: 217 119 6;
+    --amber-700: 180 83 9;
+    --amber-800: 146 64 14;
+    --amber-900: 120 53 15;
+
+    --sky-50: 240 249 255;
+    --sky-100: 224 242 254;
+    --sky-200: 186 230 253;
+    --sky-300: 125 211 252;
+    --sky-400: 56 189 248;
+    --sky-500: 14 165 233;
+    --sky-600: 2 132 199;
+    --sky-700: 3 105 161;
+    --sky-800: 7 89 133;
+    --sky-900: 12 74 110;
+
+    --violet-50: 245 243 255;
+    --violet-100: 237 233 254;
+    --violet-200: 221 214 254;
+    --violet-300: 196 181 253;
+    --violet-400: 167 139 250;
+    --violet-500: 139 92 246;
+    --violet-600: 124 58 237;
+    --violet-700: 109 40 217;
+    --violet-800: 91 33 182;
+    --violet-900: 76 29 149;
+
+    --lime-100: 236 252 203;
+    --lime-800: 63 98 18;
+    --fuchsia-100: 250 232 255;
+    --fuchsia-800: 134 25 143;
+    --cyan-100: 207 250 254;
+    --cyan-800: 21 94 117;
+  }
+
+  /*
+   * ═══════════════════════════════════════════════════════
+     משתני צבע — מצב כהה
+     ═══════════════════════════════════════════════════════
+   * רק המשתנים שבאמת משתנים מופיעים כאן. 400/500/600 של כל גוון
+   * *לא* מופיעים בכוונה — אלה הגוונים הרוויים שמשמשים למילוי כפתורים
+   * ותגיות עם טקסט לבן, ונשארים זהים משני צידי המצב (ראו tailwind.config.js).
+   */
+  :root.dark {
+    color-scheme: dark;
+
+    /* ink — היפוך מלא: מה שהיה 900 (הכי ניגודי) הופך ל-50 וכו' */
+    --ink-50: 15 23 42;
+    --ink-100: 30 41 59;
+    --ink-200: 51 65 85;
+    --ink-300: 71 85 105;
+    --ink-400: 100 116 139;
+    --ink-500: 148 163 184;
+    --ink-600: 203 213 225;
+    --ink-700: 226 232 240;
+    --ink-800: 241 245 249;
+    --ink-900: 248 250 252;
+    /* מעט יותר בהיר מ-ink-50 (רקע העמוד) — כדי שכרטיסים עדיין "יבלטו",
+       בדיוק כמו שלבן בולט מעל ink-50 במצב הבהיר */
+    --surface: 30 41 59;
+
+    --brand-50: 4 47 46;
+    --brand-100: 19 78 74;
+    --brand-200: 17 94 89;
+    --brand-300: 15 118 110;
+    --brand-700: 94 234 212;
+    --brand-800: 153 246 228;
+    --brand-900: 204 251 241;
+
+    --rose-50: 76 5 25;
+    --rose-100: 136 19 55;
+    --rose-200: 159 18 57;
+    --rose-300: 190 18 60;
+    --rose-700: 253 164 175;
+    --rose-800: 254 205 211;
+    --rose-900: 255 228 230;
+
+    --emerald-50: 2 44 34;
+    --emerald-100: 6 78 59;
+    --emerald-200: 6 95 70;
+    --emerald-300: 4 120 87;
+    --emerald-700: 110 231 183;
+    --emerald-800: 167 243 208;
+    --emerald-900: 209 250 229;
+
+    --amber-50: 69 26 3;
+    --amber-100: 120 53 15;
+    --amber-200: 146 64 14;
+    --amber-300: 180 83 9;
+    --amber-700: 252 211 77;
+    --amber-800: 253 230 138;
+    --amber-900: 254 243 199;
+
+    --sky-50: 8 47 73;
+    --sky-100: 12 74 110;
+    --sky-200: 7 89 133;
+    --sky-300: 3 105 161;
+    --sky-700: 125 211 252;
+    --sky-800: 186 230 253;
+    --sky-900: 224 242 254;
+
+    --violet-50: 46 16 101;
+    --violet-100: 76 29 149;
+    --violet-200: 91 33 182;
+    --violet-300: 109 40 217;
+    --violet-700: 196 181 253;
+    --violet-800: 221 214 254;
+    --violet-900: 237 233 254;
+
+    --lime-100: 54 83 20;
+    --lime-800: 217 249 157;
+    --fuchsia-100: 112 26 117;
+    --fuchsia-800: 245 208 254;
+    --cyan-100: 22 78 99;
+    --cyan-800: 165 243 252;
   }
 
   * {
@@ -56,8 +232,8 @@
   input:-webkit-autofill:focus,
   textarea:-webkit-autofill,
   select:-webkit-autofill {
-    -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
-    box-shadow: 0 0 0 1000px #fff inset !important;
+    -webkit-box-shadow: 0 0 0 1000px theme('colors.surface') inset !important;
+    box-shadow: 0 0 0 1000px theme('colors.surface') inset !important;
     -webkit-text-fill-color: theme('colors.ink.900') !important;
     caret-color: theme('colors.ink.900');
     transition: background-color 9999s ease-in-out 0s;
@@ -73,7 +249,7 @@
   /* ‼️ brand-500 על לבן = 2.49:1 — מתחת לסף 3:1 של מחוון ממשק, כלומר
      טבעת המיקוד עצמה לא הייתה נראית למי שצריך אותה. brand-700 = 5.47:1. */
   :focus-visible {
-    @apply outline-none ring-2 ring-brand-700 ring-offset-2 ring-offset-white;
+    @apply outline-none ring-2 ring-brand-700 ring-offset-2 ring-offset-surface;
   }
 
   ::selection {
@@ -117,7 +293,7 @@
   }
 
   .card {
-    @apply rounded-card border border-ink-200/70 bg-white shadow-card;
+    @apply rounded-card border border-ink-200/70 bg-surface shadow-card;
   }
 
   .safe-top {
@@ -210,6 +386,27 @@
   font-weight: 600;
   font-size: 0.9375rem;
   cursor: pointer;
+}
+
+/* ‼️ מסך הפתיחה מוצג *לפני* React, אז הוא לא יכול לקרוא Tailwind/
+   ה-CSS vars שמוגדרים תחת .dark ברגיל — אבל הסקריפט המוטבע ב-
+   index.html כבר מדביק את מחלקת .dark על ה-<html> לפני שהדפדפן בכלל
+   מצייר פיקסל, אז בחירת הסלקטור html.dark כאן מספיקה. בלי זה: מבזק
+   לבן עז לפני שה-JS מספיק להחליף למסך כהה. */
+html.dark #boot-splash {
+  background: linear-gradient(160deg, #042f2e 0%, #0f172a 60%);
+}
+html.dark #boot-splash .boot-name {
+  color: #5eead4;
+}
+html.dark #boot-splash .boot-bar {
+  background: #115e59;
+}
+html.dark #boot-error .boot-error-title {
+  color: #f8fafc;
+}
+html.dark #boot-error .boot-error-body {
+  color: #94a3b8;
 }
 
 /* ═══════════════════════════════════════════════════════════
