@@ -71,12 +71,31 @@ npm run admin:shortcut
 מסונכרנת מעלה את שניהם לענן — כלומר הסוד שאמור לא לעזוב את המחשב,
 עוזב אותו בשקט. `npm run admin:shortcut` מזהה את המצב ומתריע.
 
-הפתרון: להוציא את הסודות מהסנכרון, ב-`admin/.env.local`:
+הפתרון: להוציא את הסודות מהסנכרון. **התוכן** של `admin/.env.local`
+(קובץ, לא פקודות):
 
-```
+```ini
 ADMIN_DATA_DIR=C:\RoomMateAdmin\data
 ADMIN_SERVICE_ACCOUNT=C:\RoomMateAdmin\service-account.json
 ```
+
+ב-PowerShell, ליצירה בפקודה אחת:
+
+```powershell
+New-Item -ItemType Directory -Force -Path C:\RoomMateAdmin\data | Out-Null
+@"
+ADMIN_DATA_DIR=C:\RoomMateAdmin\data
+ADMIN_SERVICE_ACCOUNT=C:\RoomMateAdmin\service-account.json
+"@ | Set-Content admin\.env.local -Encoding ASCII
+```
+
+> ‼️ `-Encoding ASCII` ולא `UTF8`: PowerShell 5.1 מוסיף BOM, שנדבק
+> לשם המפתח הראשון והופך אותו ללא-מזוהה. הטוען חותך BOM מאז, אבל
+> ASCII חוסך את השאלה (הערכים כאן הם נתיבים באנגלית ממילא).
+
+אחרי המעבר: מחקו את `admin\.data` הישן. ואם `service-account.json`
+כבר שהה בתיקייה המסונכרנת — הוא היה בענן. הנכון הוא **לבטל אותו
+ב-Firebase Console ולהנפיק מפתח חדש**, לא רק להזיז את הקובץ.
 
 (או פשוט להחזיק את הפרויקט מחוץ לתיקייה המסונכרנת.)
 

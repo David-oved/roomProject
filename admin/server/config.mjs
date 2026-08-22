@@ -20,10 +20,17 @@ const here = dirname(fileURLToPath(import.meta.url));
 export const ADMIN_ROOT = resolve(here, '..');
 export const REPO_ROOT = resolve(ADMIN_ROOT, '..');
 
-/** טוענים .env.local / .env מהשורש בלי תלות חיצונית (dotenv). */
+/**
+ * טוענים .env.local / .env מהשורש בלי תלות חיצונית (dotenv).
+ *
+ * ‼️ ה-BOM נחתך לפני הכול. PowerShell (`Set-Content -Encoding UTF8`)
+ *    כותב קובץ עם BOM, והוא נדבק לתחילת השורה הראשונה — כלומר המפתח
+ *    הופך ל-„\uFEFFADMIN_DATA_DIR” ופשוט לא מזוהה. התסמין הוא הגדרה
+ *    שנראית נכונה לחלוטין בעורך ומתעלמים ממנה בלי שום הודעת שגיאה.
+ */
 function loadEnvFile(file) {
   if (!existsSync(file)) return;
-  for (const rawLine of readFileSync(file, 'utf8').split('\n')) {
+  for (const rawLine of readFileSync(file, 'utf8').replace(/^\uFEFF/, '').split('\n')) {
     const line = rawLine.trim();
     if (!line || line.startsWith('#')) continue;
     const eq = line.indexOf('=');
