@@ -86,6 +86,22 @@ export const config = {
   projectId,
   /** שורש הנתונים הפרטיים של הקונסולה בתוך RTDB. */
   consoleRoot: 'adminConsole',
+  /**
+   * חיי הסשן בדפדפן. שני שעונים: מוחלט, ועוד אחד של חוסר פעילות —
+   * מחשב שנשאר פתוח בלי השגחה ננעל מעצמו.
+   */
+  session: {
+    ttlMs: Number(process.env.ADMIN_SESSION_HOURS ?? 12) * 60 * 60 * 1000,
+    idleMs: Number(process.env.ADMIN_IDLE_MINUTES ?? 30) * 60 * 1000,
+  },
+  /**
+   * כיבוי אוטומטי של השרת אחרי חוסר פעילות (דקות; 0 מבטל).
+   *
+   * ‼️ לא נוחות אלא אבטחה: השרת מחזיק את מפתח ה-service account בזיכרון.
+   *    כשפותחים אותו בקיצור-דרך במקום בטרמינל, אין חלון שסוגרים בסוף —
+   *    ובלי הכיבוי הזה הוא היה נשאר חי ימים.
+   */
+  autoStopMs: Number(process.env.ADMIN_AUTOSTOP_MINUTES ?? 60) * 60 * 1000,
   /** אמולטור, או service account + databaseURL. אחרת — מצב הדגמה. */
   get mode() {
     if (this.emulatorHost && this.projectId) return 'live';

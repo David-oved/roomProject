@@ -16,7 +16,7 @@ import { AlertCenter } from './components/Alerts/AlertCenter';
 import { ReportsPage } from './components/Reports/ReportsPage';
 import { SystemPage } from './components/SystemPage';
 import { Loading } from './components/ui/primitives';
-import { TokenGate } from './components/Shell/TokenGate';
+import { AccessGate } from './components/Shell/AccessGate';
 
 /**
  * שורש האפליקציה.
@@ -37,7 +37,7 @@ export default function App() {
 function Shell() {
   const { loading, error, toasts, dismissToast } = useStore();
 
-  if (error) return <TokenGate message={error} />;
+  if (error) return <AccessGate message={error} />;
 
   return (
     <div className="app">

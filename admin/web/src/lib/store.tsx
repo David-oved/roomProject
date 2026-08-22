@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { api, openStream, type StreamPayload } from './api';
+import { api, hasSession, openStream, startKeepAlive, type StreamPayload } from './api';
 import type { Bootstrap } from './types';
 
 /**
@@ -68,12 +68,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(refreshBoot, [refreshBoot]);
 
+  /* שעון חוסר-הפעילות בשרת מתאפס רק על פעולה אמיתית של המשתמש. */
+  useEffect(() => startKeepAlive(), []);
+
   /* ── זרם השינויים ── */
   useEffect(() => {
     let retry: number | undefined;
     let close = () => {};
 
     const connect = () => {
+      // ‼️ בלי סשן אין למי להתחבר. בלי התנאי הזה טאב שננעל היה מנסה
+      //    להתחבר מחדש כל שלוש שניות עד אין קץ — רעש מיותר, ובשרת גם
+      //    ספירת כישלונות שמובילה לנעילה של מי שסתם השאיר טאב פתוח.
+      if (!hasSession()) {
+        setConnected(false);
+        return;
+      }
       close = openStream(
         (payload) => {
           setConnected(true);
