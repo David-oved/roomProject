@@ -186,3 +186,28 @@ export const settlement = (over: Record<string, unknown> = {}) => ({
   date: T,
   ...over,
 });
+
+/** קנייה גדולה בתכנון — נזרעת ישירות, המעברים הם מה שנבדק. */
+export const trip = (over: Record<string, unknown> = {}) => ({
+  status: 'planning',
+  title: 'קנייה גדולה',
+  createdBy: MEMBER,
+  createdAt: T,
+  shopperId: null,
+  startedAt: null,
+  finishedAt: null,
+  receiptTotal: null,
+  purchaseId: null,
+  ...over,
+});
+
+/** שורה ברשימת קנייה גדולה. */
+export const tripLine = (over: Record<string, unknown> = {}) => ({
+  name: 'חלב',
+  category: 'kitchen',
+  qty: 1,
+  state: 'planned',
+  addedBy: MEMBER,
+  addedAt: T,
+  ...over,
+});

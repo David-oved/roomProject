@@ -25,6 +25,8 @@ import {
   purchase,
   seed,
   settlement,
+  trip,
+  tripLine,
 } from './helpers';
 
 /**
@@ -631,6 +633,311 @@ describe.skipIf(!hasEmulator)('database.rules.json', () => {
     it('הניצול: כתיבת claim מייל בלי חיבור אמיתי לא עוקפת — משתמש לא-מאומת נדחה תמיד', async () => {
       const anon = testEnv.unauthenticatedContext().database();
       await assertFails(get(ref(anon, 'users')));
+    });
+  });
+
+  /* ═════════ קנייה גדולה: activeTripId ═════════ */
+
+  describe('rooms/$code/activeTripId', () => {
+    it('חבר פעיל תופס סלוט ריק — מותר', async () => {
+      await assertSucceeds(set(ref(as(MEMBER), `rooms/${ROOM}/activeTripId`), 'trip1'));
+    });
+
+    it('זר לא-חבר לא תופס סלוט — נחסם', async () => {
+      await assertFails(set(ref(as(OUTSIDER), `rooms/${ROOM}/activeTripId`), 'trip1'));
+    });
+
+    it('לא ניתן לתפוס סלוט שכבר תפוס ע"י קנייה פעילה — נחסם', async () => {
+      await given(`rooms/${ROOM}/activeTripId`, 'trip1');
+      await given(`rooms/${ROOM}/trips/trip1`, trip({ status: 'shopping', shopperId: MEMBER }));
+      await assertFails(set(ref(as(MEMBER2), `rooms/${ROOM}/activeTripId`), 'trip2'));
+    });
+
+    it('תפיסה חוזרת מותרת כשהקנייה התפוסה כבר הושלמה (יתום) — מותר', async () => {
+      await given(`rooms/${ROOM}/activeTripId`, 'trip1');
+      await given(`rooms/${ROOM}/trips/trip1`, trip({ status: 'done' }));
+      await assertSucceeds(set(ref(as(MEMBER2), `rooms/${ROOM}/activeTripId`), 'trip2'));
+    });
+
+    it('תפיסה חוזרת מותרת כשהקנייה התפוסה בוטלה — מותר', async () => {
+      await given(`rooms/${ROOM}/activeTripId`, 'trip1');
+      await given(`rooms/${ROOM}/trips/trip1`, trip({ status: 'cancelled' }));
+      await assertSucceeds(set(ref(as(MEMBER2), `rooms/${ROOM}/activeTripId`), 'trip2'));
+    });
+
+    it('הניצול: שחרור סלוט כשהקנייה עדיין פעילה, לא ע"י מנהל — נחסם', async () => {
+      await given(`rooms/${ROOM}/activeTripId`, 'trip1');
+      await given(`rooms/${ROOM}/trips/trip1`, trip({ status: 'shopping', shopperId: MEMBER }));
+      await assertFails(remove(ref(as(MEMBER2), `rooms/${ROOM}/activeTripId`)));
+    });
+
+    it('מנהל יכול לשחרר סלוט תפוס בכל מצב — שסתום חירום', async () => {
+      await given(`rooms/${ROOM}/activeTripId`, 'trip1');
+      await given(`rooms/${ROOM}/trips/trip1`, trip({ status: 'shopping', shopperId: MEMBER }));
+      await assertSucceeds(remove(ref(as(ADMIN), `rooms/${ROOM}/activeTripId`)));
+    });
+
+    it('שחרור סלוט כשהקנייה כבר הושלמה — מותר לכל חבר פעיל', async () => {
+      await given(`rooms/${ROOM}/activeTripId`, 'trip1');
+      await given(`rooms/${ROOM}/trips/trip1`, trip({ status: 'done' }));
+      await assertSucceeds(remove(ref(as(MEMBER2), `rooms/${ROOM}/activeTripId`)));
+    });
+  });
+
+  /* ═════════ קנייה גדולה: trips/$tripId ═════════ */
+
+  describe('rooms/$code/trips/$tripId', () => {
+    it('יצירה אחרי תפיסת activeTripId — מותר', async () => {
+      await given(`rooms/${ROOM}/activeTripId`, 'trip1');
+      await assertSucceeds(
+        set(ref(as(MEMBER), `rooms/${ROOM}/trips/trip1`), trip({ createdBy: MEMBER }))
+      );
+    });
+
+    it('הניצול: יצירה בלי לתפוס activeTripId קודם — נחסם', async () => {
+      await assertFails(
+        set(ref(as(MEMBER), `rooms/${ROOM}/trips/trip1`), trip({ createdBy: MEMBER }))
+      );
+    });
+
+    it('הניצול: יצירה כש-activeTripId מצביע על קנייה אחרת — נחסם', async () => {
+      await given(`rooms/${ROOM}/activeTripId`, 'trip-other');
+      await assertFails(
+        set(ref(as(MEMBER), `rooms/${ROOM}/trips/trip1`), trip({ createdBy: MEMBER }))
+      );
+    });
+
+    it('הניצול: יצירת קנייה בשם חבר אחר (createdBy מזויף) — נחסם', async () => {
+      await given(`rooms/${ROOM}/activeTripId`, 'trip1');
+      await assertFails(
+        set(ref(as(MEMBER), `rooms/${ROOM}/trips/trip1`), trip({ createdBy: MEMBER2 }))
+      );
+    });
+
+    it('זר לא-חבר לא יוצר קנייה גדולה — נחסם', async () => {
+      await given(`rooms/${ROOM}/activeTripId`, 'trip1');
+      await assertFails(
+        set(ref(as(OUTSIDER), `rooms/${ROOM}/trips/trip1`), trip({ createdBy: OUTSIDER }))
+      );
+    });
+
+    describe('תחילת קנייה (planning → shopping)', () => {
+      beforeEach(async () => {
+        await given(`rooms/${ROOM}/activeTripId`, 'trip1');
+        await given(`rooms/${ROOM}/trips/trip1`, trip({ createdBy: MEMBER }));
+      });
+
+      it('כל חבר פעיל תופס shopperId לעצמו — מותר', async () => {
+        await assertSucceeds(
+          update(ref(as(MEMBER2), `rooms/${ROOM}/trips/trip1`), {
+            status: 'shopping',
+            shopperId: MEMBER2,
+            startedAt: T,
+          })
+        );
+      });
+
+      it('הניצול: תפיסת shopperId בשם חבר אחר — נחסם', async () => {
+        await assertFails(
+          update(ref(as(MEMBER2), `rooms/${ROOM}/trips/trip1`), {
+            status: 'shopping',
+            shopperId: MEMBER,
+            startedAt: T,
+          })
+        );
+      });
+
+      it('לא ניתן להתחיל קנייה שכבר לא בתכנון — נחסם', async () => {
+        await given(`rooms/${ROOM}/trips/trip1/status`, 'shopping');
+        await given(`rooms/${ROOM}/trips/trip1/shopperId`, MEMBER);
+        await assertFails(
+          update(ref(as(MEMBER2), `rooms/${ROOM}/trips/trip1`), {
+            status: 'shopping',
+            shopperId: MEMBER2,
+            startedAt: T,
+          })
+        );
+      });
+    });
+
+    describe('סיום קנייה (shopping → done)', () => {
+      beforeEach(async () => {
+        await given(`rooms/${ROOM}/activeTripId`, 'trip1');
+        await given(
+          `rooms/${ROOM}/trips/trip1`,
+          trip({ status: 'shopping', shopperId: MEMBER2, startedAt: T })
+        );
+      });
+
+      it('רק מי שיצא לסופר (shopperId) יכול לסיים — מותר', async () => {
+        await assertSucceeds(
+          update(ref(as(MEMBER2), `rooms/${ROOM}/trips/trip1`), {
+            status: 'done',
+            finishedAt: T,
+            receiptTotal: 5000,
+            purchaseId: 'p1',
+          })
+        );
+      });
+
+      it('הניצול: מישהו שאינו הקונה מנסה לסיים — נחסם, גם אם הוא מנהל', async () => {
+        await assertFails(
+          update(ref(as(ADMIN), `rooms/${ROOM}/trips/trip1`), {
+            status: 'done',
+            finishedAt: T,
+            receiptTotal: 5000,
+            purchaseId: 'p1',
+          })
+        );
+      });
+    });
+
+    describe('ביטול קנייה גדולה', () => {
+      it('היוצר יכול לבטל קנייה בתכנון — מותר', async () => {
+        await given(`rooms/${ROOM}/activeTripId`, 'trip1');
+        await given(`rooms/${ROOM}/trips/trip1`, trip({ createdBy: MEMBER }));
+        await assertSucceeds(
+          update(ref(as(MEMBER), `rooms/${ROOM}/trips/trip1`), {
+            status: 'cancelled',
+            cancelledBy: MEMBER,
+          })
+        );
+      });
+
+      it('מנהל יכול לבטל כל קנייה גדולה — מותר', async () => {
+        await given(`rooms/${ROOM}/activeTripId`, 'trip1');
+        await given(
+          `rooms/${ROOM}/trips/trip1`,
+          trip({ createdBy: MEMBER2, status: 'shopping', shopperId: MEMBER2 })
+        );
+        await assertSucceeds(
+          update(ref(as(ADMIN), `rooms/${ROOM}/trips/trip1`), {
+            status: 'cancelled',
+            cancelledBy: ADMIN,
+          })
+        );
+      });
+
+      it('הניצול: חבר שאינו היוצר/הקונה/המנהל מנסה לבטל — נחסם', async () => {
+        await given(`rooms/${ROOM}/activeTripId`, 'trip1');
+        await given(`rooms/${ROOM}/trips/trip1`, trip({ createdBy: MEMBER }));
+        await assertFails(
+          update(ref(as(MEMBER2), `rooms/${ROOM}/trips/trip1`), {
+            status: 'cancelled',
+            cancelledBy: MEMBER2,
+          })
+        );
+      });
+    });
+  });
+
+  /* ═════════ קנייה גדולה: trips/$tripId/lines ═════════ */
+
+  describe('rooms/$code/trips/$tripId/lines', () => {
+    beforeEach(async () => {
+      await given(`rooms/${ROOM}/trips/trip1`, trip({ status: 'planning', createdBy: MEMBER }));
+    });
+
+    it('חבר פעיל מוסיף שורה על שמו — מותר', async () => {
+      await assertSucceeds(
+        set(ref(as(MEMBER2), `rooms/${ROOM}/trips/trip1/lines/l1`), tripLine({ addedBy: MEMBER2 }))
+      );
+    });
+
+    it('הניצול: הוספת שורה בשם חבר אחר — נחסם', async () => {
+      await assertFails(
+        set(ref(as(MEMBER2), `rooms/${ROOM}/trips/trip1/lines/l1`), tripLine({ addedBy: MEMBER }))
+      );
+    });
+
+    it('כל חבר פעיל יכול לסמן state (למשל בזמן קנייה בפועל) — מותר', async () => {
+      await given(`rooms/${ROOM}/trips/trip1/lines/l1`, tripLine({ addedBy: MEMBER }));
+      await assertSucceeds(
+        set(ref(as(MEMBER2), `rooms/${ROOM}/trips/trip1/lines/l1/state`), 'bought')
+      );
+    });
+
+    it('הניצול: שינוי שם/קטגוריה של שורה קיימת ע"י מי שלא הוסיף אותה — נחסם', async () => {
+      await given(`rooms/${ROOM}/trips/trip1/lines/l1`, tripLine({ addedBy: MEMBER }));
+      await assertFails(
+        set(ref(as(MEMBER2), `rooms/${ROOM}/trips/trip1/lines/l1/name`), 'שם אחר')
+      );
+    });
+
+    it('מי שהוסיף את השורה יכול למחוק אותה — מותר', async () => {
+      await given(`rooms/${ROOM}/trips/trip1/lines/l1`, tripLine({ addedBy: MEMBER2 }));
+      await assertSucceeds(remove(ref(as(MEMBER2), `rooms/${ROOM}/trips/trip1/lines/l1`)));
+    });
+
+    it('הניצול: חבר אחר (לא המוסיף, לא מנהל) מוחק שורה — נחסם', async () => {
+      await given(`rooms/${ROOM}/trips/trip1/lines/l1`, tripLine({ addedBy: MEMBER2 }));
+      await assertFails(remove(ref(as(MEMBER), `rooms/${ROOM}/trips/trip1/lines/l1`)));
+    });
+
+    it('מנהל יכול למחוק כל שורה — מותר', async () => {
+      await given(`rooms/${ROOM}/trips/trip1/lines/l1`, tripLine({ addedBy: MEMBER2 }));
+      await assertSucceeds(remove(ref(as(ADMIN), `rooms/${ROOM}/trips/trip1/lines/l1`)));
+    });
+
+    it('הניצול: הוספת שורה אחרי שהקנייה כבר נסגרה (done) — נחסם', async () => {
+      await given(`rooms/${ROOM}/trips/trip1/status`, 'done');
+      await assertFails(
+        set(ref(as(MEMBER2), `rooms/${ROOM}/trips/trip1/lines/l2`), tripLine({ addedBy: MEMBER2 }))
+      );
+    });
+
+    it('הניצול: סימון state אחרי שהקנייה בוטלה — נחסם', async () => {
+      await given(`rooms/${ROOM}/trips/trip1/lines/l1`, tripLine({ addedBy: MEMBER }));
+      await given(`rooms/${ROOM}/trips/trip1/status`, 'cancelled');
+      await assertFails(
+        set(ref(as(MEMBER), `rooms/${ROOM}/trips/trip1/lines/l1/state`), 'bought')
+      );
+    });
+  });
+
+  /* ═════════ קנייה גדולה: אישור תשלום (settlements/$id/approvals) ═════════ */
+
+  describe('settlements/$id/approvals — רוב/אישור מנהל על חוב מקנייה גדולה', () => {
+    it('חבר פעיל מאשר את עצמו על תשלום מתויג tripId — מותר', async () => {
+      await given(`rooms/${ROOM}/settlements/s1`, settlement({ tripId: 'trip1' }));
+      await assertSucceeds(
+        set(ref(as(MEMBER2), `rooms/${ROOM}/settlements/s1/approvals/${MEMBER2}`), true)
+      );
+    });
+
+    it('הניצול: אישור על תשלום שאינו מתויג tripId — נחסם', async () => {
+      await given(`rooms/${ROOM}/settlements/s1`, settlement());
+      await assertFails(
+        set(ref(as(MEMBER2), `rooms/${ROOM}/settlements/s1/approvals/${MEMBER2}`), true)
+      );
+    });
+
+    it('הניצול: הצבעה בשם חבר אחר — נחסם', async () => {
+      await given(`rooms/${ROOM}/settlements/s1`, settlement({ tripId: 'trip1' }));
+      await assertFails(
+        set(ref(as(MEMBER2), `rooms/${ROOM}/settlements/s1/approvals/${MEMBER}`), true)
+      );
+    });
+
+    it('הניצול: ערך שאינו true — נחסם', async () => {
+      await given(`rooms/${ROOM}/settlements/s1`, settlement({ tripId: 'trip1' }));
+      await assertFails(
+        set(ref(as(MEMBER2), `rooms/${ROOM}/settlements/s1/approvals/${MEMBER2}`), false)
+      );
+    });
+
+    it('זר לא-חבר לא מאשר — נחסם', async () => {
+      await given(`rooms/${ROOM}/settlements/s1`, settlement({ tripId: 'trip1' }));
+      await assertFails(
+        set(ref(as(OUTSIDER), `rooms/${ROOM}/settlements/s1/approvals/${OUTSIDER}`), true)
+      );
+    });
+
+    it('בדיקת רגרסיה: הכלל הראשי של settlements לא נפגע — אישור confirmedBy רגיל עדיין עובד', async () => {
+      await given(`rooms/${ROOM}/settlements/s1`, settlement());
+      await assertSucceeds(
+        set(ref(as(MEMBER2), `rooms/${ROOM}/settlements/s1/confirmedBy`), MEMBER2)
+      );
     });
   });
 });

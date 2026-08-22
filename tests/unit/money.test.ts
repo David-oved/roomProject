@@ -3,6 +3,7 @@ import {
   computeBalances,
   computeContributions,
   defaultPercentages,
+  isSettlementSettled,
   simplifyDebts,
   splitEqual,
   splitWithDebtOffset,
@@ -200,6 +201,151 @@ describe('computeBalances', () => {
 
     const balances = computeBalances(purchases, settlements, ids);
     expect(Object.values(balances).reduce((x, y) => x + y, 0)).toBe(0);
+  });
+});
+
+/* ═══════════════════ אישור תשלום מקנייה גדולה ═══════════════════ */
+
+describe('isSettlementSettled', () => {
+  const ctx = { activeMemberIds: ['a', 'b', 'c', 'd'], adminId: 'a' };
+
+  it('תשלום רגיל (בלי tripId) מתנהג בדיוק כמו confirmedBy', () => {
+    const s: Settlement = { from: 'b', to: 'a', amount: 1000, date: 1, confirmedBy: null };
+    expect(isSettlementSettled(s)).toBe(false);
+    expect(isSettlementSettled({ ...s, confirmedBy: 'a' })).toBe(true);
+  });
+
+  it('תשלום רגיל מתעלם מ-ctx — לא רלוונטי לו', () => {
+    const s: Settlement = { from: 'b', to: 'a', amount: 1000, date: 1, confirmedBy: null };
+    expect(isSettlementSettled(s, ctx)).toBe(false);
+  });
+
+  it('תשלום מקנייה גדולה בלי ctx לא נסגר גם אם confirmedBy קיים', () => {
+    const s: Settlement = {
+      from: 'b',
+      to: 'a',
+      amount: 1000,
+      date: 1,
+      confirmedBy: 'a',
+      tripId: 't1',
+    };
+    expect(isSettlementSettled(s)).toBe(false);
+  });
+
+  it('confirmedBy יחיד לא סוגר תשלום מקנייה גדולה', () => {
+    const s: Settlement = {
+      from: 'b',
+      to: 'a',
+      amount: 1000,
+      date: 1,
+      confirmedBy: 'a',
+      tripId: 't1',
+    };
+    expect(isSettlementSettled(s, ctx)).toBe(false);
+  });
+
+  it('אישור מנהל לבדו סוגר תשלום מקנייה גדולה', () => {
+    const s: Settlement = {
+      from: 'b',
+      to: 'c',
+      amount: 1000,
+      date: 1,
+      confirmedBy: null,
+      tripId: 't1',
+      approvals: { a: true },
+    };
+    expect(isSettlementSettled(s, ctx)).toBe(true);
+  });
+
+  it('רוב מוחלט (>50%) מהחברים הפעילים סוגר, בלי מנהל', () => {
+    // 4 חברים פעילים — 3 אישורים הם רוב, 2 אינם
+    const twoApprovals: Settlement = {
+      from: 'b',
+      to: 'c',
+      amount: 1000,
+      date: 1,
+      confirmedBy: null,
+      tripId: 't1',
+      approvals: { b: true, c: true },
+    };
+    expect(isSettlementSettled(twoApprovals, ctx)).toBe(false);
+
+    const threeApprovals: Settlement = {
+      ...twoApprovals,
+      approvals: { b: true, c: true, d: true },
+    };
+    expect(isSettlementSettled(threeApprovals, ctx)).toBe(true);
+  });
+
+  it('אישורים ממי שאינו חבר פעיל לא נספרים לרוב', () => {
+    const s: Settlement = {
+      from: 'b',
+      to: 'c',
+      amount: 1000,
+      date: 1,
+      confirmedBy: null,
+      tripId: 't1',
+      approvals: { b: true, c: true, 'uid-not-a-member': true },
+    };
+    expect(isSettlementSettled(s, ctx)).toBe(false);
+  });
+});
+
+describe('computeBalances עם approvalCtx', () => {
+  const ctx = { activeMemberIds: ['a', 'b', 'c', 'd'], adminId: 'a' };
+
+  it('תשלום מקנייה גדולה בלי רוב/אישור מנהל לא סוגר את החוב', () => {
+    const trip = purchase({
+      boughtBy: 'a',
+      amount: 4000,
+      splitBetween: { a: true, b: true, c: true, d: true },
+      shares: { a: 1000, b: 1000, c: 1000, d: 1000 },
+      tripId: 't1',
+    });
+    const s: Settlement = {
+      from: 'b',
+      to: 'a',
+      amount: 1000,
+      date: 2,
+      confirmedBy: 'a',
+      tripId: 't1',
+    };
+    const balances = computeBalances([trip], [s], ['a', 'b', 'c', 'd'], ctx);
+    // confirmedBy יחיד לא מספיק — b עדיין חייב
+    expect(balances.b).toBe(-1000);
+  });
+
+  it('רוב מוחלט סוגר את החוב גם בלי confirmedBy', () => {
+    const trip = purchase({
+      boughtBy: 'a',
+      amount: 4000,
+      splitBetween: { a: true, b: true, c: true, d: true },
+      shares: { a: 1000, b: 1000, c: 1000, d: 1000 },
+      tripId: 't1',
+    });
+    const s: Settlement = {
+      from: 'b',
+      to: 'a',
+      amount: 1000,
+      date: 2,
+      confirmedBy: null,
+      tripId: 't1',
+      approvals: { b: true, c: true, d: true },
+    };
+    const balances = computeBalances([trip], [s], ['a', 'b', 'c', 'd'], ctx);
+    expect(balances.b).toBe(0);
+  });
+
+  it('ללא approvalCtx, תשלום מקנייה גדולה לעולם לא נסגר (backward-compat)', () => {
+    const trip = purchase({
+      boughtBy: 'a',
+      amount: 2000,
+      splitBetween: { a: true, b: true },
+      shares: { a: 1000, b: 1000 },
+      tripId: 't1',
+    });
+    const s: Settlement = { from: 'b', to: 'a', amount: 1000, date: 2, confirmedBy: 'a', tripId: 't1' };
+    expect(computeBalances([trip], [s], ['a', 'b']).b).toBe(-1000);
   });
 });
 

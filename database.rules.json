@@ -577,6 +577,8 @@
             "status":     { ".validate": "newData.val().matches(/^(pending|approved|rejected|settled)$/)" },
             "approvedBy": { ".validate": "newData.val() === auth.uid || root.child('rooms/' + $code + '/metadata/adminId').val() === newData.val()" },
             "note":       { ".validate": "newData.isString() && newData.val().length <= 300" },
+            // הקנייה נוצרה מסיום קנייה גדולה — ראו trips למטה.
+            "tripId":     { ".validate": "newData.isString() && newData.val().length <= 40" },
             "$other":     { ".validate": false }
           }
         },
@@ -615,7 +617,101 @@
             // (src/services/purchaseService.ts) ולכן שום זרימה לגיטימית
             // לא נשברת; האישור מגיע תמיד ככתיבה שנייה של המקבל.
             "confirmedBy": { ".validate": "newData.val() === auth.uid && newData.val() === newData.parent().child('to').val()" },
+
+            // ---------- תשלום שמקורו בקנייה גדולה ----------
+            // ‼️ תוקן בכוונה כתוספת בלבד: התנאים כאן *מוסיפים* הרשאת כתיבה
+            // לנתיב הצר approvals/$uid, ולא נוגעים ב-.write הראשי למעלה —
+            // ב-RTDB Rules כלל מקונן יותר מרחיב הרשאה, לעולם לא מצמצם אותה.
+            // כך settlements/$settlementId נשאר בדיוק כפי שהיה לכל התשלומים
+            // הרגילים, וההרחבה חלה אך ורק על תשלום שכבר מתויג tripId.
+            //
+            // חוב שהתחלק בין כל החדר (בסיום קנייה גדולה) לא נסגר באישור
+            // נושה יחיד — כל חבר פעיל יכול לסמן שהוא מאשר, ו-isSettlementSettled
+            // (lib/money.ts) קובע שהחוב סגור כשהמנהל אישר או שרוב מוחלט
+            // מהחברים הפעילים אישרו. כל אחד מסמן רק את עצמו, ורק על תשלום
+            // שכבר מתויג tripId — אין דרך "לפתוח" את המנגנון הזה על תשלום רגיל.
+            "tripId": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "approvals": {
+              "$uid": {
+                ".write": "auth != null && auth.uid === $uid && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && root.child('rooms/' + $code + '/settlements/' + $settlementId + '/tripId').exists()",
+                ".validate": "newData.isBoolean() && newData.val() === true"
+              }
+            },
             "$other":      { ".validate": false }
+          }
+        },
+
+        // ---------- מזהה הקנייה הגדולה הפעילה ----------
+        // נתפס אטומית ב-runTransaction, בדיוק כמו roomNames לייחודיות שם
+        // חדר (ראו roomService.createRoom) — רק שכאן ההיקף הוא חדר יחיד.
+        //
+        // תפיסה (ריק → tripId): מותרת כל עוד אין מי שתפוס, או שהקנייה
+        // התפוסה כבר done/cancelled/לא קיימת — אותה "התאוששות מיתום"
+        // שנועדה למקרה שבו יצירת ה-trip נכשלה אחרי התפיסה, או שהשחרור
+        // בסיום נכשל (ראו tripService.createTrip/finalizeTrip).
+        // שחרור (tripId → ריק): מותר כשהקנייה שהוא מצביע עליה כבר
+        // done/cancelled/לא קיימת, או ע"י מנהל החדר כשסתימה — שסתום חירום.
+        "activeTripId": {
+          ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((newData.exists() && newData.isString() && newData.val().length > 0 && (!data.exists() || root.child('rooms/' + $code + '/trips/' + data.val() + '/status').val() === 'done' || root.child('rooms/' + $code + '/trips/' + data.val() + '/status').val() === 'cancelled' || !root.child('rooms/' + $code + '/trips/' + data.val()).exists())) || (!newData.exists() && data.exists() && (root.child('rooms/' + $code + '/trips/' + data.val() + '/status').val() === 'done' || root.child('rooms/' + $code + '/trips/' + data.val() + '/status').val() === 'cancelled' || !root.child('rooms/' + $code + '/trips/' + data.val()).exists() || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid)))",
+          ".validate": "newData.isString() && newData.val().length <= 40"
+        },
+
+        // ---------- קניות גדולות ----------
+        // סבב קניות מרוכז: רשימה משותפת → יציאה לסופר → סגירה בקנייה
+        // יחידה שמתחלקת שווה בשווה. ראו Trip/TripLine ב-types/models.ts.
+        //
+        // ‼️ הכל דורש חיבור לאינטרנט (assertOnline בכל פונקציית שירות) —
+        //    אין כאן שום שקול אופליין, בכוונה מפורשת.
+        "trips": {
+          ".indexOn": ["status"],
+          "$tripId": {
+            // יצירה : חבר פעיל, ורק אחרי שתפס את activeTripId באותו tripId
+            //         בדיוק (ראו שם — root כאן כבר "אחרי" התפיסה, כי היא
+            //         כתיבה קודמת ונפרדת).
+            // תחילת קנייה (planning→shopping) : כל חבר פעיל תופס shopperId
+            //         לעצמו — "אני יוצא/ת לסופר". שאר השדות קפואים.
+            // סיום (shopping→done) : רק מי שכבר shopperId, ורק ממנו.
+            //         ‼️ זו האכיפה שקנייה גדולה מסתיימת אך ורק ע"י מי שהלך
+            //         בפועל לסופר — לפי דרישת המוצר, בלי חריג למנהל.
+            // ביטול (→cancelled) : היוצר, הקונה שנקבע (אם יש), או המנהל.
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((!data.exists() && newData.exists() && newData.child('status').val() === 'planning' && newData.child('createdBy').val() === auth.uid && !newData.child('shopperId').exists() && root.child('rooms/' + $code + '/activeTripId').val() === $tripId) || (data.exists() && newData.exists() && data.child('status').val() === 'planning' && newData.child('status').val() === 'shopping' && newData.child('shopperId').val() === auth.uid && newData.child('title').val() === data.child('title').val() && newData.child('createdBy').val() === data.child('createdBy').val() && newData.child('createdAt').val() === data.child('createdAt').val() && !newData.child('receiptTotal').exists() && !newData.child('finishedAt').exists() && !newData.child('purchaseId').exists()) ||(data.exists() && newData.exists() && data.child('status').val() === 'shopping' && newData.child('status').val() === 'done' && data.child('shopperId').val() === auth.uid && newData.child('shopperId').val() === data.child('shopperId').val() && newData.child('title').val() === data.child('title').val() && newData.child('createdBy').val() === data.child('createdBy').val() && newData.child('createdAt').val() === data.child('createdAt').val() && newData.child('startedAt').val() === data.child('startedAt').val()) || (data.exists() && newData.exists() && (data.child('status').val() === 'planning' || data.child('status').val() === 'shopping') && newData.child('status').val() === 'cancelled' && (data.child('createdBy').val() === auth.uid || data.child('shopperId').val() === auth.uid || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid) && newData.child('cancelledBy').val() === auth.uid))",
+
+            ".validate": "newData.hasChildren(['status', 'title', 'createdBy', 'createdAt'])",
+            "status":       { ".validate": "newData.val().matches(/^(planning|shopping|done|cancelled)$/)" },
+            "title":        { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 60" },
+            "createdBy":    { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val()).exists()" },
+            "createdAt":    { ".validate": "newData.isNumber() && (!data.exists() || data.val() === newData.val())" },
+            "shopperId":    { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val() + '/status').val() === 'active'" },
+            "startedAt":    { ".validate": "newData.isNumber()" },
+            "finishedAt":   { ".validate": "newData.isNumber()" },
+            "receiptTotal": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 10000000 && newData.val() % 1 === 0" },
+            "purchaseId":   { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "cancelledBy":  { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val()).exists()" },
+
+            // ---------- שורות ברשימת הקנייה הגדולה ----------
+            // הוספה/עריכה/מחיקה חסומות ברגע שהקנייה נסגרה (done/cancelled) —
+            // finalizeTrip כותב לפריטים המקושרים דרך items, לא דרך כאן.
+            "lines": {
+              "$lineId": {
+                // הוספה : כל חבר פעיל, addedBy = הוא עצמו, state מתחיל ב-planned.
+                // עדכון : כל חבר פעיל — אבל name/category/addedBy/addedAt קפואים.
+                //         זה מה שמאפשר גם לסמן state (bought/not_found) בזמן
+                //         הקנייה בפועל וגם לעדכן qty/productId/itemId בתכנון.
+                // מחיקה : מי שהוסיף, או המנהל.
+                ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && root.child('rooms/' + $code + '/trips/' + $tripId + '/status').val() !== 'done' && root.child('rooms/' + $code + '/trips/' + $tripId + '/status').val() !== 'cancelled' && ((!data.exists() && newData.exists() && newData.child('addedBy').val() === auth.uid && newData.child('state').val() === 'planned') || (data.exists() && newData.exists() && newData.child('name').val() === data.child('name').val() && newData.child('category').val() === data.child('category').val() && newData.child('addedBy').val() === data.child('addedBy').val() && newData.child('addedAt').val() === data.child('addedAt').val()) || (data.exists() && !newData.exists() && (data.child('addedBy').val() === auth.uid || root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid)))",
+                ".validate": "newData.hasChildren(['name', 'category', 'qty', 'state', 'addedBy', 'addedAt'])",
+                "name":      { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 60" },
+                "category":  { ".validate": "newData.val().matches(/^(kitchen|bathroom|cleaning|other)$/)" },
+                "qty":       { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 999" },
+                "productId": { ".validate": "newData.isString() && newData.val().length <= 40" },
+                "itemId":    { ".validate": "newData.isString() && newData.val().length <= 40" },
+                "state":     { ".validate": "newData.val().matches(/^(planned|bought|not_found)$/)" },
+                "addedBy":   { ".validate": "root.child('rooms/' + $code + '/members/' + newData.val()).exists()" },
+                "addedAt":   { ".validate": "newData.isNumber()" },
+                "$other":    { ".validate": false }
+              }
+            },
+            "$other": { ".validate": false }
           }
         },
 
