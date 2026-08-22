@@ -146,8 +146,18 @@ GCLOUD_PROJECT=<project-id> npm run admin    # טרמינל 3 — הקונסול
    **Generate new private key**.
 2. שמרו את הקובץ בשם `admin/service-account.json`
    (או הגדירו `ADMIN_SERVICE_ACCOUNT=/path/to/key.json`).
-3. ודאו ש-`VITE_FB_DATABASE_URL` מוגדר ב-`.env.local` שבשורש.
-4. `npm run admin`
+3. ודאו ש-`VITE_FB_DATABASE_URL` מוגדר ב-`.env.local` שבשורש
+   (או `ADMIN_DATABASE_URL` ב-`admin/.env.local`).
+4. `npm run admin:restart`
+
+‼️ **דווקא `restart` ולא לחיצה על הקיצור.** הגדרות נטענות רק בעליית
+השרת, והמשגר מתחבר לשרת שכבר רץ — כלומר אחרי הגדרה נכונה לחלוטין
+המסך היה ממשיך להראות נתוני הדגמה, בלי שום רמז למה. המשגר מזהה את
+הפער ומתריע, אבל את השרת צריך להרים מחדש.
+
+איך יודעים שהצליח: המשגר מדפיס `מצב: חי · <כתובת ה-RTDB>`, ובממשק
+נעלם התג „מצב הדגמה” מהסרגל העליון. מסך „מערכת” מציג את מקור הנתונים
+המלא.
 
 > ‼️ `service-account.json` הוא **סוד אמיתי** — בניגוד ל-apiKey של הלקוח,
 > הוא עוקף את כל ה-Security Rules. הוא נמצא ב-`.gitignore`, ואסור לו
@@ -172,6 +182,8 @@ GCLOUD_PROJECT=<project-id> npm run admin    # טרמינל 3 — הקונסול
 |---|---|
 | `npm run admin:shortcut` | מתקין את הקיצור על שולחן העבודה (פעם אחת) |
 | `npm run admin:open` | מה שהקיצור מריץ — שרת מנותק + דפדפן מחובר |
+| `npm run admin:restart` | סוגר את השרת ומרים אותו מחדש — **אחרי כל שינוי הגדרות** |
+| `npm run admin:stop` | סוגר את השרת |
 | `npm run admin` | פיתוח: שרת + ממשק (Vite) + פתיחת דפדפן |
 | `npm run admin:server` | שרת ה-API בלבד |
 | `npm run admin:build` | בדיקת טיפוסים ובניית הממשק ל-`admin/dist` |

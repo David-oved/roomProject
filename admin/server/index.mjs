@@ -274,7 +274,41 @@ const server = createServer(async (req, res) => {
       }
       sessions.noteSuccess('token');
       const { ticket, expiresInMs } = sessions.mintTicket();
-      sendJson(res, 200, { ticket, expiresInMs, webPort: config.webPort, port: config.port });
+      // ‼️ מחזירים גם את המצב שבו השרת *הזה* עלה. המשגר מדבר עם שרת
+      //    שאולי רץ מאתמול, ובלי זה הוא היה מדפיס את המצב לפי הסביבה
+      //    שלו — כלומר „מצב חי” בזמן שהקונסולה מציגה נתוני הדגמה.
+      sendJson(res, 200, {
+        ticket,
+        expiresInMs,
+        webPort: config.webPort,
+        port: config.port,
+        mode: config.mode,
+        source: config.source,
+      });
+      return;
+    }
+
+    /**
+     * כיבוי יזום. משמש את `--restart`: שינוי הגדרות אינו משפיע על שרת
+     * שכבר רץ, וצריך דרך לסגור אותו שעובדת גם ב-Windows בלי taskkill.
+     *
+     * ‼️ מחוץ לדפדפן בלבד, ועם הטוקן הראשי — כמו הנפקת כרטיס.
+     */
+    if (req.method === 'POST' && url.pathname === '/api/session/shutdown') {
+      let body = {};
+      try {
+        body = await readBody(req);
+      } catch {
+        /* גוף ריק — הטוקן יכול להגיע בכותרת */
+      }
+      const token = extractToken(req, url) || body.token || '';
+      if (isBrowserRequest(req) || !safeEqual(token, TOKEN)) {
+        sessions.noteFailure('token');
+        sendJson(res, 403, { error: 'בקשת כיבוי נדחתה' });
+        return;
+      }
+      sendJson(res, 200, { ok: true });
+      setTimeout(shutdown, 100);
       return;
     }
 

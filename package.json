@@ -10,6 +10,8 @@
     "preview": "vite preview",
     "admin": "node admin/start.mjs",
     "admin:open": "node admin/launch.mjs",
+    "admin:restart": "node admin/launch.mjs --restart",
+    "admin:stop": "node admin/launch.mjs --stop",
     "admin:shortcut": "node scripts/install-admin-shortcut.mjs",
     "admin:server": "node admin/server/index.mjs",
     "admin:build": "tsc -p admin/tsconfig.json --noEmit && vite build --config admin/vite.config.ts",

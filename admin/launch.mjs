@@ -31,7 +31,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, '..');
 const API = `http://127.0.0.1:${config.port}`;
 
-/** מנפיק כרטיס. מחזיר null כשהשרת אינו עונה — וזו גם בדיקת החיים. */
+/**
+ * מנפיק כרטיס. מחזיר null כשהשרת אינו עונה — וזו גם בדיקת החיים.
+ * התשובה כוללת את המצב שבו השרת *שרץ עכשיו* עלה (חי/הדגמה).
+ */
 async function requestTicket(timeoutMs = 2500) {
   try {
     const res = await fetch(`${API}/api/session/ticket`, {
@@ -42,7 +45,7 @@ async function requestTicket(timeoutMs = 2500) {
     });
     if (!res.ok) return null;
     const body = await res.json();
-    return body.ticket ?? null;
+    return body.ticket ? body : null;
   } catch {
     return null;
   }
@@ -51,11 +54,31 @@ async function requestTicket(timeoutMs = 2500) {
 async function waitForTicket(timeoutMs = 25_000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    const ticket = await requestTicket(1500);
-    if (ticket) return ticket;
+    const issued = await requestTicket(1500);
+    if (issued) return issued;
     await new Promise((r) => setTimeout(r, 250));
   }
   return null;
+}
+
+/** מבקש מהשרת לכבות את עצמו ומחכה שייסגר. */
+async function stopServer(timeoutMs = 10_000) {
+  try {
+    await fetch(`${API}/api/session/shutdown`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-admin-token': getToken() },
+      body: '{}',
+      signal: AbortSignal.timeout(2500),
+    });
+  } catch {
+    /* לא ענה — אולי כבר מת */
+  }
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!(await requestTicket(1000))) return true;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return false;
 }
 
 /**
@@ -83,10 +106,25 @@ function openBrowser(url) {
 
 console.info('🛡️  קונסולת המנהל');
 
-/* ── 1. שרת שכבר רץ ── */
-let ticket = await requestTicket();
+const wantsStop = process.argv.includes('--stop');
+const wantsRestart = process.argv.includes('--restart');
 
-if (!ticket) {
+if (wantsStop || wantsRestart) {
+  console.info('   סוגר את השרת הקיים…');
+  if (!(await stopServer())) {
+    console.error('\n❌ השרת לא נסגר. סגרו את תהליך node ידנית ונסו שוב.');
+    process.exit(1);
+  }
+  if (wantsStop) {
+    console.info('✅ הקונסולה נסגרה.');
+    process.exit(0);
+  }
+}
+
+/* ── 1. שרת שכבר רץ ── */
+let issued = await requestTicket();
+
+if (!issued) {
   /* ── 2. ממשק בנוי ── */
   if (!existsSync(join(here, 'dist', 'index.html'))) {
     // ‼️ בדיקה מפורשת לפני הבנייה: בלי node_modules הבנייה נכשלת
@@ -123,16 +161,34 @@ if (!ticket) {
   });
   server.unref();
 
-  ticket = await waitForTicket();
-  if (!ticket) {
+  issued = await waitForTicket();
+  if (!issued) {
     console.error(`\n❌ השרת לא עלה בזמן. הלוג: ${logPath}`);
     process.exit(1);
   }
 }
 
 /* ── 4. כניסה ── */
-const url = `${API}/enter?ticket=${encodeURIComponent(ticket)}`;
-console.info(`   מצב: ${config.mode === 'live' ? 'חי (Firebase)' : 'הדגמה (נתונים מקומיים)'}`);
+const url = `${API}/enter?ticket=${encodeURIComponent(issued.ticket)}`;
+console.info(`   מצב: ${issued.mode === 'live' ? 'חי' : 'הדגמה (נתונים מקומיים)'} · ${issued.source}`);
+
+/**
+ * ‼️ האזהרה הזאת שווה את כל הפונקציה: שינוי `.env.local` אינו משפיע על
+ *    שרת שכבר רץ, והמשגר פשוט מתחבר אליו. בלי ההודעה כאן המסך היה
+ *    ממשיך להראות נתוני הדגמה אחרי הגדרה נכונה לחלוטין — בלי שום רמז
+ *    למה, ובלי שום דבר לתקן.
+ */
+if (issued.mode !== config.mode) {
+  console.info(
+    `\n   ⚠️  השרת שרץ עלה במצב „${issued.mode === 'live' ? 'חי' : 'הדגמה'}”, אבל ההגדרות הנוכחיות\n` +
+      `      אומרות „${config.mode === 'live' ? 'חי' : 'הדגמה'}”. הגדרות נטענות רק בעליית השרת.\n` +
+      `      להחלה: npm run admin:restart`
+  );
+  if (config.mode === 'demo' && config.missing.length) {
+    console.info(`      חסר להרצה חיה: ${config.missing.join(', ')}`);
+  }
+}
+
 console.info('✅ פותח את הדפדפן…');
 openBrowser(url);
 
