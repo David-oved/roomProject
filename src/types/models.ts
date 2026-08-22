@@ -79,6 +79,8 @@ export interface Purchase {
   status: PurchaseStatus;
   approvedBy: string | null;
   note?: string;
+  /** הקנייה נוצרה מסיום קנייה גדולה — ראו Trip */
+  tripId?: string;
 }
 
 export interface Settlement {
@@ -87,6 +89,54 @@ export interface Settlement {
   amount: Agorot;
   date: number;
   confirmedBy: string | null;
+  /**
+   * החוב הזה מקורו בקנייה גדולה שהתחלקה בין כל החדר. תשלום כזה לא
+   * נסגר באישור נושה יחיד — ראו approvals ו-isSettlementSettled ב-money.ts.
+   */
+  tripId?: string;
+  /** הצבעות אישור לתשלום שמקורו בקנייה גדולה: מנהל או רוב חברים פעילים */
+  approvals?: Record<string, true>;
+}
+
+export type TripStatus = 'planning' | 'shopping' | 'done' | 'cancelled';
+export type TripLineState = 'planned' | 'bought' | 'not_found';
+
+/**
+ * שורה ברשימת הקנייה הגדולה. itemId מקשר למוצר חסר קיים בחדר
+ * (ראו Item) — לא כל שורה מקושרת: אפשר להוסיף מוצר לרשימה בלי
+ * שקדם לו דיווח "חסר".
+ */
+export interface TripLine {
+  name: string;
+  category: Category;
+  qty: number;
+  productId?: string | null;
+  itemId?: string | null;
+  state: TripLineState;
+  addedBy: string;
+  addedAt: number;
+}
+
+/**
+ * קנייה גדולה — סבב קניות מרוכז אחד, מרשימה משותפת ועד סגירה בקנייה
+ * יחידה שמתחלקת שווה בשווה בין החברים הפעילים.
+ *
+ * ‼️ רק קנייה אחת פעילה בכל רגע בחדר — נאכף ע"י rooms/{code}/activeTripId,
+ * שנתפס אטומית באותו דפוס בדיוק כמו ייחודיות שם חדר (ראו roomService).
+ */
+export interface Trip {
+  status: TripStatus;
+  title: string;
+  createdBy: string;
+  createdAt: number;
+  /** מי יצא בפועל לסופר. רק הוא יכול לסיים את הקנייה. */
+  shopperId: string | null;
+  startedAt: number | null;
+  finishedAt: number | null;
+  receiptTotal: Agorot | null;
+  /** הקנייה שנוצרה עם הסיום */
+  purchaseId: string | null;
+  cancelledBy?: string;
 }
 
 /**
@@ -297,3 +347,10 @@ export const PURCHASE_STATUS_LABELS: Record<PurchaseStatus, string> = {
 };
 
 export const ALL_CATEGORIES: Category[] = ['kitchen', 'bathroom', 'cleaning', 'other'];
+
+export const TRIP_STATUS_LABELS: Record<TripStatus, string> = {
+  planning: 'בבנייה',
+  shopping: 'בסופר',
+  done: 'הושלמה',
+  cancelled: 'בוטלה',
+};

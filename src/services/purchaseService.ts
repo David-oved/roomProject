@@ -269,7 +269,8 @@ export async function createSettlement(
   from: string,
   fromName: string,
   to: string,
-  amount: Agorot
+  amount: Agorot,
+  tripId?: string
 ): Promise<void> {
   assertOnline('לרשום תשלום');
   assertRoomWritable(code, 'לרשום תשלום');
@@ -285,12 +286,15 @@ export async function createSettlement(
       amount,
       date: serverTimestamp(),
       confirmedBy: null,
+      ...(tripId ? { tripId } : {}),
     },
     [`rooms/${code}/notifications/${notifId}`]: {
       type: 'settlement',
       actorId: from,
       actorName: fromName,
-      text: `${fromName} מסמן/ת שהעביר/ה לך ${formatILS(amount)} — ממתין לאישורך`,
+      text: tripId
+        ? `${fromName} מסמן/ת שהעביר/ה ${formatILS(amount)} על חוב מקנייה גדולה — נדרש רוב אישורים`
+        : `${fromName} מסמן/ת שהעביר/ה לך ${formatILS(amount)} — ממתין לאישורך`,
       entityId: id,
       createdAt: serverTimestamp(),
       readBy: { [from]: true },
@@ -309,6 +313,52 @@ export async function createSettlement(
     audience: 'user',
     targetUid: to,
     actorUid: from,
+  });
+}
+
+/**
+ * אישור תשלום שמקורו בחוב שהתחלק בין כל החדר (קנייה גדולה).
+ *
+ * ‼️ לא נוגע ב-confirmedBy — זה מנגנון נפרד לגמרי. isSettlementSettled
+ * (lib/money.ts) קובע שהחוב סגור כשהמנהל אישר או שרוב מוחלט מהחברים
+ * הפעילים אישרו. כל חבר מסמן רק את עצמו (נאכף גם ב-Rules).
+ */
+export async function approveTripSettlement(
+  code: string,
+  settlementId: string,
+  approverId: string,
+  approverName: string,
+  payerId: string,
+  amount: Agorot
+): Promise<void> {
+  assertOnline('לאשר תשלום');
+  assertRoomWritable(code, 'לאשר תשלום');
+
+  const notifId = push(ref(db, `rooms/${code}/notifications`)).key!;
+
+  await update(ref(db), {
+    [`rooms/${code}/settlements/${settlementId}/approvals/${approverId}`]: true,
+    [`rooms/${code}/notifications/${notifId}`]: {
+      type: 'settlement',
+      actorId: approverId,
+      actorName: approverName,
+      text: `${approverName} אישר/ה תשלום של ${formatILS(amount)} מקנייה גדולה`,
+      entityId: settlementId,
+      createdAt: serverTimestamp(),
+      readBy: { [approverId]: true },
+    },
+  });
+
+  void enqueueNotification({
+    roomCode: code,
+    title: 'התשלום שלך קיבל אישור',
+    body: `${approverName} אישר/ה שקיבלת ${formatILS(amount)} — ממתין לרוב או לאישור מנהל`,
+    url: `/r/${code}/balances`,
+    tag: `settlement-confirm-${settlementId}`,
+    priority: 'now',
+    audience: 'user',
+    targetUid: payerId,
+    actorUid: approverId,
   });
 }
 

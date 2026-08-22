@@ -19,6 +19,7 @@ const JoinRoomPage = lazy(() => import('./pages/JoinRoomPage'));
 const PendingApprovalPage = lazy(() => import('./pages/PendingApprovalPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const ItemsPage = lazy(() => import('./pages/ItemsPage'));
+const TripPage = lazy(() => import('./pages/TripPage'));
 const BalancesPage = lazy(() => import('./pages/BalancesPage'));
 const TasksPage = lazy(() => import('./pages/TasksPage'));
 const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage'));
@@ -107,6 +108,7 @@ export function AppRoutes() {
               <Route element={<RequireRoomMember />}>
                 <Route index element={<DashboardPage />} />
                 <Route path="items" element={<ItemsPage />} />
+                <Route path="trip" element={<TripPage />} />
                 <Route path="balances" element={<BalancesPage />} />
                 <Route path="tasks" element={<TasksPage />} />
                 <Route path="announcements" element={<AnnouncementsPage />} />
