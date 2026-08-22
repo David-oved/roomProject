@@ -89,6 +89,13 @@ let ticket = await requestTicket();
 if (!ticket) {
   /* ── 2. ממשק בנוי ── */
   if (!existsSync(join(here, 'dist', 'index.html'))) {
+    // ‼️ בדיקה מפורשת לפני הבנייה: בלי node_modules הבנייה נכשלת
+    //    בערימת שגיאות של Vite, ומי שלחץ על קיצור אינו אמור לפענח
+    //    אותן כדי לגלות שחסרה פקודה אחת.
+    if (!existsSync(join(repoRoot, 'node_modules'))) {
+      console.error('\n❌ התלויות לא מותקנות. הריצו בתיקיית הפרויקט:\n   npm install');
+      process.exit(1);
+    }
     console.info('   בונה את הממשק (פעם אחת)…');
     const build = spawnSync('npm', ['run', 'admin:build'], {
       cwd: repoRoot,

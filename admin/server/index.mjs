@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
-import { config, ADMIN_ROOT } from './config.mjs';
+import { config, ADMIN_ROOT, DATA_DIR } from './config.mjs';
 import {
   authenticate,
   extractToken,
@@ -440,7 +440,10 @@ server.listen(config.port, config.host, () => {
   console.info(`\n🛡️  קונסולת המנהל — ${config.mode === 'live' ? 'מצב חי' : 'מצב הדגמה'}`);
   console.info(`   API:   ${url}`);
   console.info(`   כניסה: הריצו npm run admin, או לחצו על הקיצור „קונסולת המנהל”`);
-  console.info(`   טוקן שחזור: ${TOKEN}`);
+  // ‼️ הנתיב ולא הערך. כשהמשגר מפעיל את השרת הפלט נכתב לקובץ, ולוג
+  //    שמכיל אישור גישה קבוע הוא בדיוק הדליפה שהמנגנון כאן נועד למנוע
+  //    — במיוחד כשהפרויקט יושב בתיקייה מסונכרנת לענן.
+  console.info(`   טוקן שחזור: ${join(DATA_DIR, 'token')}`);
   console.info(
     `   סשן: ${Math.round(config.session.ttlMs / 3600000)} שעות · ננעל אחרי ${Math.round(
       config.session.idleMs / 60000

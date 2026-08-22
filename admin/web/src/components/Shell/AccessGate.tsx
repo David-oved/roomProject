@@ -49,8 +49,9 @@ export function AccessGate({ message }: { message: string }) {
         ) : (
           <>
             <p style={{ fontSize: 12, marginBottom: 8 }}>
-              הטוקן מודפס בטרמינל שבו רץ השרת, ונמצא גם ב-
-              <span className="mono">admin/.data/token</span>.
+              הטוקן נמצא בקובץ <span className="mono">admin/.data/token</span> (או בתיקייה
+              שהוגדרה ב-<span className="mono">ADMIN_DATA_DIR</span>). השרת מדפיס את הנתיב
+              אליו בעלייה, לא את הערך עצמו.
             </p>
             <input
               className="input"

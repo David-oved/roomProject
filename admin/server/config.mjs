@@ -45,8 +45,20 @@ loadEnvFile(join(REPO_ROOT, '.env.local'));
 loadEnvFile(join(REPO_ROOT, '.env'));
 loadEnvFile(join(ADMIN_ROOT, '.env.local'));
 
-/** תיקיית העבודה המקומית של הקונסולה — טוקן, מטמון דמו, ייצוא דוחות. */
-export const DATA_DIR = join(ADMIN_ROOT, '.data');
+/**
+ * תיקיית העבודה המקומית של הקונסולה — טוקן, מטמון דמו, לוגים.
+ *
+ * ‼️ ניתנת להזזה ב-ADMIN_DATA_DIR, ולא בשביל נוחות: פרויקט שיושב
+ *    בתוך תיקייה מסונכרנת (OneDrive, Dropbox, Drive) מעלה את התוכן
+ *    שלה לענן — כולל הטוקן. הסוד שאמור לא לעזוב את המחשב, עוזב אותו
+ *    בלי שאיש שם לב. במקרה כזה מכוונים את המשתנה לתיקייה מקומית.
+ */
+const dataDirRaw = process.env.ADMIN_DATA_DIR;
+export const DATA_DIR = dataDirRaw
+  ? isAbsolute(dataDirRaw)
+    ? dataDirRaw
+    : resolve(REPO_ROOT, dataDirRaw)
+  : join(ADMIN_ROOT, '.data');
 if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 
 function resolveMaybe(p) {
