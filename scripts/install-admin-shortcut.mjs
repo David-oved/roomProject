@@ -215,10 +215,47 @@ console.info(`   הלוג: ${logPath}`);
  *    שאמור לא לעזוב את המחשב, עוזב אותו.
  */
 if (/[\\/](OneDrive|Dropbox|Google Drive|iCloud)/i.test(repoRoot)) {
-  console.info(
-    `\n   ⚠️  הפרויקט יושב בתיקייה מסונכרנת לענן.\n` +
-      `      admin/.data (הטוקן) ו-admin/service-account.json הם סודות שאסור שיעלו לענן.\n` +
-      `      הגדירו ADMIN_DATA_DIR לתיקייה מקומית מחוץ לסנכרון — ראו admin/README.md.`
-  );
+  const envFile = join(adminDir, '.env.local');
+  const alreadySet = Boolean(process.env.ADMIN_DATA_DIR) || existsSync(envFile);
+
+  console.info(`\n   ⚠️  הפרויקט יושב בתיקייה מסונכרנת לענן.`);
+  console.info(`      admin/.data (הטוקן) ו-service-account.json הם סודות שאסור שיעלו לענן.`);
+
+  if (alreadySet) {
+    console.info(`      ✅ ${existsSync(envFile) ? envFile : 'ADMIN_DATA_DIR'} כבר מוגדר.`);
+  } else {
+    /* ‼️ פקודה מוכנה ולא הפניה לתיעוד. „הגדירו ADMIN_DATA_DIR” הוא
+       משפט שאפשר לקרוא ולא לעשות; שורה שאפשר להדביק היא משפט שעושים.
+       ‼️ ASCII ולא UTF8: PowerShell 5.1 מוסיף BOM שנדבק לשם המפתח. */
+    const safeDir =
+      process.platform === 'win32' ? 'C:\\RoomMateAdmin\\data' : join(homedir(), '.roommate-admin');
+    const saPath = join(safeDir, 'service-account.json');
+    console.info(`\n      להוצאת הסודות מהסנכרון — הדביקו את השורות האלה:\n`);
+    if (process.platform === 'win32') {
+      // ‼️ כל נתיב במרכאות: נתיב הפרויקט מכיל רווח (ולעיתים גם עברית),
+      //    ובלי מרכאות PowerShell היה קורא אותו כשני ארגומנטים.
+      console.info(`      New-Item -ItemType Directory -Force -Path "${safeDir}" | Out-Null`);
+      console.info(
+        `      "ADMIN_DATA_DIR=${safeDir}\`r\`nADMIN_SERVICE_ACCOUNT=${saPath}" | ` +
+          `Set-Content "${envFile}" -Encoding ASCII`
+      );
+    } else {
+      console.info(`      mkdir -p ${JSON.stringify(safeDir)}`);
+      console.info(
+        `      printf 'ADMIN_DATA_DIR=%s\\nADMIN_SERVICE_ACCOUNT=%s\\n' ` +
+          `${JSON.stringify(safeDir)} ${JSON.stringify(saPath)} > ${JSON.stringify(envFile)}`
+      );
+    }
+    console.info(`\n      ואז מחקו את ${join(adminDir, '.data')} הישן.`);
+  }
+
+  if (existsSync(join(adminDir, 'service-account.json'))) {
+    // ‼️ העברה אינה מספיקה: הקובץ כבר סונכרן. מפתח שעוקף את כל
+    //    ה-Security Rules ושהה בענן — דינו ביטול והנפקה מחדש.
+    console.info(
+      `\n      ‼️ service-account.json כבר יושב כאן, כלומר כבר עלה לענן.\n` +
+        `         בטלו אותו ב-Firebase Console → Service accounts והנפיקו חדש.`
+    );
+  }
 }
 console.info('');
