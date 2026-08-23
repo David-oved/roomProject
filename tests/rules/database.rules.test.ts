@@ -752,4 +752,135 @@ describe.skipIf(!hasEmulator)('database.rules.json', () => {
       await assertFails(set(ref(as(ADMIN), `rooms/${OTHER_ROOM}/metadata/name`), 'שם חדש'));
     });
   });
+
+  /* ═════════ אישור בקשת הצטרפות — מנהל החדר ═════════ */
+
+  /**
+   * ‼️ הבדיקות שהיו חסרות כשמנהלי חדרים דיווחו שהם לא מצליחים לאשר
+   *    אף אחד.
+   *
+   * הכשל לא היה בהרשאה של מנהל החדר ולא נגע בחשבון המפתח כלל — הוא
+   * היה בהנחה שגויה לגבי מנוע הכללים עצמו:
+   *
+   *   `root` בכללי RTDB הוא תמיד המצב **לפני** הכתיבה. כתיבה
+   *   מרובת-נתיבים אינה משנה את זה — כל נתיב בעדכון נבדק מול אותו
+   *   root ישן, ולא מול מה שנתיב אחר באותו עדכון עומד לכתוב.
+   *
+   * הכלל ב-users/$uid/rooms/$roomCode דרש שהיעד יהיה כבר חבר פעיל,
+   * בהנחה שהחברות שנכתבת באותה עדכון אטומית "תיראה" כבר. היא לא. ומה
+   * שהופך את זה לכשל מלא ולא חלקי: העדכון אטומי — נתיב אחד שנדחה מפיל
+   * את כל השבעה.
+   *
+   * ‼️ הבדיקה הראשונה כאן היא בכוונה **המטען המדויק** של
+   *    approveJoinRequest (roomService.ts), על כל שבעת הנתיבים. בדיקה
+   *    של נתיב בודד לא הייתה תופסת את זה: חמישה מהשבעה עברו גם קודם.
+   */
+  describe('approveJoinRequest', () => {
+    /** בדיוק מה ש-roomService שולח כשמנהל לוחץ "אשר". */
+    const approvalUpdate = (uid: string) => ({
+      [`rooms/${ROOM}/members/${uid}`]: {
+        name: 'מבקש',
+        email: 'joiner@example.com',
+        avatar: null,
+        joinedAt: T,
+        status: 'active',
+        role: 'member',
+      },
+      [`rooms/${ROOM}/pendingRequests/${uid}/status`]: 'approved',
+      [`rooms/${ROOM}/pendingRequests/${uid}/respondedAt`]: T,
+      [`joinRequests/${uid}/${ROOM}/status`]: 'approved',
+      [`joinRequests/${uid}/${ROOM}/respondedAt`]: T,
+      [`users/${uid}/rooms/${ROOM}`]: true,
+      [`rooms/${ROOM}/notifications/n1`]: {
+        type: 'member_joined',
+        actorId: ADMIN,
+        actorName: 'אדמין',
+        text: 'מבקש הצטרף לחדר',
+        entityId: uid,
+        createdAt: T,
+        readBy: { [ADMIN]: true },
+      },
+    });
+
+    it('מנהל החדר מאשר בקשה — העדכון האטומי המלא עובר', async () => {
+      await assertSucceeds(update(ref(as(ADMIN)), approvalUpdate(JOINER)));
+    });
+
+    it('מנהל החדר לבדו מספיק — אין שום דרישה לחשבון המפתח', async () => {
+      // ‼️ חשבון המפתח הוא קריאה בלבד ואינו מעורב באישורים כלל.
+      //    הבדיקה הזו נועלת את זה: ההרשאה נגזרת מ-metadata/adminId.
+      await assertSucceeds(update(ref(as(ADMIN)), approvalUpdate(JOINER)));
+      const snap = await get(ref(as(ADMIN), `rooms/${ROOM}/members/${JOINER}/status`));
+      expect(snap.val()).toBe('active');
+    });
+
+    it('הדגל ברשימת החדרים של המאושר נדלק — בלעדיו הוא לא רואה את החדר', async () => {
+      await assertSucceeds(update(ref(as(ADMIN)), approvalUpdate(JOINER)));
+      const snap = await get(ref(as(JOINER), `users/${JOINER}/rooms`));
+      expect(snap.val()).toEqual({ [ROOM]: true });
+    });
+
+    it('המאושר קורא את החדר מיד אחרי האישור', async () => {
+      await assertSucceeds(update(ref(as(ADMIN)), approvalUpdate(JOINER)));
+      await assertSucceeds(get(ref(as(JOINER), `rooms/${ROOM}/metadata`)));
+    });
+
+    it('דחייה עדיין עובדת', async () => {
+      await assertSucceeds(
+        update(ref(as(ADMIN)), {
+          [`rooms/${ROOM}/pendingRequests/${JOINER}/status`]: 'rejected',
+          [`rooms/${ROOM}/pendingRequests/${JOINER}/respondedAt`]: T,
+          [`joinRequests/${JOINER}/${ROOM}/status`]: 'rejected',
+          [`joinRequests/${JOINER}/${ROOM}/respondedAt`]: T,
+        })
+      );
+    });
+
+    it('מנהל של חדר אחר לא מאשר לחדר שאינו שלו', async () => {
+      await assertFails(update(ref(as(OUTSIDER)), approvalUpdate(JOINER)));
+    });
+
+    it('חבר רגיל אינו מאשר בקשות', async () => {
+      await assertFails(update(ref(as(MEMBER)), approvalUpdate(JOINER)));
+    });
+
+    /* ── ההגנה שהתיקון חייב לשמור עליה ── */
+
+    /**
+     * ‼️ זו הסיבה שהתנאי הוצב שם מלכתחילה, והתיקון לא מבטל אותה.
+     *
+     * "חדר רפאים": מנהל מדליק את הדגל אצל מישהו שלא ביקש כלום. זו לא
+     * הצקה בלבד — כל כתיבה עתידית מרובת-נתיבים של הקורבן (שינוי שם,
+     * שמתפזר לכל חדריו) הייתה נכשלת *כולה* בגלל הנתיב הפנטום. מניעת
+     * שירות לצמיתות.
+     */
+    it('הניצול: הדלקת דגל חדר אצל מי שלא ביקש להצטרף — נחסם', async () => {
+      await assertFails(set(ref(as(ADMIN), `users/${VICTIM}/rooms/${ROOM}`), true));
+    });
+
+    it('הניצול: אותו דבר על משתמש קיים שאינו קשור לחדר — נחסם', async () => {
+      await assertFails(set(ref(as(OUTSIDER), `users/${MEMBER}/rooms/${OTHER_ROOM}`), true));
+    });
+
+    /**
+     * ‼️ הדלת נשארת סגורה כי מנהל אינו יכול *ליצור* בקשה בשם מישהו
+     *    אחר — רק המשתמש עצמו יוצר את הבקשה שלו. בלי הנעילה הזו,
+     *    התיקון שלמעלה היה פותח מחדש את חדר הרפאים בשני צעדים.
+     */
+    it('הניצול: מנהל שותל בקשת הצטרפות בשם קורבן — נחסם', async () => {
+      await assertFails(
+        set(ref(as(ADMIN), `rooms/${ROOM}/pendingRequests/${VICTIM}`), {
+          userId: VICTIM,
+          displayName: 'קורבן',
+          requestedAt: T,
+          status: 'pending',
+        })
+      );
+    });
+
+    it('הסרה ועזיבה ממשיכות לכבות את הדגל', async () => {
+      await assertSucceeds(update(ref(as(ADMIN)), approvalUpdate(JOINER)));
+      await assertSucceeds(set(ref(as(ADMIN), `users/${JOINER}/rooms/${ROOM}`), null));
+    });
+  });
 });

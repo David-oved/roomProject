@@ -107,6 +107,37 @@ export async function seed(testEnv: RulesTestEnvironment): Promise<void> {
         [MEMBER]: { email: 'member@example.com', displayName: 'חבר', createdAt: T },
         [MEMBER2]: { email: 'member2@example.com', displayName: 'חברה', createdAt: T },
         [OUTSIDER]: { email: 'out@example.com', displayName: 'זר', createdAt: T },
+        // ‼️ למבקש ולנדחה יש פרופיל: אי אפשר לבקש להצטרף בלי להירשם
+        //    קודם. בלעדיהם מצב הפתיחה לא מייצג שום משתמש אמיתי, ובדיקת
+        //    אישור ההצטרפות נופלת מסיבה שלא קיימת בייצור.
+        [JOINER]: { email: 'joiner@example.com', displayName: 'מבקש', createdAt: T },
+        [REJECTED]: { email: 'rejected@example.com', displayName: 'נדחה', createdAt: T },
+      },
+      /**
+       * ‼️ המראה האישית של הבקשות.
+       *
+       * requestToJoin כותב תמיד את שני הצדדים — rooms/$code/
+       * pendingRequests/$uid *וגם* joinRequests/$uid/$code. זריעה של צד
+       * אחד בלבד יוצרת מצב שלא קיים בייצור, ובו כל עדכון של המראה נופל
+       * על .validate (חסר requestedAt) — כישלון שנראה כמו בעיית הרשאה
+       * ואינו כזה.
+       */
+      joinRequests: {
+        [JOINER]: {
+          [ROOM]: {
+            status: 'pending',
+            requestedAt: T,
+            roomName: 'דירת הסטודנטים',
+          },
+        },
+        [REJECTED]: {
+          [ROOM]: {
+            status: 'rejected',
+            requestedAt: T,
+            respondedAt: T,
+            roomName: 'דירת הסטודנטים',
+          },
+        },
       },
       roomCodes: {
         [ROOM]: { name: 'דירת הסטודנטים', adminId: ADMIN, createdAt: T },
