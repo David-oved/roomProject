@@ -20,7 +20,14 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    include: ['tests/**/*.test.ts'],
+    /**
+     * ‼️ גם .tsx — בדיקות מסך הטעינה (tests/unit/loadingGuards.test.tsx)
+     *    מרנדרות רכיבי React אמיתיים. ברירת המחדל כאן היא node; כל
+     *    קובץ שצריך DOM מכריז על כך בעצמו עם
+     *    `// @vitest-environment jsdom` בראש הקובץ, כדי שלא נשלם על
+     *    הקמת jsdom בכל בדיקת לוגיקה טהורה.
+     */
+    include: ['tests/**/*.test.{ts,tsx}'],
     coverage: {
       include: ['src/lib/**'],
     },

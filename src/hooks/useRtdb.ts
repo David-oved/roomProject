@@ -14,6 +14,31 @@ export interface RtdbState<T> {
 }
 
 /**
+ * ‼️ שעון עצר לחיבור שלא מגיע.
+ *
+ * onValue הוא הבטחה בלי תפוגה: כשאין חיבור פתוח ל-RTDB, ה-SDK פשוט
+ * ממשיך לנסות בשקט — הוא לא קורא ל-callback ההצלחה *ולא* ל-callback
+ * השגיאה. לכן `loading` נשאר true לנצח, וכל מסך שממתין לו מציג ספינר
+ * לנצח. זה בדיוק מה שקרה למשתמשים שה-CSP חסם להם את ה-long-polling
+ * (ראו ההערה ב-index.html): שום שגיאה, שום מסך — רק טעינה אינסופית.
+ *
+ * הגבול הזה הוא רשת הביטחון האחרונה: אחריו המסך מציג הודעת שגיאה עם
+ * כפתור ניסיון חוזר, במקום ספינר. הוא נדיב בכוונה — ברשת סלולרית
+ * איטית חיבור ראשון יכול לקחת כמה שניות טובות, ואסור שנקטע אותו.
+ *
+ * ‼️ השעון נעצר ברגע שהגיע *משהו* — נתונים חיים, שגיאה, או אפילו
+ *    הידרציה מהמטמון — ולכן הוא לא נוגע במסך שכבר מציג תוכן.
+ */
+export const RTDB_CONNECT_TIMEOUT_MS = 20_000;
+
+export class RtdbTimeoutError extends Error {
+  constructor() {
+    super('החיבור לשרת לא נוצר. בדקו את החיבור לאינטרנט ונסו שוב.');
+    this.name = 'RtdbTimeoutError';
+  }
+}
+
+/**
  * מאזין לצומת RTDB ומחזיר אותו כמערך, עם id מהמפתח.
  *
  * ‼️ כל onValue חייב להחזיר unsubscribe. בלי זה נצברות האזנות בכל
@@ -39,13 +64,23 @@ export function useRtdbList<T>(path: string | null): RtdbState<Array<T & { id: s
 
     let gotLive = false;
     let cancelled = false;
+    let settled = false;
 
     const toList = (val: Record<string, T> | null) =>
       Object.entries(val ?? {}).map(([id, v]) => ({ ...(v as T), id }));
 
+    const timer = window.setTimeout(() => {
+      if (settled || cancelled) return;
+      settled = true;
+      setState((s) =>
+        s.loading ? { ...s, loading: false, error: new RtdbTimeoutError() } : s
+      );
+    }, RTDB_CONNECT_TIMEOUT_MS);
+
     // 1) הידרציה מיידית מהמטמון — לא מחכים לרשת
     void readCache<Record<string, T>>(path, uid).then((entry) => {
       if (entry && !gotLive && !cancelled) {
+        settled = true;
         setState({
           data: toList(entry.value),
           loading: false,
@@ -61,6 +96,7 @@ export function useRtdbList<T>(path: string | null): RtdbState<Array<T & { id: s
       ref(db, path),
       (snap) => {
         gotLive = true;
+        settled = true;
         const val = snap.val() as Record<string, T> | null;
         setState({
           data: toList(val),
@@ -77,6 +113,7 @@ export function useRtdbList<T>(path: string | null): RtdbState<Array<T & { id: s
         // כדי שהמסך פתוח אצלו. בלי לנקות את data, החבר שהוסר ממשיך
         // לראות תמונה קפואה של החדר (חברים, כספים, הכל) לנצח, כי
         // בדיוק העדכון שהיה מראה לו "הוסרת" הוא זה שנחסם.
+        settled = true;
         if (gotLive) {
           setState({ data: [], loading: false, error, fromCache: false, cachedAt: null });
         } else {
@@ -87,6 +124,7 @@ export function useRtdbList<T>(path: string | null): RtdbState<Array<T & { id: s
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
       unsubscribe();
     };
   }, [path, uid]);
@@ -115,9 +153,19 @@ export function useRtdbValue<T>(path: string | null): RtdbState<T | null> {
 
     let gotLive = false;
     let cancelled = false;
+    let settled = false;
+
+    const timer = window.setTimeout(() => {
+      if (settled || cancelled) return;
+      settled = true;
+      setState((s) =>
+        s.loading ? { ...s, loading: false, error: new RtdbTimeoutError() } : s
+      );
+    }, RTDB_CONNECT_TIMEOUT_MS);
 
     void readCache<T>(path, uid).then((entry) => {
       if (entry && !gotLive && !cancelled) {
+        settled = true;
         setState({
           data: entry.value,
           loading: false,
@@ -132,6 +180,7 @@ export function useRtdbValue<T>(path: string | null): RtdbState<T | null> {
       ref(db, path),
       (snap) => {
         gotLive = true;
+        settled = true;
         const val = snap.val() as T | null;
         setState({
           data: val,
@@ -144,6 +193,7 @@ export function useRtdbValue<T>(path: string | null): RtdbState<T | null> {
       },
       (error) => {
         // ראו ההערה המקבילה ב-useRtdbList — אותו תיקון, אותה סיבה.
+        settled = true;
         if (gotLive) {
           setState({ data: null, loading: false, error, fromCache: false, cachedAt: null });
         } else {
@@ -154,6 +204,7 @@ export function useRtdbValue<T>(path: string | null): RtdbState<T | null> {
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
       unsubscribe();
     };
   }, [path, uid]);

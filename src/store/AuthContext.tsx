@@ -33,6 +33,22 @@ export const useAuth = () => useContext(Ctx);
 const ACTIVE_THROTTLE_MS = 60 * 60 * 1000;
 let lastTouchedAt = 0;
 
+/**
+ * ‼️ שעון עצר ל-onAuthStateChanged.
+ *
+ * `loading: true` כאן חוסם את *כל* האפליקציה — RequireAuth,
+ * RequireGuest ו-RequireDeveloper כולם מציגים FullPageSpinner עד
+ * שהוא יורד. ואם ה-SDK של Auth לא קורא ל-callback אף פעם (אתחול
+ * ההתמדה נתקע בדפדפן שחוסם IndexedDB/localStorage — מצב סודי
+ * ב-Samsung Internet, "חסימת נתוני אתרים"), אין שום דבר שיוריד אותו.
+ * המשתמש נשאר מול ספינר לנצח, בלי שגיאה ובלי דרך להתקדם.
+ *
+ * אחרי הגבול הזה מתייחסים למצב כ"לא מחובר": המשתמש רואה את מסך
+ * ההתחברות — מסך שאפשר לפעול בו — במקום ספינר אינסופי. אם התשובה
+ * האמיתית תגיע אחר כך, ה-callback עדיין ירוץ ויעדכן את המצב.
+ */
+const AUTH_TIMEOUT_MS = 15_000;
+
 function touchLastActive(uid: string): void {
   const now = Date.now();
   if (now - lastTouchedAt < ACTIVE_THROTTLE_MS) return;
@@ -54,7 +70,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let profileUnsub: (() => void) | undefined;
     let healTimer: number | undefined;
 
+    const authTimer = window.setTimeout(() => {
+      setState((s) => (s.loading ? { user: null, profile: null, loading: false } : s));
+    }, AUTH_TIMEOUT_MS);
+
     const authUnsub = subscribeToAuth((user) => {
+      window.clearTimeout(authTimer);
       profileUnsub?.();
       profileUnsub = undefined;
       window.clearTimeout(healTimer);
@@ -71,7 +92,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!snap.exists()) {
             // ריפוי עצמי של משתמש "יתום": קיים ב-Authentication אך לא ב-DB.
             // קורה כשההרשמה נקטעה באמצע. ראו docs/06-edge-cases.md מקרה 15.
-            //
+
+            /**
+             * ‼️ משחררים את `loading` עוד לפני הריפוי.
+             *
+             * בלי זה המסלול הזה היה מסך טעינה אינסופי: כל עוד setState
+             * לא נקרא, `loading` נשאר true וכל שומרי הסף מציגים ספינר.
+             * וזה לא מקרה קצה של שנייה־שתיים — אם כתיבת הריפוי נכשלת
+             * (אין הרשאה, אין רשת), הצומת לעולם לא יופיע וה-callback
+             * הזה לעולם לא ייקרא שוב. המשתמש נתקע לצמיתות.
+             *
+             * profile: null הוא מצב חוקי ומטופל — כך בדיוק נראה גם
+             * callback השגיאה כמה שורות מכאן, ו-OnboardingPage יודע
+             * להציג מסך פעולה ("צרו חדר / הצטרפו") גם בלעדיו.
+             */
+            setState({ user, profile: null, loading: false });
+
             // ‼️ שתי הגנות מפני דריסת השם שהמשתמש הקליד:
             //  1. אם ההרשמה עדיין רצה — היא תכתוב את הפרופיל בעצמה.
             //  2. גם אחרת, ממתינים רגע ובודקים שוב, כי הכתיבה עשויה
@@ -100,6 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
+      window.clearTimeout(authTimer);
       window.clearTimeout(healTimer);
       profileUnsub?.();
       authUnsub();
