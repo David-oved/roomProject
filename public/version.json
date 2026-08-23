@@ -1,7 +1,7 @@
 {
   "version": "1.25.0",
   "releasedAt": "2026-08-23",
-  "forceUpdate": false,
+  "forceUpdate": true,
   "title": "תיקון: מסך טעינה תקוע ואישור חברים",
   "notes": [
     "תוקן מסך הטעינה שנתקע בדפדפנים שאינם כרום",
