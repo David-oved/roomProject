@@ -61,7 +61,7 @@ export default function AnnouncementsPage() {
     // ‼️ left/width ולא inset-x-0 — ראו את ההסבר על זום-צביטה
     // ב-useVisualViewportBounds.
     <div
-      className="fixed flex flex-col bg-ink-50"
+      className="fixed flex animate-page-in flex-col bg-ink-50"
       style={{
         top: viewport.top,
         left: viewport.left,
@@ -85,9 +85,11 @@ export default function AnnouncementsPage() {
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-700">
           <MegaphoneIcon width={17} height={17} />
         </span>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-base font-bold leading-tight text-ink-900">הודעות מהמנהל</h1>
-          <p className="truncate text-xs text-ink-500">
+        <div className="min-w-0 flex-1 animate-header-in">
+          <h1 className="truncate text-lg font-extrabold leading-tight tracking-tight text-ink-900">
+            הודעות מהמנהל
+          </h1>
+          <p className="truncate text-[13px] font-medium leading-snug text-ink-500">
             {isAdmin ? 'כל החברים רואים את מה שתשלח כאן' : 'רק המנהל יכול לשלוח כאן'}
           </p>
         </div>

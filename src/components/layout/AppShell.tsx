@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { BottomNav } from './BottomNav';
+import { PageTransition } from './PageTransition';
 import { useLiveNotifications } from '../../hooks/useLiveNotifications';
 import { useChatWatcher } from '../../hooks/useChatWatcher';
 import { OfflineBanner } from './OfflineBanner';
@@ -18,14 +19,21 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { unreadTotal } = useChatWatcher();
 
   return (
-    <div className="min-h-[100dvh] bg-ink-50">
+    <div className="relative min-h-[100dvh] overflow-x-clip bg-ink-50">
+      {/* ‼️ קישוט רקע בלבד — fixed ו-pointer-events-none, לא תופס מקום
+          בפריסה ולא מפריע לגלילה. מוסיף עומק עדין בלי לגעת בתוכן עצמו. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-72 bg-gradient-to-b
+                   from-brand-200/40 via-brand-100/10 to-transparent"
+      />
       <OfflineBanner />
 
       <main
         className="mx-auto max-w-lg px-4 safe-x"
         style={{ paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom) + 1.5rem)' }}
       >
-        {children}
+        <PageTransition>{children}</PageTransition>
       </main>
 
       <BottomNav unreadChat={unreadTotal} />
@@ -68,7 +76,7 @@ export function PlainShell({
           paddingBottom: 'calc(var(--safe-bottom) + 1.5rem)',
         }}
       >
-        {children}
+        <PageTransition>{children}</PageTransition>
       </main>
     </div>
   );

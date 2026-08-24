@@ -100,7 +100,11 @@ export default function JoinRoomPage() {
 
   return (
     <>
-      <TopBar title="הצטרפות לחדר" back="/onboarding" />
+      <TopBar
+        title="הצטרפות לחדר"
+        subtitle="השתמשו בקוד שקיבלתם משותף לחדר"
+        back="/onboarding"
+      />
       <PlainShell hasTopBar>
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col py-6" noValidate>
           <div className="text-center">

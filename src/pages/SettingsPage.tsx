@@ -94,7 +94,11 @@ export default function SettingsPage() {
 
   return (
     <>
-      <TopBar title="הגדרות" back={`/r/${roomCode}`} />
+      <TopBar
+        title="הגדרות"
+        subtitle="ניהול החדר, החברים והחשבון שלכם"
+        back={`/r/${roomCode}`}
+      />
       <PlainShell hasTopBar>
         <div className="space-y-6 py-4">
           <Link

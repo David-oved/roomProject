@@ -55,7 +55,11 @@ export default function CreateRoomPage() {
 
   return (
     <>
-      <TopBar title="יצירת חדר חדש" back="/onboarding" />
+      <TopBar
+        title="יצירת חדר חדש"
+        subtitle="קבעו שם, ותקבלו קוד להזמנת שותפים"
+        back="/onboarding"
+      />
       <PlainShell hasTopBar>
         <form onSubmit={handleSubmit} className="space-y-5 py-4" noValidate>
           <Input

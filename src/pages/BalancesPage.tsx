@@ -72,7 +72,7 @@ export default function BalancesPage() {
 
   return (
     <AppShell>
-      <TopBar title="חשבון והוצאות" />
+      <TopBar title="חשבון והוצאות" subtitle="מי חייב למי, ומי נשא בכמה מההוצאות" />
       <RoomArchivedBanner />
 
       <div className="pt-4">

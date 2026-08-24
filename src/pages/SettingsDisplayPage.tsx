@@ -28,7 +28,11 @@ export default function SettingsDisplayPage() {
 
   return (
     <>
-      <TopBar title="תצוגה" back={`/r/${roomCode}/settings`} />
+      <TopBar
+        title="תצוגה"
+        subtitle="בהיר, כהה או לפי הגדרת המכשיר"
+        back={`/r/${roomCode}/settings`}
+      />
       <PlainShell hasTopBar>
         <div className="space-y-4 py-4">
           <div className="grid grid-cols-3 gap-2.5">

@@ -8,7 +8,11 @@ export default function SettingsNotificationsPage() {
 
   return (
     <>
-      <TopBar title="התראות" back={`/r/${roomCode}/settings`} />
+      <TopBar
+        title="התראות"
+        subtitle="בחרו על מה תרצו לקבל התראה"
+        back={`/r/${roomCode}/settings`}
+      />
       <PlainShell hasTopBar>
         <div className="py-4">
           <NotificationSettings />

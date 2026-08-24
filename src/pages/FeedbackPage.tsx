@@ -109,7 +109,11 @@ export default function FeedbackPage() {
 
   return (
     <>
-      <TopBar title="פנייה למנהל המערכת" back />
+      <TopBar
+        title="פנייה למנהל המערכת"
+        subtitle="שאלה, באג או הצעה — נשמח לשמוע"
+        back
+      />
       <PlainShell hasTopBar>
         <div className="space-y-4 py-4">
           {sentId ? (

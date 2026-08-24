@@ -69,7 +69,7 @@ export default function AdminMessagesPage() {
     <>
       <TopBar
         title="הודעות ממנהל המערכת"
-        subtitle={unreadCount > 0 ? `${unreadCount} חדשות` : undefined}
+        subtitle={unreadCount > 0 ? `${unreadCount} חדשות` : 'עדכוני מערכת ותשובות לפניות ששלחתם'}
         back
       />
       <PlainShell hasTopBar>

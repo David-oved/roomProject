@@ -92,6 +92,7 @@ export default function TasksPage() {
     <AppShell>
       <TopBar
         title="מטלות"
+        subtitle="תורנות קבועה בין חברי החדר, בסבב הוגן"
         back={`/r/${roomCode}`}
         actions={
           isAdmin && (

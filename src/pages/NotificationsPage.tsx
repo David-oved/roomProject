@@ -78,7 +78,11 @@ export default function NotificationsPage() {
 
   return (
     <AppShell>
-      <TopBar title="התראות" back />
+      <TopBar
+        title="התראות"
+        subtitle="עדכונים על תשלומים, מטלות ובקשות שממתינות לך"
+        back
+      />
 
       <div className="pt-4">
         {loading ? (
