@@ -139,7 +139,7 @@ export default function SettingsPage() {
 function SettingsSection({ title, rows }: { title: string; rows: Row[] }) {
   return (
     <section className="space-y-2">
-      <h2 className="px-1 text-xs font-bold uppercase tracking-wide text-ink-400">{title}</h2>
+      <h2 className="px-1 text-xs font-bold uppercase tracking-wide text-ink-500">{title}</h2>
       <ul className="card divide-y divide-ink-100 overflow-hidden p-0">
         {rows.map((row) => (
           <li key={row.key}>

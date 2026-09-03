@@ -18,7 +18,7 @@ interface Tab {
   label: string;
   Icon: typeof HomeIcon;
   end?: boolean;
-  dot?: boolean;
+  unreadCount?: number;
   hintId: string;
   hintText: string;
 }
@@ -65,7 +65,7 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
       to: `${base}/chat`,
       label: "צ'אט",
       Icon: ChatIcon,
-      dot: unreadChat > 0,
+      unreadCount: unreadChat,
       hintId: 'nav.chat',
       hintText: 'צ׳אט קבוצתי ושיחות פרטיות עם חברי החדר',
     },
@@ -124,14 +124,19 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
   );
 }
 
-function TabButton({ to, label, Icon, end, dot, hintId, hintText }: Tab) {
+function TabButton({ to, label, Icon, end, unreadCount, hintId, hintText }: Tab) {
   const hintRef = useHintRef<HTMLAnchorElement>(hintId, hintText);
+  const hasUnread = !!unreadCount && unreadCount > 0;
   return (
     <li className="flex-1 self-stretch">
       <NavLink
         ref={hintRef}
         to={to}
         end={end}
+        // ‼️ הנקודה האדומה היא רמז ויזואלי גרידא (aria-hidden) — בלי
+        // aria-label דינמי כאן, קורא-מסך לא היה יודע שיש הודעות שלא
+        // נקראו. אותו דפוס בדיוק כמו aria-label של פעמון ההתראות.
+        aria-label={hasUnread ? `${label}, ${unreadCount} הודעות שלא נקראו` : undefined}
         className="tap flex h-full flex-col items-center justify-center gap-1
                    text-xs font-semibold outline-none"
       >
@@ -152,7 +157,7 @@ function TabButton({ to, label, Icon, end, dot, hintId, hintText }: Tab) {
                   isActive ? 'text-brand-700' : 'text-ink-500',
                 ].join(' ')}
               />
-              {dot && (
+              {hasUnread && (
                 <span
                   aria-hidden
                   className="absolute end-1.5 top-0.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white"
