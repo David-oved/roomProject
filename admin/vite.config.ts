@@ -25,6 +25,13 @@ export default defineConfig({
         // SSE חייב לעבור בלי חציצה
         ws: false,
       },
+      // ‼️ גם /enter עובר לשרת ה-API: הוא זה שפודה את כרטיס הכניסה
+      //    ומגיש את העוגייה. בלי השורה הזאת Vite היה מגיש לו index.html,
+      //    והכניסה בפיתוח פשוט לא הייתה קורית.
+      '/enter': {
+        target: `http://127.0.0.1:${apiPort}`,
+        changeOrigin: false,
+      },
     },
   },
   build: {

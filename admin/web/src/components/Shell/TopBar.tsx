@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../lib/store';
+import { lockConsole } from '../../lib/api';
 import { relativeTime } from '../../lib/format';
 import { Dot } from '../ui/primitives';
 
@@ -107,6 +108,18 @@ export function TopBar() {
         <Dot tone={connected ? 'success' : 'danger'} live={connected} />
         {connected ? `עודכן ${relativeTime(lastPush?.builtAt ?? Date.now())}` : 'אין חיבור לשרת'}
       </span>
+
+      {/* ‼️ נעילה מפורשת ולא רק פקיעה אוטומטית: כשקמים מהמחשב רוצים
+          לסגור *עכשיו*, ולא לקוות שעברו מספיק דקות. */}
+      <button
+        className="btn sm ghost"
+        title="נעילת הקונסולה (הסשן נסגר בשרת)"
+        onClick={() => {
+          void lockConsole().then(() => window.location.reload());
+        }}
+      >
+        🔒 נעילה
+      </button>
     </header>
   );
 }

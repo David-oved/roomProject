@@ -10,11 +10,13 @@ import { config } from './server/config.mjs';
  *  משגר הקונסולה — `npm run admin`
  * ═══════════════════════════════════════════════════════════════
  *  מריץ שני תהליכים (שרת ה-API ושרת הפיתוח של הממשק), מחכה שהממשק
- *  יעלה, ופותח את הדפדפן עם הטוקן מוזרק בכתובת.
+ *  יעלה, ופותח את הדפדפן עם כרטיס כניסה חד-פעמי.
  *
- *  ‼️ הטוקן מוזרק ב-URL ולא נשמר בקוד: הממשק שומר אותו ב-localStorage
- *     ומיד מנקה אותו מהכתובת (ראו lib/api.ts), כדי שלא יישאר
- *     בהיסטוריית הדפדפן.
+ *  ‼️ זה מסלול ה*פיתוח*. הפתיחה היומיומית בשני קליקים היא
+ *     `admin/launch.mjs` — תהליך אחד, ממשק בנוי, בלי Vite.
+ *
+ *  ‼️ מה שנוסע ב-URL הוא כרטיס בן 60 שניות לשימוש יחיד, לא טוקן:
+ *     `/enter` פודה אותו לסשן ומוחק את הכתובת מההיסטוריה.
  *
  *  ‼️ שני התהליכים קשורים זה לזה: סגירת אחד סוגרת את השני. אחרת נשאר
  *     שרת API יתום שמחזיק את הפורט, והפעלה הבאה נכשלת בלי סיבה ברורה.
@@ -61,6 +63,32 @@ function shutdown() {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
+/** מבקש כרטיס כניסה חד-פעמי משרת ה-API (ראו admin/launch.mjs). */
+async function requestTicket(timeoutMs = 2000) {
+  try {
+    const res = await fetch(`http://127.0.0.1:${config.port}/api/session/ticket`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-admin-token': token },
+      body: '{}',
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) return null;
+    return (await res.json()).ticket ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function waitForTicket(timeoutMs = 20_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const ticket = await requestTicket();
+    if (ticket) return ticket;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return null;
+}
+
 /**
  * פותח את הדפדפן בכלים של מערכת ההפעלה — בלי תלות חיצונית.
  *
@@ -105,19 +133,24 @@ console.info(`   מצב: ${config.mode === 'live' ? 'חי (Firebase)' : 'הדג�
 spawnChild('שרת ה-API', process.execPath, [join(here, 'server', 'index.mjs')]);
 
 if (buildOnly) {
-  const url = `http://127.0.0.1:${config.port}/?token=${token}`;
   if (existsSync(join(here, 'dist'))) {
     await waitForPort(config.port);
-    openBrowser(url);
+    const ticket = await waitForTicket();
+    if (ticket) openBrowser(`http://127.0.0.1:${config.port}/enter?ticket=${ticket}`);
   }
 } else {
   spawnChild('שרת הממשק', 'npx', ['vite', '--config', join(here, 'vite.config.ts')]);
   const ready = await waitForPort(config.webPort);
-  const url = `http://127.0.0.1:${config.webPort}/?token=${token}`;
-  if (ready) {
-    console.info(`\n✅ הקונסולה פתוחה: ${url}\n`);
+  const ticket = ready ? await waitForTicket() : null;
+  if (ticket) {
+    // ‼️ נכנסים דרך פורט ה-Vite ולא דרך ה-API: העוגייה ו-localStorage
+    //    חייבים להיווצר במקור שממנו הממשק ייטען בפועל.
+    const url = `http://127.0.0.1:${config.webPort}/enter?ticket=${ticket}`;
+    console.info(`\n✅ הקונסולה פתוחה: http://127.0.0.1:${config.webPort}/\n`);
     openBrowser(url);
   } else {
-    console.info(`\n⚠️  הממשק לא ענה בזמן. נסו לפתוח ידנית: ${url}\n`);
+    console.info(
+      `\n⚠️  לא הצלחתי לפתוח כניסה אוטומטית. פתחו http://127.0.0.1:${config.webPort}/ והדביקו את הטוקן:\n   ${token}\n`
+    );
   }
 }

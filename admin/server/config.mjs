@@ -20,10 +20,17 @@ const here = dirname(fileURLToPath(import.meta.url));
 export const ADMIN_ROOT = resolve(here, '..');
 export const REPO_ROOT = resolve(ADMIN_ROOT, '..');
 
-/** טוענים .env.local / .env מהשורש בלי תלות חיצונית (dotenv). */
+/**
+ * טוענים .env.local / .env מהשורש בלי תלות חיצונית (dotenv).
+ *
+ * ‼️ ה-BOM נחתך לפני הכול. PowerShell (`Set-Content -Encoding UTF8`)
+ *    כותב קובץ עם BOM, והוא נדבק לתחילת השורה הראשונה — כלומר המפתח
+ *    הופך ל-„\uFEFFADMIN_DATA_DIR” ופשוט לא מזוהה. התסמין הוא הגדרה
+ *    שנראית נכונה לחלוטין בעורך ומתעלמים ממנה בלי שום הודעת שגיאה.
+ */
 function loadEnvFile(file) {
   if (!existsSync(file)) return;
-  for (const rawLine of readFileSync(file, 'utf8').split('\n')) {
+  for (const rawLine of readFileSync(file, 'utf8').replace(/^\uFEFF/, '').split('\n')) {
     const line = rawLine.trim();
     if (!line || line.startsWith('#')) continue;
     const eq = line.indexOf('=');
@@ -45,8 +52,20 @@ loadEnvFile(join(REPO_ROOT, '.env.local'));
 loadEnvFile(join(REPO_ROOT, '.env'));
 loadEnvFile(join(ADMIN_ROOT, '.env.local'));
 
-/** תיקיית העבודה המקומית של הקונסולה — טוקן, מטמון דמו, ייצוא דוחות. */
-export const DATA_DIR = join(ADMIN_ROOT, '.data');
+/**
+ * תיקיית העבודה המקומית של הקונסולה — טוקן, מטמון דמו, לוגים.
+ *
+ * ‼️ ניתנת להזזה ב-ADMIN_DATA_DIR, ולא בשביל נוחות: פרויקט שיושב
+ *    בתוך תיקייה מסונכרנת (OneDrive, Dropbox, Drive) מעלה את התוכן
+ *    שלה לענן — כולל הטוקן. הסוד שאמור לא לעזוב את המחשב, עוזב אותו
+ *    בלי שאיש שם לב. במקרה כזה מכוונים את המשתנה לתיקייה מקומית.
+ */
+const dataDirRaw = process.env.ADMIN_DATA_DIR;
+export const DATA_DIR = dataDirRaw
+  ? isAbsolute(dataDirRaw)
+    ? dataDirRaw
+    : resolve(REPO_ROOT, dataDirRaw)
+  : join(ADMIN_ROOT, '.data');
 if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 
 function resolveMaybe(p) {
@@ -86,6 +105,22 @@ export const config = {
   projectId,
   /** שורש הנתונים הפרטיים של הקונסולה בתוך RTDB. */
   consoleRoot: 'adminConsole',
+  /**
+   * חיי הסשן בדפדפן. שני שעונים: מוחלט, ועוד אחד של חוסר פעילות —
+   * מחשב שנשאר פתוח בלי השגחה ננעל מעצמו.
+   */
+  session: {
+    ttlMs: Number(process.env.ADMIN_SESSION_HOURS ?? 12) * 60 * 60 * 1000,
+    idleMs: Number(process.env.ADMIN_IDLE_MINUTES ?? 30) * 60 * 1000,
+  },
+  /**
+   * כיבוי אוטומטי של השרת אחרי חוסר פעילות (דקות; 0 מבטל).
+   *
+   * ‼️ לא נוחות אלא אבטחה: השרת מחזיק את מפתח ה-service account בזיכרון.
+   *    כשפותחים אותו בקיצור-דרך במקום בטרמינל, אין חלון שסוגרים בסוף —
+   *    ובלי הכיבוי הזה הוא היה נשאר חי ימים.
+   */
+  autoStopMs: Number(process.env.ADMIN_AUTOSTOP_MINUTES ?? 60) * 60 * 1000,
   /** אמולטור, או service account + databaseURL. אחרת — מצב הדגמה. */
   get mode() {
     if (this.emulatorHost && this.projectId) return 'live';

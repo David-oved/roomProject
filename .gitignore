@@ -52,3 +52,4 @@ admin/service-account.json
 admin/.data/
 admin/dist/
 admin/.env.local
+admin/launch.cmd

@@ -1,7 +1,7 @@
 {
   "name": "roommate",
   "private": true,
-  "version": "1.26.0",
+  "version": "1.26.1",
   "type": "module",
   "description": "RoomMate — ניהול חכם של חדר משותף במעונות סטודנטים",
   "scripts": {
@@ -9,6 +9,10 @@
     "build": "npm run clean && tsc -b --noEmit && vite build && node scripts/stamp-build.mjs",
     "preview": "vite preview",
     "admin": "node admin/start.mjs",
+    "admin:open": "node admin/launch.mjs",
+    "admin:restart": "node admin/launch.mjs --restart",
+    "admin:stop": "node admin/launch.mjs --stop",
+    "admin:shortcut": "node scripts/install-admin-shortcut.mjs",
     "admin:server": "node admin/server/index.mjs",
     "admin:build": "tsc -p admin/tsconfig.json --noEmit && vite build --config admin/vite.config.ts",
     "admin:preview": "node admin/start.mjs --server-only",
