@@ -5,6 +5,8 @@ import { useRoom } from '../../store/RoomContext';
 import { useSuspension } from '../../hooks/useAdminMessages';
 import { isDeveloper } from '../../lib/developer';
 import { FullPageSpinner } from '../ui/Spinner';
+import { ErrorState } from '../ui/EmptyState';
+import { PlainShell } from '../layout/AppShell';
 
 // נטען עצלה — רוב המשתמשים לעולם לא יראו את המסך הזה
 const SuspendedPage = lazy(() => import('../../pages/SuspendedPage'));
@@ -58,9 +60,31 @@ export function RequireGuest() {
 /** דורש חברות פעילה בחדר שב-URL */
 export function RequireRoomMember() {
   const { code } = useParams<{ code: string }>();
-  const { myMembership, loading, metadata } = useRoom();
+  const { myMembership, loading, metadata, error } = useRoom();
 
   if (loading) return <FullPageSpinner label="טוען את החדר…" />;
+
+  /**
+   * ‼️ "החיבור לא נוצר" אינו "החדר לא קיים".
+   *
+   * בלי ההבחנה הזו נוצרת לולאת ניתוב איטית: פסק הזמן של useRtdb מוריד
+   * את loading בלי מטא-דאטה, השומר מפרש את זה כחדר שנעלם ומנווט ל-
+   * onboarding, ושם משתמש עם חדר אחד מוחזר מיד לאותו חדר — וחוזר
+   * חלילה כל עוד אין רשת. מסך עם כפתור "נסה שוב" הוא מה שהמשתמש
+   * באמת צריך כאן.
+   *
+   * ‼️ מצומצם בכוונה לפסק זמן בלבד. permission_denied חייב להמשיך
+   *    לנווט ל-onboarding — זו הזרימה של "הוסרת מהחדר", והיא נבדקת.
+   */
+  if (!metadata && error?.name === 'RtdbTimeoutError') {
+    return (
+      <PlainShell>
+        <div className="flex flex-1 flex-col justify-center">
+          <ErrorState message={error.message} onRetry={() => window.location.reload()} />
+        </div>
+      </PlainShell>
+    );
+  }
 
   if (!metadata) return <Navigate to="/onboarding" replace />;
 

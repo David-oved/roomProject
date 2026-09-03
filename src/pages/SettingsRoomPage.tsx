@@ -80,7 +80,11 @@ export default function SettingsRoomPage() {
 
   return (
     <>
-      <TopBar title="החדר" back={`/r/${roomCode}/settings`} />
+      <TopBar
+        title="החדר"
+        subtitle="שם, תיאור וניהול מתקדם של החדר"
+        back={`/r/${roomCode}/settings`}
+      />
       <PlainShell hasTopBar>
         <div className="space-y-6 py-4">
           {/* פרטי החדר */}

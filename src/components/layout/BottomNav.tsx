@@ -138,13 +138,15 @@ function TabButton({ to, label, Icon, end, unreadCount, hintId, hintText }: Tab)
         // נקראו. אותו דפוס בדיוק כמו aria-label של פעמון ההתראות.
         aria-label={hasUnread ? `${label}, ${unreadCount} הודעות שלא נקראו` : undefined}
         className="tap flex h-full flex-col items-center justify-center gap-1
-                   text-xs font-semibold outline-none"
+                   text-xs font-semibold outline-none transition-transform
+                   duration-150 active:scale-90"
       >
         {({ isActive }) => (
           <>
             <span
               className={[
-                'relative grid h-8 w-11 place-items-center rounded-full transition-all duration-300 ease-out',
+                'relative grid h-8 w-11 place-items-center rounded-full transition-all duration-300',
+                'ease-[cubic-bezier(.34,1.56,.64,1)]',
                 isActive ? 'scale-100 bg-brand-50' : 'scale-90 bg-transparent',
               ].join(' ')}
             >

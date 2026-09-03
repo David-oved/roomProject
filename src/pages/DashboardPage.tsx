@@ -198,7 +198,7 @@ export default function DashboardPage() {
     <AppShell>
       <TopBar
         title={metadata?.name ?? 'החדר שלי'}
-        subtitle="חשבון החדר"
+        subtitle="תמונת מצב מהירה — יתרה, חסרים ומטלות"
         actions={
           <>
             <Link

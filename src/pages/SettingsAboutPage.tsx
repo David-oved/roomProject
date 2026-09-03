@@ -8,7 +8,11 @@ export default function SettingsAboutPage() {
 
   return (
     <>
-      <TopBar title="אודות" back={`/r/${roomCode}/settings`} />
+      <TopBar
+        title="אודות"
+        subtitle="גרסה, עדכונים ומידע על האפליקציה"
+        back={`/r/${roomCode}/settings`}
+      />
       <PlainShell hasTopBar>
         <div className="py-4">
           <AboutSettings />

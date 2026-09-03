@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   assertFails,
   assertSucceeds,
@@ -631,6 +631,256 @@ describe.skipIf(!hasEmulator)('database.rules.json', () => {
     it('הניצול: כתיבת claim מייל בלי חיבור אמיתי לא עוקפת — משתמש לא-מאומת נדחה תמיד', async () => {
       const anon = testEnv.unauthenticatedContext().database();
       await assertFails(get(ref(anon, 'users')));
+    });
+  });
+
+  /* ═════════ חברות בכמה חדרים במקביל ═════════ */
+
+  /**
+   * ‼️ למה זה נבדק בשכבת הכללים ולא רק בממשק.
+   *
+   * OnboardingPage כבר יודע להציג בוחר חדרים (ראו
+   * tests/unit/multiRoom.test.tsx), אבל ממשק שמציג שני חדרים בזמן
+   * שהשרת מרשה רק אחד הוא הבטחה ריקה. השאלה "האם משתמש *תכלס* יכול
+   * להיות חבר בשני חדרים" נחתכת כאן: users/$uid/rooms/$roomCode הוא
+   * wildcard בלי תקרה, ואין שום כלל שסופר חדרים.
+   *
+   * הבדיקות נועלות שני דברים הפוכים: שהחברות הכפולה באמת עובדת, ושהיא
+   * לא הופכת לדלת אחורית — חברות בחדר אחד לא מקנה שום גישה לאחר.
+   */
+  describe('חברות בשני חדרים', () => {
+    /** MEMBER מצטרף גם ל-OTHER_ROOM, בנוסף ל-ROOM שהוא כבר חבר בו. */
+    const joinSecondRoom = async () => {
+      await given(`rooms/${OTHER_ROOM}/members/${MEMBER}`, {
+        name: 'חבר',
+        email: 'member@example.com',
+        joinedAt: T,
+        status: 'active',
+        role: 'member',
+      });
+      await given(`users/${MEMBER}/rooms`, { [ROOM]: true, [OTHER_ROOM]: true });
+    };
+
+    it('חבר פעיל בשני חדרים קורא את שניהם', async () => {
+      await joinSecondRoom();
+      await assertSucceeds(get(ref(as(MEMBER), `rooms/${ROOM}/metadata`)));
+      await assertSucceeds(get(ref(as(MEMBER), `rooms/${OTHER_ROOM}/metadata`)));
+      await assertSucceeds(get(ref(as(MEMBER), `rooms/${OTHER_ROOM}/members`)));
+    });
+
+    it('רשימת החדרים שלו מחזיקה את שניהם, והוא קורא אותה', async () => {
+      await joinSecondRoom();
+      const snap = await get(ref(as(MEMBER), `users/${MEMBER}/rooms`));
+      expect(Object.keys(snap.val() ?? {}).sort()).toEqual([ROOM, OTHER_ROOM].sort());
+    });
+
+    it('אין תקרה — אפשר להוסיף חדר שלישי', async () => {
+      await joinSecondRoom();
+      await assertSucceeds(set(ref(as(MEMBER), `users/${MEMBER}/rooms/ROOM03`), true));
+    });
+
+    it('הוא כותב בשני החדרים — חברות כפולה אינה קריאה בלבד', async () => {
+      await joinSecondRoom();
+      const item = (name: string) => ({
+        name,
+        category: 'kitchen',
+        reportedBy: MEMBER,
+        reportedAt: T,
+        priority: 'normal',
+        status: 'needed',
+      });
+
+      await assertSucceeds(set(ref(as(MEMBER), `rooms/${ROOM}/items/i1`), item('חלב')));
+      await assertSucceeds(set(ref(as(MEMBER), `rooms/${OTHER_ROOM}/items/i2`), item('לחם')));
+    });
+
+    it('שני החדרים נשארים מופרדים — חברות באחד אינה גישה לשלישי', async () => {
+      await joinSecondRoom();
+      await given('rooms/ROOM03/metadata', {
+        name: 'חדר זר',
+        createdAt: T,
+        createdBy: STRANGER,
+        adminId: STRANGER,
+        currency: 'ILS',
+      });
+      await assertFails(get(ref(as(MEMBER), 'rooms/ROOM03/metadata')));
+    });
+
+    it('הניצול: רישום עצמי לחדר שלישי אינו הופך לחברות בו', async () => {
+      // ‼️ users/$uid/rooms הוא נוחות ניתוב בצד הלקוח, לא מקור הרשאה.
+      // מי שיכתוב לעצמו קוד חדר שרירותי — וזה מותר לו — עדיין לא יקבל
+      // ממנו שום נתון, כי ההרשאה נגזרת מ-rooms/$code/members בלבד.
+      await given('rooms/ROOM03/metadata', {
+        name: 'חדר זר',
+        createdAt: T,
+        createdBy: STRANGER,
+        adminId: STRANGER,
+        currency: 'ILS',
+      });
+      await assertSucceeds(set(ref(as(MEMBER), `users/${MEMBER}/rooms/ROOM03`), true));
+      await assertFails(get(ref(as(MEMBER), 'rooms/ROOM03/metadata')));
+    });
+
+    it('עזיבת חדר אחד לא נוגעת בשני', async () => {
+      await joinSecondRoom();
+
+      // בדיוק מה ש-leaveRoom כותב (roomService.ts)
+      await assertSucceeds(
+        update(ref(as(MEMBER)), {
+          [`rooms/${OTHER_ROOM}/members/${MEMBER}/status`]: 'removed',
+          [`users/${MEMBER}/rooms/${OTHER_ROOM}`]: null,
+        })
+      );
+
+      await assertSucceeds(get(ref(as(MEMBER), `rooms/${ROOM}/metadata`)));
+      await assertFails(get(ref(as(MEMBER), `rooms/${OTHER_ROOM}/metadata`)));
+    });
+
+    it('אפשר להיות מנהל בחדר אחד וחבר רגיל באחר', async () => {
+      // ADMIN מנהל את ROOM; מוסיפים אותו כחבר רגיל ב-OTHER_ROOM
+      await given(`rooms/${OTHER_ROOM}/members/${ADMIN}`, {
+        name: 'אדמין',
+        email: 'admin@example.com',
+        joinedAt: T,
+        status: 'active',
+        role: 'member',
+      });
+      await given(`users/${ADMIN}/rooms`, { [ROOM]: true, [OTHER_ROOM]: true });
+
+      await assertSucceeds(set(ref(as(ADMIN), `rooms/${ROOM}/metadata/name`), 'שם חדש'));
+      // ‼️ הגבול: תפקיד המנהל אינו נודד איתו לחדר השני
+      await assertFails(set(ref(as(ADMIN), `rooms/${OTHER_ROOM}/metadata/name`), 'שם חדש'));
+    });
+  });
+
+  /* ═════════ אישור בקשת הצטרפות — מנהל החדר ═════════ */
+
+  /**
+   * ‼️ הבדיקות שהיו חסרות כשמנהלי חדרים דיווחו שהם לא מצליחים לאשר
+   *    אף אחד.
+   *
+   * הכשל לא היה בהרשאה של מנהל החדר ולא נגע בחשבון המפתח כלל — הוא
+   * היה בהנחה שגויה לגבי מנוע הכללים עצמו:
+   *
+   *   `root` בכללי RTDB הוא תמיד המצב **לפני** הכתיבה. כתיבה
+   *   מרובת-נתיבים אינה משנה את זה — כל נתיב בעדכון נבדק מול אותו
+   *   root ישן, ולא מול מה שנתיב אחר באותו עדכון עומד לכתוב.
+   *
+   * הכלל ב-users/$uid/rooms/$roomCode דרש שהיעד יהיה כבר חבר פעיל,
+   * בהנחה שהחברות שנכתבת באותה עדכון אטומית "תיראה" כבר. היא לא. ומה
+   * שהופך את זה לכשל מלא ולא חלקי: העדכון אטומי — נתיב אחד שנדחה מפיל
+   * את כל השבעה.
+   *
+   * ‼️ הבדיקה הראשונה כאן היא בכוונה **המטען המדויק** של
+   *    approveJoinRequest (roomService.ts), על כל שבעת הנתיבים. בדיקה
+   *    של נתיב בודד לא הייתה תופסת את זה: חמישה מהשבעה עברו גם קודם.
+   */
+  describe('approveJoinRequest', () => {
+    /** בדיוק מה ש-roomService שולח כשמנהל לוחץ "אשר". */
+    const approvalUpdate = (uid: string) => ({
+      [`rooms/${ROOM}/members/${uid}`]: {
+        name: 'מבקש',
+        email: 'joiner@example.com',
+        avatar: null,
+        joinedAt: T,
+        status: 'active',
+        role: 'member',
+      },
+      [`rooms/${ROOM}/pendingRequests/${uid}/status`]: 'approved',
+      [`rooms/${ROOM}/pendingRequests/${uid}/respondedAt`]: T,
+      [`joinRequests/${uid}/${ROOM}/status`]: 'approved',
+      [`joinRequests/${uid}/${ROOM}/respondedAt`]: T,
+      [`users/${uid}/rooms/${ROOM}`]: true,
+      [`rooms/${ROOM}/notifications/n1`]: {
+        type: 'member_joined',
+        actorId: ADMIN,
+        actorName: 'אדמין',
+        text: 'מבקש הצטרף לחדר',
+        entityId: uid,
+        createdAt: T,
+        readBy: { [ADMIN]: true },
+      },
+    });
+
+    it('מנהל החדר מאשר בקשה — העדכון האטומי המלא עובר', async () => {
+      await assertSucceeds(update(ref(as(ADMIN)), approvalUpdate(JOINER)));
+    });
+
+    it('מנהל החדר לבדו מספיק — אין שום דרישה לחשבון המפתח', async () => {
+      // ‼️ חשבון המפתח הוא קריאה בלבד ואינו מעורב באישורים כלל.
+      //    הבדיקה הזו נועלת את זה: ההרשאה נגזרת מ-metadata/adminId.
+      await assertSucceeds(update(ref(as(ADMIN)), approvalUpdate(JOINER)));
+      const snap = await get(ref(as(ADMIN), `rooms/${ROOM}/members/${JOINER}/status`));
+      expect(snap.val()).toBe('active');
+    });
+
+    it('הדגל ברשימת החדרים של המאושר נדלק — בלעדיו הוא לא רואה את החדר', async () => {
+      await assertSucceeds(update(ref(as(ADMIN)), approvalUpdate(JOINER)));
+      const snap = await get(ref(as(JOINER), `users/${JOINER}/rooms`));
+      expect(snap.val()).toEqual({ [ROOM]: true });
+    });
+
+    it('המאושר קורא את החדר מיד אחרי האישור', async () => {
+      await assertSucceeds(update(ref(as(ADMIN)), approvalUpdate(JOINER)));
+      await assertSucceeds(get(ref(as(JOINER), `rooms/${ROOM}/metadata`)));
+    });
+
+    it('דחייה עדיין עובדת', async () => {
+      await assertSucceeds(
+        update(ref(as(ADMIN)), {
+          [`rooms/${ROOM}/pendingRequests/${JOINER}/status`]: 'rejected',
+          [`rooms/${ROOM}/pendingRequests/${JOINER}/respondedAt`]: T,
+          [`joinRequests/${JOINER}/${ROOM}/status`]: 'rejected',
+          [`joinRequests/${JOINER}/${ROOM}/respondedAt`]: T,
+        })
+      );
+    });
+
+    it('מנהל של חדר אחר לא מאשר לחדר שאינו שלו', async () => {
+      await assertFails(update(ref(as(OUTSIDER)), approvalUpdate(JOINER)));
+    });
+
+    it('חבר רגיל אינו מאשר בקשות', async () => {
+      await assertFails(update(ref(as(MEMBER)), approvalUpdate(JOINER)));
+    });
+
+    /* ── ההגנה שהתיקון חייב לשמור עליה ── */
+
+    /**
+     * ‼️ זו הסיבה שהתנאי הוצב שם מלכתחילה, והתיקון לא מבטל אותה.
+     *
+     * "חדר רפאים": מנהל מדליק את הדגל אצל מישהו שלא ביקש כלום. זו לא
+     * הצקה בלבד — כל כתיבה עתידית מרובת-נתיבים של הקורבן (שינוי שם,
+     * שמתפזר לכל חדריו) הייתה נכשלת *כולה* בגלל הנתיב הפנטום. מניעת
+     * שירות לצמיתות.
+     */
+    it('הניצול: הדלקת דגל חדר אצל מי שלא ביקש להצטרף — נחסם', async () => {
+      await assertFails(set(ref(as(ADMIN), `users/${VICTIM}/rooms/${ROOM}`), true));
+    });
+
+    it('הניצול: אותו דבר על משתמש קיים שאינו קשור לחדר — נחסם', async () => {
+      await assertFails(set(ref(as(OUTSIDER), `users/${MEMBER}/rooms/${OTHER_ROOM}`), true));
+    });
+
+    /**
+     * ‼️ הדלת נשארת סגורה כי מנהל אינו יכול *ליצור* בקשה בשם מישהו
+     *    אחר — רק המשתמש עצמו יוצר את הבקשה שלו. בלי הנעילה הזו,
+     *    התיקון שלמעלה היה פותח מחדש את חדר הרפאים בשני צעדים.
+     */
+    it('הניצול: מנהל שותל בקשת הצטרפות בשם קורבן — נחסם', async () => {
+      await assertFails(
+        set(ref(as(ADMIN), `rooms/${ROOM}/pendingRequests/${VICTIM}`), {
+          userId: VICTIM,
+          displayName: 'קורבן',
+          requestedAt: T,
+          status: 'pending',
+        })
+      );
+    });
+
+    it('הסרה ועזיבה ממשיכות לכבות את הדגל', async () => {
+      await assertSucceeds(update(ref(as(ADMIN)), approvalUpdate(JOINER)));
+      await assertSucceeds(set(ref(as(ADMIN), `users/${JOINER}/rooms/${ROOM}`), null));
     });
   });
 });

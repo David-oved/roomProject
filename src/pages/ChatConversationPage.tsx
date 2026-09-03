@@ -146,7 +146,7 @@ export default function ChatConversationPage() {
 
   return (
     <div
-      className="fixed flex flex-col bg-ink-50"
+      className="fixed flex animate-page-in flex-col bg-ink-50"
       // ‼️ left/width ולא inset-x-0 — ראו את ההסבר על זום-צביטה
       // ב-useVisualViewportBounds.
       style={{
@@ -187,12 +187,14 @@ export default function ChatConversationPage() {
           </div>
         )}
 
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-base font-bold leading-tight text-ink-900">{title}</h1>
+        <div className="min-w-0 flex-1 animate-header-in">
+          <h1 className="truncate text-lg font-extrabold leading-tight tracking-tight text-ink-900">
+            {title}
+          </h1>
           {isGeneral ? (
-            <p className="truncate text-xs text-ink-500">{activeMembers.length} חברים</p>
+            <p className="truncate text-[13px] font-medium text-ink-500">{activeMembers.length} חברים</p>
           ) : (
-            <p className={`truncate text-xs ${otherOnline ? 'font-medium text-emerald-700' : 'text-ink-500'}`}>
+            <p className={`truncate text-[13px] font-medium ${otherOnline ? 'text-emerald-700' : 'text-ink-500'}`}>
               {otherOnline ? 'מחובר/ת עכשיו' : 'לא מחובר/ת'}
             </p>
           )}

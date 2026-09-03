@@ -20,7 +20,11 @@ export default function ProfilePage() {
 
   return (
     <>
-      <TopBar title="החשבון שלי" back />
+      <TopBar
+        title="החשבון שלי"
+        subtitle="פרטים אישיים, התראות ומידע על האפליקציה"
+        back
+      />
       <PlainShell hasTopBar>
         <div className="space-y-6 py-4">
           <AccountSettings />

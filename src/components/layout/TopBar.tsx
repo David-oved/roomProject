@@ -42,9 +42,15 @@ export function TopBar({
           </button>
         )}
 
-        <div className={`min-w-0 flex-1 ${back ? '' : 'ps-2'}`}>
-          <h1 className="truncate text-base font-bold leading-tight text-ink-900">{title}</h1>
-          {subtitle && <div className="truncate text-xs text-ink-500">{subtitle}</div>}
+        <div className={`min-w-0 flex-1 animate-header-in ${back ? '' : 'ps-2'}`}>
+          <h1 className="truncate text-lg font-extrabold leading-tight tracking-tight text-ink-900">
+            {title}
+          </h1>
+          {subtitle && (
+            <div className="truncate text-[13px] font-medium leading-snug text-ink-500">
+              {subtitle}
+            </div>
+          )}
         </div>
 
         {actions && <div className="flex shrink-0 items-center gap-0.5 pe-1">{actions}</div>}

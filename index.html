@@ -43,6 +43,31 @@
          אחרת הפוש המיידי ייחסם. (לא נפילה: ההתראה עדיין תצא תוך 5
          דקות מה-GitHub Action, ראו worker/src/index.js.)
 
+      ‼️ *.firebaseio.com / *.firebasedatabase.app מופיעים גם ב-script-src,
+         ולא רק ב-connect-src. זה לא עודף — זו התקלה שגרמה למסך טעינה
+         אינסופי אצל חלק מהמשתמשים (בעיקר Samsung Internet):
+
+         ל-SDK של RTDB שני מובילים — WebSocket ו-long-polling. את הבחירה
+         ביניהם הוא עושה ב-TransportManager.initTransports_, ושם יש שורה
+         מכרעת: WebSocketConnection.previouslyFailed() מחזיר true גם כש-
+         PersistentStorage.isInMemoryStorage — כלומר בכל דפדפן שחוסם
+         localStorage (מצב סודי ב-Samsung Internet, "חסימת קובצי Cookie
+         ונתוני אתרים", הגנת מעקב מחמירה). במצב הזה ה-SDK *פותח* ב-long-
+         polling, בלי אפילו לנסות WebSocket.
+
+         ו-long-polling ב-RTDB אינו fetch: הוא מזריק <script src="https://
+         <db>.firebaseio.com/.lp?..."> לתוך iframe מקומי (about:blank),
+         שיורש את המדיניות של הדף. לכן script-src — ולא connect-src — הוא
+         שחוסם אותו. התוצאה: onValue לא נקרא אף פעם, וגם callback השגיאה
+         לא. שום מסך לא יוצא מ-loading, ואין שגיאה להציג. מסך טעינה לנצח.
+
+         אותה מלכודת נסגרת על כל משתמש שה-WebSocket שלו נכשל פעם אחת:
+         הדגל previous_websocket_failure נשמר ב-localStorage, ומאותו רגע
+         כל טעינה מתחילה ב-long-polling החסום.
+
+         wildcard ולא הדומיין המדויק, כי השרת מפנה את החיבור ל-shard
+         (s-usc1c-nss-####.firebaseio.com) שאינו ידוע בזמן בנייה.
+
       'unsafe-inline' ב-script-src נדרש לשני סקריפטים מוטבעים ב-<head>/
       <body>: קביעת מצב כהה/בהיר לפני הציור הראשון (למה למטה), וסקריפט
       המילוט שבתחתית הקובץ — האחרון חייב להיות inline מעצם תפקידו, הוא
@@ -65,7 +90,8 @@
         object-src 'none';
         form-action 'self';
         frame-ancestors 'none';
-        script-src 'self' 'unsafe-inline';
+        script-src 'self' 'unsafe-inline'
+          https://*.firebaseio.com https://*.firebasedatabase.app;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         font-src 'self' data: https://fonts.gstatic.com;
         img-src 'self' data: blob: https://res.cloudinary.com https://firebasestorage.googleapis.com;
