@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useRtdbList } from './useRtdb';
 import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
-import { computeBalances, computeContributions, whoIsNext } from '../lib/money';
+import { computeBalances, computeContributions, isSettlementSettled, whoIsNext } from '../lib/money';
 import type {
   Announcement,
   AppNotification,
@@ -62,23 +62,35 @@ export function usePurchases() {
 }
 
 export function useSettlements() {
-  const { roomCode } = useRoom();
+  const { roomCode, activeMembers, metadata } = useRoom();
   const { user } = useAuth();
   const state = useRtdbList<Settlement>(roomCode ? `rooms/${roomCode}/settlements` : null);
 
-  /** תשלומים שמישהו סימן שהעביר לי — ממתינים לאישור שלי */
+  /** תשלומים שמישהו סימן שהעביר לי — ממתינים לאישור שלי (תשלומים רגילים בלבד) */
   const awaitingMyConfirmation = useMemo(
-    () => state.data.filter((s) => !s.confirmedBy && s.to === user?.uid),
+    () => state.data.filter((s) => !s.tripId && !s.confirmedBy && s.to === user?.uid),
     [state.data, user]
   );
 
-  /** תשלומים ששלחתי ועדיין לא אושרו בצד השני */
+  /** תשלומים ששלחתי ועדיין לא אושרו בצד השני (תשלומים רגילים בלבד) */
   const awaitingOthers = useMemo(
-    () => state.data.filter((s) => !s.confirmedBy && s.from === user?.uid),
+    () => state.data.filter((s) => !s.tripId && !s.confirmedBy && s.from === user?.uid),
     [state.data, user]
   );
 
-  return { ...state, awaitingMyConfirmation, awaitingOthers };
+  /**
+   * תשלומים על חוב מקנייה גדולה שעדיין לא הגיעו לרוב/אישור מנהל,
+   * ושאני עדיין לא הצבעתי עליהם — ראו isSettlementSettled ב-lib/money.ts.
+   */
+  const awaitingMyTripApproval = useMemo(() => {
+    if (!metadata) return [];
+    const ctx = { activeMemberIds: activeMembers.map((m) => m.id), adminId: metadata.adminId };
+    return state.data.filter(
+      (s) => s.tripId && !isSettlementSettled(s, ctx) && !s.approvals?.[user?.uid ?? '']
+    );
+  }, [state.data, metadata, activeMembers, user]);
+
+  return { ...state, awaitingMyConfirmation, awaitingOthers, awaitingMyTripApproval };
 }
 
 /**
@@ -86,7 +98,7 @@ export function useSettlements() {
  * כך אישור כפול של קנייה לא מכפיל את החוב, ותמיד אפשר לחשב מחדש.
  */
 export function useBalances() {
-  const { activeMembers, members } = useRoom();
+  const { activeMembers, members, metadata } = useRoom();
   const { user } = useAuth();
   const {
     purchases,
@@ -104,8 +116,11 @@ export function useBalances() {
   const balances = useMemo(() => {
     // כוללים גם חברים שהוסרו — החובות שלהם לא נעלמים
     const ids = members.map((m) => m.id);
-    return computeBalances(purchases, settlements, ids);
-  }, [purchases, settlements, members]);
+    const approvalCtx = metadata
+      ? { activeMemberIds: activeMembers.map((m) => m.id), adminId: metadata.adminId }
+      : undefined;
+    return computeBalances(purchases, settlements, ids, approvalCtx);
+  }, [purchases, settlements, members, activeMembers, metadata]);
 
   const myBalance = user ? (balances[user.uid] ?? 0) : 0;
 

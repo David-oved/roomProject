@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { ErrorState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import {
+  BasketIcon,
   BellIcon,
   CartIcon,
   ExchangeIcon,
@@ -104,6 +105,10 @@ export default function DashboardPage() {
   const settleShortcutHintRef = useHintRef<HTMLAnchorElement>(
     'dashboard.settleShortcut',
     'משם אפשר לסגור חובות ולעדכן תשלומים בין שותפים'
+  );
+  const tripShortcutHintRef = useHintRef<HTMLAnchorElement>(
+    'dashboard.tripShortcut',
+    'בונים רשימת קניות משותפת ליציאה מרוכזת אחת לסופר'
   );
   const confirmSettlementHintRef = useHintRef<HTMLAnchorElement>(
     'dashboard.confirmSettlement',
@@ -311,7 +316,7 @@ export default function DashboardPage() {
         </section>
 
         {/* ── קיצורי דרך ── */}
-        <section className="grid grid-cols-3 gap-2">
+        <section className="grid grid-cols-4 gap-2">
           <button
             ref={reportShortcutHintRef}
             onClick={() => setReportOpen(true)}
@@ -321,7 +326,7 @@ export default function DashboardPage() {
                        transition active:scale-[.97] disabled:bg-ink-300 disabled:active:scale-100"
           >
             <PlusIcon width={19} height={19} />
-            <span className="text-xs font-semibold">דיווח מוצר</span>
+            <span className="text-[11px] font-semibold">דיווח מוצר</span>
           </button>
           <Link
             ref={buyShortcutHintRef}
@@ -330,7 +335,16 @@ export default function DashboardPage() {
                        py-3.5 text-ink-700 transition active:scale-[.97]"
           >
             <CartIcon width={19} height={19} />
-            <span className="text-xs font-semibold">רשמתי קנייה</span>
+            <span className="text-[11px] font-semibold">רשמתי קנייה</span>
+          </Link>
+          <Link
+            ref={tripShortcutHintRef}
+            to={`/r/${roomCode}/trip`}
+            className="flex flex-col items-center gap-2 rounded-2xl border border-ink-200 bg-surface
+                       py-3.5 text-ink-700 transition active:scale-[.97]"
+          >
+            <BasketIcon width={19} height={19} />
+            <span className="text-[11px] font-semibold">קנייה גדולה</span>
           </Link>
           <Link
             ref={settleShortcutHintRef}
@@ -339,7 +353,7 @@ export default function DashboardPage() {
                        py-3.5 text-ink-700 transition active:scale-[.97]"
           >
             <ExchangeIcon width={19} height={19} />
-            <span className="text-xs font-semibold">סגירת חוב</span>
+            <span className="text-[11px] font-semibold">סגירת חוב</span>
           </Link>
         </section>
 

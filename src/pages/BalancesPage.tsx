@@ -17,6 +17,7 @@ import { useToast } from '../store/ToastContext';
 import { useConfirm } from '../store/ConfirmContext';
 import {
   approvePurchase,
+  approveTripSettlement,
   confirmSettlement,
   createSettlement,
   rejectPurchase,
@@ -167,14 +168,24 @@ function SummaryTab({
   memberAvatar: (uid: string) => string | null;
 }) {
   const { user, profile } = useAuth();
-  const { roomCode, isArchived, memberName: roomMemberName, memberAvatar: roomMemberAvatar } = useRoom();
+  const {
+    roomCode,
+    isArchived,
+    isAdmin,
+    activeMembers,
+    memberName: roomMemberName,
+    memberAvatar: roomMemberAvatar,
+  } = useRoom();
   const { isOnline } = useConnection();
   const toast = useToast();
   const confirm = useConfirm();
   const [busy, setBusy] = useState<string | null>(null);
-  const { awaitingMyConfirmation, awaitingOthers } = useSettlements();
+  const { awaitingMyConfirmation, awaitingOthers, awaitingMyTripApproval } = useSettlements();
 
-  const nothingPending = allTransfers.length === 0 && awaitingMyConfirmation.length === 0;
+  const nothingPending =
+    allTransfers.length === 0 &&
+    awaitingMyConfirmation.length === 0 &&
+    awaitingMyTripApproval.length === 0;
 
   const confirmSettlementHintRef = useHintRef<HTMLButtonElement>(
     'balances.confirmSettlement',
@@ -244,6 +255,59 @@ function SummaryTab({
                 </Button>
               </li>
             ))}
+          </ul>
+        </section>
+      )}
+
+      {/* ── תשלומים על חוב מקנייה גדולה — דורשים רוב או אישור מנהל ── */}
+      {awaitingMyTripApproval.length > 0 && (
+        <section>
+          <h2 className="mb-2 px-1 text-sm font-bold text-sky-800">
+            תשלומים מקנייה גדולה — ממתינים לאישורך
+          </h2>
+          <ul className="space-y-2">
+            {awaitingMyTripApproval.map((s) => {
+              const approvedCount = activeMembers.filter((m) => s.approvals?.[m.id]).length;
+              const needed = Math.floor(activeMembers.length / 2) + 1;
+              return (
+                <li
+                  key={s.id}
+                  className="card flex items-center gap-3 border-sky-200 bg-sky-50/60 p-4"
+                >
+                  <Avatar name={roomMemberName(s.from)} uid={s.from} src={roomMemberAvatar(s.from)} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-ink-900">
+                      {roomMemberName(s.from)} מסמן/ת שהעביר/ה {isAdmin ? '' : `ל${roomMemberName(s.to)} `}
+                    </p>
+                    <p className="num text-lg font-bold text-sky-700">{formatILS(s.amount)}</p>
+                    <p className="text-xs text-ink-500">
+                      חוב שהתחלק בין כל החדר · {approvedCount}/{needed} אישורים נדרשים{isAdmin ? ', או אישור מנהל' : ''}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    disabled={!isOnline || isArchived || busy === s.id}
+                    loading={busy === s.id}
+                    onClick={async () => {
+                      setBusy(s.id);
+                      await toast.run(() =>
+                        approveTripSettlement(
+                          roomCode!,
+                          s.id,
+                          user!.uid,
+                          profile!.displayName,
+                          s.from,
+                          s.amount
+                        )
+                      );
+                      setBusy(null);
+                    }}
+                  >
+                    אשר
+                  </Button>
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
@@ -569,7 +633,20 @@ function HistoryTab({
   memberName: (uid: string) => string;
   memberAvatar: (uid: string) => string | null;
 }) {
+  const { user, profile } = useAuth();
+  const { roomCode, isArchived } = useRoom();
+  const { isOnline } = useConnection();
+  const toast = useToast();
+  const { data: settlements } = useSettlements();
+  const [busy, setBusy] = useState<string | null>(null);
+
   const done = purchases.filter((p) => p.status !== 'pending');
+
+  /** מזהי tripId שכבר יצרתי עבורם תשלום — כדי לא להציע לשלם פעמיים */
+  const myTripSettlements = useMemo(
+    () => new Set(settlements.filter((s) => s.tripId && s.from === user?.uid).map((s) => s.tripId)),
+    [settlements, user]
+  );
 
   if (done.length === 0) {
     return (
@@ -602,23 +679,60 @@ function HistoryTab({
       </div>
 
       <ul className="card divide-y divide-ink-100">
-        {done.map((p, idx) => (
-          <li key={p.id} className="flex items-center gap-3 px-4 py-3">
-            <Avatar name={memberName(p.boughtBy)} uid={p.boughtBy} src={memberAvatar(p.boughtBy)} size="xs" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-ink-900">{p.title}</p>
-              <p className="text-xs text-ink-500">
-                {memberName(p.boughtBy)} · {p.createdAt ? formatSmartDate(p.createdAt) : ''}
-              </p>
-            </div>
-            <div className="shrink-0 text-end">
-              <p className="num text-sm font-bold text-ink-900">{formatILS(p.amount)}</p>
-              <p ref={idx === 0 ? entryHintRef : undefined} className="text-[11px] text-ink-500">
-                {p.splitMethod === 'covered' ? 'על חשבונו' : PURCHASE_STATUS_LABELS[p.status]}
-              </p>
-            </div>
-          </li>
-        ))}
+        {done.map((p, idx) => {
+          const myShare = p.shares?.[user?.uid ?? ''] ?? 0;
+          const canPayTripShare =
+            !!p.tripId &&
+            myShare > 0 &&
+            p.boughtBy !== user?.uid &&
+            !myTripSettlements.has(p.tripId);
+
+          return (
+            <li key={p.id} className="flex items-center gap-3 px-4 py-3">
+              <Avatar name={memberName(p.boughtBy)} uid={p.boughtBy} src={memberAvatar(p.boughtBy)} size="xs" />
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1.5 truncate text-sm font-medium text-ink-900">
+                  {p.title}
+                  {p.tripId && <Badge tone="info">קנייה גדולה</Badge>}
+                </p>
+                <p className="text-xs text-ink-500">
+                  {memberName(p.boughtBy)} · {p.createdAt ? formatSmartDate(p.createdAt) : ''}
+                </p>
+                {canPayTripShare && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="mt-1.5"
+                    disabled={!isOnline || isArchived || busy === p.id}
+                    loading={busy === p.id}
+                    onClick={async () => {
+                      setBusy(p.id);
+                      await toast.run(() =>
+                        createSettlement(
+                          roomCode!,
+                          user!.uid,
+                          profile!.displayName,
+                          p.boughtBy,
+                          myShare,
+                          p.tripId
+                        )
+                      );
+                      setBusy(null);
+                    }}
+                  >
+                    שילמתי את חלקי · {formatILS(myShare)}
+                  </Button>
+                )}
+              </div>
+              <div className="shrink-0 text-end">
+                <p className="num text-sm font-bold text-ink-900">{formatILS(p.amount)}</p>
+                <p ref={idx === 0 ? entryHintRef : undefined} className="text-[11px] text-ink-500">
+                  {p.splitMethod === 'covered' ? 'על חשבונו' : PURCHASE_STATUS_LABELS[p.status]}
+                </p>
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </>
   );
