@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ComponentType } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AppShell } from '../components/layout/AppShell';
 import { TopBar } from '../components/layout/TopBar';
@@ -17,6 +17,7 @@ import {
   SparklesIcon,
   WarningIcon,
   WaveIcon,
+  type IconProps,
 } from '../components/ui/icons';
 import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
@@ -94,19 +95,19 @@ export default function DashboardPage() {
     'dashboard.balanceDetails',
     'רואים כאן פירוט מלא של מי חייב למי כמה'
   );
-  const reportShortcutHintRef = useHintRef<HTMLButtonElement>(
+  const reportShortcutHintRef = useHintRef<HTMLElement>(
     'dashboard.reportShortcut',
     'לחיצה פותחת דיווח מהיר על מוצר שנגמר בבית'
   );
-  const buyShortcutHintRef = useHintRef<HTMLAnchorElement>(
+  const buyShortcutHintRef = useHintRef<HTMLElement>(
     'dashboard.buyShortcut',
     'עוברים לרשימת המוצרים כדי לסמן קנייה שביצעתם'
   );
-  const settleShortcutHintRef = useHintRef<HTMLAnchorElement>(
+  const settleShortcutHintRef = useHintRef<HTMLElement>(
     'dashboard.settleShortcut',
     'משם אפשר לסגור חובות ולעדכן תשלומים בין שותפים'
   );
-  const tripShortcutHintRef = useHintRef<HTMLAnchorElement>(
+  const tripShortcutHintRef = useHintRef<HTMLElement>(
     'dashboard.tripShortcut',
     'בונים רשימת קניות משותפת ליציאה מרוכזת אחת לסופר'
   );
@@ -266,64 +267,76 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── כרטיס יתרה — בסגנון פנקס: המספר הוא הגיבור, המצב צמוד אליו ── */}
-        <section className="rounded-card border border-ink-200/70 bg-surface p-5 shadow-card">
-          <p className="text-sm font-semibold text-ink-600">היתרה שלי</p>
-
-          {/* המספר + המצב ("מאוזן" / "מגיע לך" / "אתה חייב") באותה שורה,
-              גדולים וברורים — לא תגית קטנה בפינה. */}
-          <div className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <p
-              dir="ltr"
-              className={[
-                'flex items-baseline gap-1.5 font-mono text-[2.75rem] font-bold leading-none tracking-tight',
-                myBalance === 0
-                  ? 'text-ink-900'
-                  : myBalance > 0
-                    ? 'text-emerald-700'
-                    : 'text-rose-700',
-              ].join(' ')}
-            >
-              <span className="text-3xl font-semibold opacity-60">₪</span>
-              <span className="num">{formatAmount(myBalance)}</span>
-            </p>
+        {/* ── כרטיס יתרה ──
+            רקע צבוע לפי המצב (ירוק=מגיע לך / אדום=אתה חייב / ניטרלי=מאוזן)
+            כדי שהוא יתפוס את העין, לא עוד כרטיס לבן. מתומצת: מצב + מספר +
+            שורת מידע אחת + קישור זעיר. בלי כפתור ענק. */}
+        <section
+          className={[
+            'rounded-card border p-4 shadow-card',
+            myBalance === 0
+              ? 'border-ink-200/70 bg-surface'
+              : myBalance > 0
+                ? 'border-emerald-200 bg-emerald-50'
+                : 'border-rose-200 bg-rose-50',
+          ].join(' ')}
+        >
+          <div className="flex items-center justify-between">
             <span
               className={[
-                'rounded-full px-3 py-1 text-sm font-bold',
+                'text-xs font-bold uppercase tracking-wide',
                 myBalance === 0
-                  ? 'bg-ink-100 text-ink-600'
+                  ? 'text-ink-500'
                   : myBalance > 0
-                    ? 'bg-emerald-50 text-emerald-800'
-                    : 'bg-rose-50 text-rose-800',
+                    ? 'text-emerald-800'
+                    : 'text-rose-800',
               ].join(' ')}
             >
-              {myBalance === 0 ? 'מאוזן' : myBalance > 0 ? 'מגיע לך' : 'אתה חייב'}
+              {myBalance === 0 ? 'החשבון מאוזן' : myBalance > 0 ? 'מגיע לך' : 'אתה חייב'}
             </span>
+            <Link
+              ref={balanceDetailsHintRef}
+              to={`/r/${roomCode}/balances`}
+              className={[
+                'text-xs font-bold hover:underline',
+                myBalance === 0
+                  ? 'text-brand-700'
+                  : myBalance > 0
+                    ? 'text-emerald-800'
+                    : 'text-rose-800',
+              ].join(' ')}
+            >
+              פירוט ›
+            </Link>
           </div>
 
-          {/* פס עובדות בסגנון פנקס — תווית מימין, ערך משמאל, קו מפריד */}
-          <dl className="mt-5 divide-y divide-ink-100 border-y border-ink-100 text-sm">
-            <div className="flex items-center justify-between py-2.5">
-              <dt className="text-ink-500">הוצאת החודש</dt>
-              <dd className="num font-mono font-bold text-ink-900">{formatILS(spentThisMonth)}</dd>
-            </div>
-            <div className="flex items-center justify-between py-2.5">
-              <dt className="text-ink-500">מוצרים חסרים</dt>
-              <dd className="num font-mono font-bold text-ink-900">{items.length}</dd>
-            </div>
-          </dl>
-
-          <Link
-            ref={balanceDetailsHintRef}
-            to={`/r/${roomCode}/balances`}
-            className="mt-4 flex items-center justify-center rounded-xl border border-ink-200
-                       py-2.5 text-sm font-semibold text-ink-700 transition hover:bg-ink-50"
+          <p
+            dir="ltr"
+            className={[
+              'mt-1 flex items-baseline gap-1 font-mono text-4xl font-bold leading-none tracking-tight',
+              myBalance === 0
+                ? 'text-ink-900'
+                : myBalance > 0
+                  ? 'text-emerald-700'
+                  : 'text-rose-700',
+            ].join(' ')}
           >
-            פירוט מלא ומאזן חברים
-          </Link>
+            <span className="text-2xl font-semibold opacity-60">₪</span>
+            <span className="num">{formatAmount(myBalance)}</span>
+          </p>
+
+          <p
+            className={[
+              'mt-2 text-xs',
+              myBalance === 0 ? 'text-ink-500' : myBalance > 0 ? 'text-emerald-800/80' : 'text-rose-800/80',
+            ].join(' ')}
+          >
+            הוצאת החודש{' '}
+            <span className="num font-mono font-bold">{formatILS(spentThisMonth)}</span>
+          </p>
 
           {!isConsistent && (
-            <p className="mt-3 flex items-center gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs text-rose-700">
+            <p className="mt-3 flex items-center gap-1.5 rounded-lg bg-surface/70 px-2.5 py-1.5 text-xs font-semibold text-rose-700">
               <WarningIcon width={14} height={14} className="shrink-0" />
               זוהתה אי-התאמה בחישוב המאזנים. פנו למנהל החדר.
             </p>
@@ -331,49 +344,40 @@ export default function DashboardPage() {
         </section>
 
         {/* ── קיצורי דרך ──
-            ארבע פעולות שוות-חשיבות ולכן זהות בעיצוב (מתאר בלבד). הפעולה
-            הראשית של המסך היא כפתור ה-+ בניווט התחתון — קיצור "דיווח
-            מוצר" מלא כאן היה כפתור ראשי מתחרה. */}
+            כל קיצור עם אריק אייקון בצבע משלו — כדי שאפשר יהיה לזהות אותו
+            במבט חטוף, וכדי שיהיה ברור שאלה כפתורים. הצבע כאן = משמעות
+            (איזו פעולה), לא קישוט. */}
         <section className="grid grid-cols-4 gap-2">
-          <button
-            ref={reportShortcutHintRef}
+          <ShortcutButton
+            hintRef={reportShortcutHintRef}
             onClick={() => setReportOpen(true)}
             disabled={!canWrite}
             title={isArchived ? 'החדר בארכיון — לצפייה בלבד' : undefined}
-            className="flex flex-col items-center gap-2 rounded-2xl border border-ink-200 bg-surface
-                       py-3.5 text-ink-700 transition active:scale-[.97]
-                       disabled:opacity-50 disabled:active:scale-100"
-          >
-            <PlusIcon width={19} height={19} />
-            <span className="text-[11px] font-semibold">דיווח מוצר</span>
-          </button>
-          <Link
-            ref={buyShortcutHintRef}
+            Icon={PlusIcon}
+            label="דיווח מוצר"
+            tone="brand"
+          />
+          <ShortcutButton
+            hintRef={buyShortcutHintRef}
             to={`/r/${roomCode}/items`}
-            className="flex flex-col items-center gap-2 rounded-2xl border border-ink-200 bg-surface
-                       py-3.5 text-ink-700 transition active:scale-[.97]"
-          >
-            <CartIcon width={19} height={19} />
-            <span className="text-[11px] font-semibold">רישום קנייה</span>
-          </Link>
-          <Link
-            ref={tripShortcutHintRef}
+            Icon={CartIcon}
+            label="רישום קנייה"
+            tone="amber"
+          />
+          <ShortcutButton
+            hintRef={tripShortcutHintRef}
             to={`/r/${roomCode}/trip`}
-            className="flex flex-col items-center gap-2 rounded-2xl border border-ink-200 bg-surface
-                       py-3.5 text-ink-700 transition active:scale-[.97]"
-          >
-            <BasketIcon width={19} height={19} />
-            <span className="text-[11px] font-semibold">קנייה גדולה</span>
-          </Link>
-          <Link
-            ref={settleShortcutHintRef}
+            Icon={BasketIcon}
+            label="קנייה גדולה"
+            tone="violet"
+          />
+          <ShortcutButton
+            hintRef={settleShortcutHintRef}
             to={`/r/${roomCode}/balances`}
-            className="flex flex-col items-center gap-2 rounded-2xl border border-ink-200 bg-surface
-                       py-3.5 text-ink-700 transition active:scale-[.97]"
-          >
-            <ExchangeIcon width={19} height={19} />
-            <span className="text-[11px] font-semibold">סגירת חוב</span>
-          </Link>
+            Icon={ExchangeIcon}
+            label="סגירת חוב"
+            tone="emerald"
+          />
         </section>
 
         {/* ── פעולות שדורשות תשומת לב ── */}
@@ -662,5 +666,72 @@ export default function DashboardPage() {
       {reportOpen && <ReportItemSheet open onClose={() => setReportOpen(false)} />}
       {addTaskOpen && <AddTaskSheet open onClose={() => setAddTaskOpen(false)} />}
     </AppShell>
+  );
+}
+
+/* ═══════════════ קיצור דרך ═══════════════ */
+
+type ShortcutTone = 'brand' | 'amber' | 'violet' | 'emerald';
+
+const SHORTCUT_TILE: Record<ShortcutTone, string> = {
+  brand: 'bg-brand-100 text-brand-700',
+  amber: 'bg-amber-100 text-amber-700',
+  violet: 'bg-violet-100 text-violet-700',
+  emerald: 'bg-emerald-100 text-emerald-700',
+};
+
+function ShortcutButton({
+  to,
+  onClick,
+  disabled,
+  title,
+  Icon,
+  label,
+  tone,
+  hintRef,
+}: {
+  to?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  title?: string;
+  Icon: ComponentType<IconProps>;
+  label: string;
+  tone: ShortcutTone;
+  hintRef?: (el: HTMLElement | null) => void;
+}) {
+  const inner = (
+    <>
+      <span
+        aria-hidden
+        className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${SHORTCUT_TILE[tone]}`}
+      >
+        <Icon width={18} height={18} />
+      </span>
+      <span className="text-[11px] font-semibold text-ink-700">{label}</span>
+    </>
+  );
+
+  const className =
+    'flex flex-col items-center gap-1.5 rounded-2xl border border-ink-200 bg-surface p-3 ' +
+    'shadow-card transition active:scale-95 disabled:opacity-50 disabled:active:scale-100';
+
+  if (to) {
+    return (
+      <Link ref={hintRef} to={to} className={className}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <button
+      ref={hintRef}
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={className}
+    >
+      {inner}
+    </button>
   );
 }

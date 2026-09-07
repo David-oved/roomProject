@@ -27,7 +27,7 @@ export function InstallPrompt() {
   }
 
   return (
-    <section className="relative rounded-card border border-brand-200 bg-gradient-to-b from-brand-50 to-white p-4">
+    <section className="relative rounded-card border border-brand-200 bg-brand-50 p-4">
       <button
         onClick={hide}
         aria-label="סגירה"

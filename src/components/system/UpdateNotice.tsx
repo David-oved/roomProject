@@ -27,7 +27,7 @@ export function UpdateNotice() {
         aria-live="assertive"
         aria-label="מתבצע עדכון תוכנה"
         className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4
-                   bg-gradient-to-b from-brand-50 to-ink-50 px-8 text-center"
+                   bg-ink-50 px-8 text-center"
       >
         <div className="relative">
           <div className="text-brand-600">

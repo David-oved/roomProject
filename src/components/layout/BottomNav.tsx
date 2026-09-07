@@ -72,16 +72,10 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
   ];
 
   return (
-    // ‼️ bg-surface/95 ולא /80: ב-80% הרקע האפקטיבי של הסרגל תלוי במה
-    // שנגלל מתחתיו. מעל כרטיס היתרה הצבעוני תווית לשונית לא-פעילה ירדה
-    // ל-2.14:1 — כלומר קריאוּת הניווט השתנתה לפי מיקום הגלילה.
-    // (95 ולא 92: 92 אינו בסולם האטימות של Tailwind ולא מייצר כלל CSS
-    //  כלל — כלומר הסרגל היה נשאר בלי שום רקע.)
     <nav
       aria-label="ניווט ראשי"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-ink-200/70
-                 bg-surface/95 shadow-[0_-8px_24px_-16px_rgba(15,23,42,.15)]
-                 backdrop-blur-xl backdrop-saturate-150"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-ink-200/70 bg-surface
+                 shadow-[0_-4px_16px_-12px_rgba(0,0,0,.2)]"
       style={{ paddingBottom: 'var(--safe-bottom)' }}
     >
       <ul className="mx-auto flex h-[var(--nav-height)] max-w-lg items-center px-1">
@@ -91,7 +85,6 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
 
         {/* ── כפתור הפעולה המרכזי ── */}
         <li className="relative flex w-[20%] shrink-0 items-center justify-center self-stretch">
-          <div aria-hidden className="pointer-events-none absolute -top-2 h-14 w-14 rounded-full bg-brand-500/25 blur-lg" />
           <button
             ref={fabHintRef}
             type="button"
@@ -105,14 +98,12 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
                   : 'פעולה זו דורשת חיבור לאינטרנט'
             }
             aria-label="דיווח על מוצר חסר"
-            className="relative -mt-3.5 grid h-14 w-14 place-items-center rounded-2xl text-white
-                       shadow-fab ring-4 ring-white transition-transform duration-150 ease-out
-                       active:scale-90
-                       bg-gradient-to-br from-brand-500 to-brand-700
-                       disabled:from-ink-300 disabled:to-ink-400 disabled:shadow-none
-                       disabled:active:scale-100"
+            className="relative -mt-2 grid h-12 w-12 place-items-center rounded-2xl text-white
+                       shadow-fab ring-[3px] ring-surface transition-transform duration-150 ease-out
+                       active:scale-90 bg-brand-fill
+                       disabled:bg-ink-300 disabled:shadow-none disabled:active:scale-100"
           >
-            <PlusIcon width={24} height={24} />
+            <PlusIcon width={22} height={22} />
           </button>
         </li>
 

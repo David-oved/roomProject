@@ -14,7 +14,7 @@
     --safe-left: env(safe-area-inset-left, 0px);
     --safe-right: env(safe-area-inset-right, 0px);
 
-    --nav-height: 4.25rem;
+    --nav-height: 3.5rem;
     --header-height: 3.5rem;
 
     color-scheme: light;
@@ -28,19 +28,20 @@
        ‼️ src/lib/theme.ts קורא מ-localStorage ומפעיל מחלקת .dark על
        ה-<html> *לפני* שה-CSS הזה בכלל נטען (סקריפט מוטבע ב-index.html) —
        בלעדי זה הייתה מבזק של המסך הלא-נכון בכל טעינה במצב כהה. */
-    /* ניטרלים — סקאלת "אבן" (stone) חמימה במקום slate הקר.
-       הגוון החם מרחיק את האפליקציה מ"ברירת המחדל של Tailwind" בלי
-       ליפול ל"בז' מרוח": המשטחים נשארים לבן נקי עם גבולות אמיתיים. */
-    --ink-50: 250 250 249;
-    --ink-100: 245 245 244;
-    --ink-200: 231 229 228;
-    --ink-300: 214 211 209;
-    --ink-400: 168 162 158;
-    --ink-500: 120 113 108;
-    --ink-600: 87 83 78;
-    --ink-700: 68 64 60;
-    --ink-800: 41 37 36;
-    --ink-900: 28 25 23;
+    /* ניטרלים — אפור צונן־רך עם נטייה קלה לכחול. לא ה-stone החום
+       ("מזעזע במצב כהה") ולא ה-slate הקשוח של Tailwind. במצב בהיר: רקע
+       off-white עדין כדי שהכרטיסים הלבנים יבלטו. במצב כהה: פחם כחלחל
+       עמוק, לא חום. */
+    --ink-50: 246 247 249;
+    --ink-100: 236 238 242;
+    --ink-200: 222 225 231;
+    --ink-300: 199 203 212;
+    --ink-400: 152 159 172;
+    --ink-500: 108 116 130;
+    --ink-600: 82 90 103;
+    --ink-700: 60 67 78;
+    --ink-800: 39 44 53;
+    --ink-900: 22 25 32;
     --surface: 255 255 255;
 
     /* ראשי — כחול־דיו של פנקס חשבונות. לא טורקיז, לא סגול.
@@ -145,20 +146,21 @@
   :root.dark {
     color-scheme: dark;
 
-    /* ink — היפוך מלא של סקאלת "אבן": מה שהיה 900 (הכי ניגודי) הופך ל-50 */
-    --ink-50: 28 25 23;
-    --ink-100: 41 37 36;
-    --ink-200: 64 60 56;
-    --ink-300: 87 83 78;
-    --ink-400: 120 113 108;
-    --ink-500: 168 162 158;
-    --ink-600: 214 211 209;
-    --ink-700: 231 229 228;
-    --ink-800: 245 245 244;
-    --ink-900: 250 250 249;
+    /* ink — היפוך מלא: מה שהיה 900 (הכי ניגודי) הופך ל-50. פחם כחלחל
+       עמוק, לא חום. */
+    --ink-50: 22 25 32;
+    --ink-100: 39 44 53;
+    --ink-200: 60 67 78;
+    --ink-300: 82 90 103;
+    --ink-400: 108 116 130;
+    --ink-500: 152 159 172;
+    --ink-600: 199 203 212;
+    --ink-700: 236 238 242;
+    --ink-800: 246 247 249;
+    --ink-900: 252 253 254;
     /* מעט יותר בהיר מ-ink-50 (רקע העמוד) — כדי שכרטיסים עדיין "יבלטו",
        בדיוק כמו שלבן בולט מעל ink-50 במצב הבהיר */
-    --surface: 41 37 36;
+    --surface: 30 35 43;
 
     --brand-50: 20 47 61;
     --brand-100: 23 57 75;
@@ -362,7 +364,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  background: #fafaf9;
+  background: #f6f7f9;
   font-family: Assistant, system-ui, sans-serif;
 }
 #boot-splash .boot-logo {
@@ -406,12 +408,12 @@
 #boot-error .boot-error-title {
   margin: 0;
   font-weight: 700;
-  color: #1c1917;
+  color: #161920;
 }
 #boot-error .boot-error-body {
   margin: 0.25rem 0 0.85rem;
   font-size: 0.875rem;
-  color: #78716c;
+  color: #6c7482;
 }
 #boot-error button {
   min-height: 44px;
@@ -431,7 +433,7 @@
    מצייר פיקסל, אז בחירת הסלקטור html.dark כאן מספיקה. בלי זה: מבזק
    לבן עז לפני שה-JS מספיק להחליף למסך כהה. */
 html.dark #boot-splash {
-  background: #1c1917;
+  background: #161920;
 }
 html.dark #boot-splash .boot-name {
   color: #7fa6c1;
@@ -440,10 +442,10 @@ html.dark #boot-splash .boot-bar {
   background: #17394b;
 }
 html.dark #boot-error .boot-error-title {
-  color: #fafaf9;
+  color: #f6f7f9;
 }
 html.dark #boot-error .boot-error-body {
-  color: #a8a29e;
+  color: #989fac;
 }
 
 /* ═══════════════════════════════════════════════════════════

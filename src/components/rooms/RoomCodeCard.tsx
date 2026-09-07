@@ -59,7 +59,7 @@ export function RoomCodeCard({
       className={
         compact
           ? 'flex items-center gap-3'
-          : 'card bg-gradient-to-b from-brand-50/80 to-white p-5 text-center'
+          : 'card border-brand-200 bg-brand-50 p-5 text-center'
       }
     >
       <div className={compact ? 'flex-1' : ''}>
