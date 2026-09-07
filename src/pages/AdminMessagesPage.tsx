@@ -142,8 +142,8 @@ export default function AdminMessagesPage() {
                             target="_blank"
                             rel="noreferrer noopener"
                             onClick={() => user && void markAdminMessageClicked(user.uid, m.id)}
-                            className="tap mt-3 inline-flex items-center gap-1.5 rounded-xl bg-brand-700
-                                       px-4 text-sm font-semibold text-white transition hover:bg-brand-800"
+                            className="tap mt-3 inline-flex items-center gap-1.5 rounded-xl bg-brand-fill
+                                       px-4 text-sm font-semibold text-white transition hover:bg-brand-fill-hover"
                           >
                             {m.cta.text}
                             <span aria-hidden>←</span>

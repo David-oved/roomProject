@@ -9,13 +9,18 @@ export const toAgorot = (shekels: number): number => Math.round(shekels * 100);
 /** 1234 אגורות → 12.34 */
 export const toShekels = (agorot: number): number => agorot / 100;
 
-/** 1234 → "₪12.34" */
+/**
+ * 1234 → "₪12.34"
+ *
+ * ‼️ לא Intl currency: הפורמט של he-IL מחזיר "12.34 ‏₪" עם סימני
+ * כיווניות (RLM) ועם הסימן *אחרי* המספר. בתוך `.num` (שמכריח
+ * `direction: ltr` להצגת ספרות עקבית) הסימנים האלה גרמו ל-₪ להידבק
+ * לספרה או להיצמד בצד הלא-נכון. כאן: סימן לפני המספר, בלי תווים
+ * נסתרים — נקרא נכון בכל הקשר, RTL או LTR.
+ */
 export function formatILS(agorot: number): string {
-  return new Intl.NumberFormat('he-IL', {
-    style: 'currency',
-    currency: 'ILS',
-    minimumFractionDigits: 2,
-  }).format(agorot / 100);
+  const sign = agorot < 0 ? '−' : ''; // מינוס טיפוגרפי, לא מקף
+  return `${sign}₪${formatAmount(agorot)}`;
 }
 
 /** ללא סימן, לשימוש כשהסימן מוצג בנפרד: 1234 → "12.34" */

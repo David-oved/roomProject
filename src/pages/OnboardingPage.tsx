@@ -47,13 +47,15 @@ export default function OnboardingPage() {
           כדי להתחיל, צרו חדר חדש או הצטרפו לחדר קיים באמצעות קוד
         </p>
 
+        {/* שתי הבחירות שוות-חשיבות באמת — מי שגר ראשון יוצר, מי שהצטרף
+            לדירה קיימת מזין קוד. אין "נכון" אחד, ולכן שני הכרטיסים
+            זהים בעיצוב ואף אחד לא מודגש על פני השני. */}
         <div className="mt-8 space-y-3">
           <ChoiceCard
             to="/rooms/create"
             icon={SparklesIcon}
             title="יצירת חדר חדש"
             body="אתם תהיו מנהלי החדר ותקבלו קוד לשיתוף עם השותפים"
-            primary
           />
           <ChoiceCard
             to="/rooms/join"
@@ -155,28 +157,21 @@ function ChoiceCard({
   icon: Icon,
   title,
   body,
-  primary,
 }: {
   to: string;
   icon: ComponentType<IconProps>;
   title: string;
   body: string;
-  primary?: boolean;
 }) {
   return (
     <Link
       to={to}
-      className={[
-        'flex items-center gap-4 rounded-card border p-4 transition active:scale-[.99]',
-        primary
-          ? 'border-brand-200 bg-surface shadow-card hover:border-brand-300 hover:shadow-lifted'
-          : 'border-ink-200 bg-surface/70 hover:bg-surface hover:shadow-card',
-      ].join(' ')}
+      className="flex items-center gap-4 rounded-card border border-ink-200 bg-surface p-4
+                 shadow-card transition active:scale-[.99] hover:border-brand-300 hover:shadow-lifted"
     >
       <span
         aria-hidden
-        className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl
-                    ${primary ? 'bg-brand-50 text-brand-700' : 'bg-ink-100 text-ink-600'}`}
+        className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"
       >
         <Icon width={22} height={22} />
       </span>

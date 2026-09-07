@@ -74,8 +74,8 @@ function encodePng(size, rgba) {
 
 /* ───────── ציור האייקון ───────── */
 
-const BRAND_TOP = [20, 184, 166]; // brand-500
-const BRAND_BOTTOM = [15, 118, 110]; // brand-700
+const BRAND_TOP = [47, 100, 136]; // brand-500 (כחול־דיו "פנקס")
+const BRAND_BOTTOM = [26, 71, 95]; // brand-700
 const WHITE = [255, 255, 255];
 
 /** ריכוך קצוות: מחזיר 0..1 לפי מרחק מהגבול */
@@ -181,7 +181,7 @@ for (const { file, size, opts } of targets) {
 
 const favicon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#14b8a6"/><stop offset="1" stop-color="#0f766e"/>
+    <stop offset="0" stop-color="#2f6488"/><stop offset="1" stop-color="#1a475f"/>
   </linearGradient></defs>
   <rect width="64" height="64" rx="14" fill="url(#g)"/>
   <path d="M32 16 L50 33 H44 V48 H36 V38 H28 V48 H20 V33 H14 Z" fill="#fff"/>

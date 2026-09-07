@@ -97,7 +97,8 @@ export default function ItemsPage() {
   }, [params, setParams]);
 
   return (
-    <AppShell>
+    <AppShell
+      topBar={
       <TopBar
         title="מוצרים חסרים"
         subtitle={
@@ -108,9 +109,12 @@ export default function ItemsPage() {
           ) : undefined
         }
         actions={
+          // מתאר ולא מילוי: הפעולה הראשית לדיווח היא כפתור ה-+ בניווט
+          // התחתון. כאן זה קיצור נוח, לא כפתור ראשי מתחרה.
           <Button
             ref={reportHintRef}
             size="sm"
+            variant="secondary"
             onClick={() => setReportOpen(true)}
             disabled={!canWrite}
             title={
@@ -125,7 +129,8 @@ export default function ItemsPage() {
           </Button>
         }
       />
-
+      }
+    >
       <RoomArchivedBanner />
 
       {/* פילטרים */}
@@ -139,7 +144,7 @@ export default function ItemsPage() {
             className={[
               'tap flex shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition',
               filter === f.key
-                ? 'bg-brand-700 text-white shadow-sm'
+                ? 'bg-brand-fill text-white shadow-sm'
                 : 'bg-surface text-ink-600 ring-1 ring-ink-200',
             ].join(' ')}
           >

@@ -172,8 +172,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <AppShell>
-        <TopBar title="טוען…" />
+      <AppShell topBar={<TopBar title="טוען…" />}>
         <div className="pt-4">
           <ListSkeleton rows={3} />
         </div>
@@ -187,20 +186,20 @@ export default function DashboardPage() {
   const fatalError = roomError ?? itemsError ?? balancesError;
   if (fatalError && !fromCache) {
     return (
-      <AppShell>
-        <TopBar title={metadata?.name ?? 'החדר שלי'} />
+      <AppShell topBar={<TopBar title={metadata?.name ?? 'החדר שלי'} />}>
         <ErrorState message={friendlyError(fatalError)} onRetry={() => location.reload()} />
       </AppShell>
     );
   }
 
   return (
-    <AppShell>
-      <TopBar
-        title={metadata?.name ?? 'החדר שלי'}
-        subtitle="תמונת מצב מהירה — יתרה, חסרים ומטלות"
-        actions={
-          <>
+    <AppShell
+      topBar={
+        <TopBar
+          title={metadata?.name ?? 'החדר שלי'}
+          subtitle="תמונת מצב מהירה — יתרה, חסרים ומטלות"
+          actions={
+            <>
             <Link
               ref={notificationsHintRef}
               to={`/r/${roomCode}/notifications`}
@@ -233,9 +232,10 @@ export default function DashboardPage() {
               <SettingsIcon width={19} height={19} />
             </Link>
           </>
-        }
-      />
-
+          }
+        />
+      }
+    >
       <div className="space-y-4 pt-4">
         {/* ‼️ שני הבאנרים לפני כל השאר: הודעה ממנהל המערכת וחדר בארכיון
             הם דברים שמשנים מה אפשר לעשות במסך הזה, ולכן הם חייבים
@@ -261,37 +261,52 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── כרטיס יתרה — בסגנון דוח, לא כרטיס גרדיאנט ── */}
+        {/* ── כרטיס יתרה — בסגנון פנקס: המספר הוא הגיבור, המצב צמוד אליו ── */}
         <section className="rounded-card border border-ink-200/70 bg-surface p-5 shadow-card">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-ink-600">היתרה שלי</p>
-            <Badge tone={myBalance === 0 ? 'neutral' : myBalance > 0 ? 'success' : 'danger'}>
+          <p className="text-sm font-semibold text-ink-600">היתרה שלי</p>
+
+          {/* המספר + המצב ("מאוזן" / "מגיע לך" / "אתה חייב") באותה שורה,
+              גדולים וברורים — לא תגית קטנה בפינה. */}
+          <div className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <p
+              dir="ltr"
+              className={[
+                'flex items-baseline gap-1.5 font-mono text-[2.75rem] font-bold leading-none tracking-tight',
+                myBalance === 0
+                  ? 'text-ink-900'
+                  : myBalance > 0
+                    ? 'text-emerald-700'
+                    : 'text-rose-700',
+              ].join(' ')}
+            >
+              <span className="text-3xl font-semibold opacity-60">₪</span>
+              <span className="num">{formatAmount(myBalance)}</span>
+            </p>
+            <span
+              className={[
+                'rounded-full px-3 py-1 text-sm font-bold',
+                myBalance === 0
+                  ? 'bg-ink-100 text-ink-600'
+                  : myBalance > 0
+                    ? 'bg-emerald-50 text-emerald-800'
+                    : 'bg-rose-50 text-rose-800',
+              ].join(' ')}
+            >
               {myBalance === 0 ? 'מאוזן' : myBalance > 0 ? 'מגיע לך' : 'אתה חייב'}
-            </Badge>
+            </span>
           </div>
 
-          <p
-            className={[
-              'num mt-2 font-mono text-4xl font-bold tracking-tight',
-              myBalance === 0 ? 'text-ink-900' : myBalance > 0 ? 'text-emerald-700' : 'text-rose-700',
-            ].join(' ')}
-          >
-            <span className="me-0.5 text-2xl font-semibold text-ink-500">₪</span>
-            {formatAmount(myBalance)}
-          </p>
-
-          <div className="mt-4 grid grid-cols-2 divide-x divide-x-reverse divide-ink-100 border-t border-ink-100 pt-3.5">
-            <div>
-              <p className="num font-mono text-lg font-bold text-ink-900">
-                {formatILS(spentThisMonth)}
-              </p>
-              <p className="mt-0.5 text-xs text-ink-500">הוצאת החודש</p>
+          {/* פס עובדות בסגנון פנקס — תווית מימין, ערך משמאל, קו מפריד */}
+          <dl className="mt-5 divide-y divide-ink-100 border-y border-ink-100 text-sm">
+            <div className="flex items-center justify-between py-2.5">
+              <dt className="text-ink-500">הוצאת החודש</dt>
+              <dd className="num font-mono font-bold text-ink-900">{formatILS(spentThisMonth)}</dd>
             </div>
-            <div className="ps-4 text-end">
-              <p className="num font-mono text-lg font-bold text-ink-900">{items.length}</p>
-              <p className="mt-0.5 text-xs text-ink-500">מוצרים חסרים</p>
+            <div className="flex items-center justify-between py-2.5">
+              <dt className="text-ink-500">מוצרים חסרים</dt>
+              <dd className="num font-mono font-bold text-ink-900">{items.length}</dd>
             </div>
-          </div>
+          </dl>
 
           <Link
             ref={balanceDetailsHintRef}
@@ -310,15 +325,19 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {/* ── קיצורי דרך ── */}
+        {/* ── קיצורי דרך ──
+            שלוש פעולות שוות-חשיבות ולכן זהות בעיצוב (מתאר בלבד). הפעולה
+            הראשית של המסך היא כפתור ה-+ בניווט התחתון — קיצור "דיווח
+            מוצר" מלא כאן היה כפתור ראשי מתחרה. */}
         <section className="grid grid-cols-3 gap-2">
           <button
             ref={reportShortcutHintRef}
             onClick={() => setReportOpen(true)}
             disabled={!canWrite}
             title={isArchived ? 'החדר בארכיון — לצפייה בלבד' : undefined}
-            className="flex flex-col items-center gap-2 rounded-2xl bg-brand-700 py-3.5 text-white
-                       transition active:scale-[.97] disabled:bg-ink-300 disabled:active:scale-100"
+            className="flex flex-col items-center gap-2 rounded-2xl border border-ink-200 bg-surface
+                       py-3.5 text-ink-700 transition active:scale-[.97]
+                       disabled:opacity-50 disabled:active:scale-100"
           >
             <PlusIcon width={19} height={19} />
             <span className="text-xs font-semibold">דיווח מוצר</span>
@@ -330,7 +349,7 @@ export default function DashboardPage() {
                        py-3.5 text-ink-700 transition active:scale-[.97]"
           >
             <CartIcon width={19} height={19} />
-            <span className="text-xs font-semibold">רשמתי קנייה</span>
+            <span className="text-xs font-semibold">רישום קנייה</span>
           </Link>
           <Link
             ref={settleShortcutHintRef}

@@ -55,7 +55,7 @@ export default function SettingsDisplayPage() {
                     <span
                       aria-hidden
                       className="absolute end-2 top-2 grid h-5 w-5 place-items-center rounded-full
-                                 bg-brand-700 text-white"
+                                 bg-brand-fill text-white"
                     >
                       <CheckIcon width={12} height={12} strokeWidth={3} />
                     </span>
@@ -89,7 +89,7 @@ export default function SettingsDisplayPage() {
                 <p className="truncate text-sm font-bold text-ink-900">חלב 3%</p>
                 <p className="truncate text-xs text-ink-500">נוסף על ידי דנה · לפני 5 דקות</p>
               </div>
-              <span className="shrink-0 rounded-full bg-brand-700 px-2.5 py-1 text-[11px] font-bold text-white">
+              <span className="shrink-0 rounded-full bg-brand-fill px-2.5 py-1 text-[11px] font-bold text-white">
                 דחוף
               </span>
             </div>

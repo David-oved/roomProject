@@ -71,7 +71,7 @@ export default function AnnouncementsPage() {
     >
       <header
         className="sticky top-0 z-10 flex shrink-0 items-center gap-2.5 border-b border-ink-200/70
-                   bg-surface/90 px-2 backdrop-blur-xl safe-x"
+                   bg-surface px-2 safe-x"
         style={{ paddingTop: 'var(--safe-top)', height: 'calc(var(--header-height) + var(--safe-top))' }}
       >
         <button
@@ -85,7 +85,7 @@ export default function AnnouncementsPage() {
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-700">
           <MegaphoneIcon width={17} height={17} />
         </span>
-        <div className="min-w-0 flex-1 animate-header-in">
+        <div className="min-w-0 flex-1">
           <h1 className="truncate text-lg font-extrabold leading-tight tracking-tight text-ink-900">
             הודעות מהמנהל
           </h1>

@@ -98,13 +98,19 @@ export default function JoinRoomPage() {
     void submit(code);
   }
 
+  // מצב מושבת עם הסבר — לא רק כפתור אפור (חוק חלק א'). קוד ריק לא מקבל
+  // טקסט: מחווני ההתקדמות והמציין ("ABC123") כבר אומרים מה חסר.
+  const disabledReason = !isOnline
+    ? 'שליחת בקשה דורשת חיבור לאינטרנט'
+    : code.length > 0 && !isValidRoomCode(code)
+      ? `הקוד צריך להיות ${CODE_LENGTH} תווים`
+      : null;
+
   return (
     <>
-      <TopBar
-        title="הצטרפות לחדר"
-        subtitle="השתמשו בקוד שקיבלתם משותף לחדר"
-        back="/onboarding"
-      />
+      {/* ‼️ בלי subtitle בכוונה: ההסבר "הזינו קוד בן 6 תווים" מופיע פעם
+          אחת בלבד — צמוד לשדה עצמו — ולא שוב ככותרת משנה מרוחקת. */}
+      <TopBar title="הצטרפות לחדר" back="/onboarding" />
       <PlainShell hasTopBar>
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col py-6" noValidate>
           <div className="text-center">
@@ -190,16 +196,20 @@ export default function JoinRoomPage() {
 
           <div className="flex-1" />
 
-          <Button
-            type="submit"
-            size="lg"
-            fullWidth
-            loading={busy}
-            disabled={!isValidRoomCode(code) || !isOnline}
-            className="mt-6"
-          >
-            {busy ? 'שולח…' : 'שליחת בקשת הצטרפות'}
-          </Button>
+          <div className="mt-6 space-y-2">
+            <Button
+              type="submit"
+              size="lg"
+              fullWidth
+              loading={busy}
+              disabled={!isValidRoomCode(code) || !isOnline}
+            >
+              {busy ? 'שולח…' : 'שליחת בקשת הצטרפות'}
+            </Button>
+            {disabledReason && !busy && (
+              <p className="text-center text-xs text-ink-500">{disabledReason}</p>
+            )}
+          </div>
         </form>
       </PlainShell>
     </>

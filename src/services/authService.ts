@@ -30,7 +30,7 @@ const AUTH_MESSAGES: Record<string, string> = {
   'auth/invalid-credential': 'האימייל או הסיסמה שגויים',
   'auth/too-many-requests': 'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות',
   'auth/network-request-failed': 'אין חיבור לאינטרנט',
-  'auth/operation-not-allowed': 'ההרשמה אינה זמינה כרגע. נסו שוב מאוחר יותר.',
+  'auth/operation-not-allowed': 'הרשמה עם אימייל וסיסמה כבויה כרגע במערכת. נסו שוב בהמשך היום.',
 };
 
 export function authErrorCode(err: unknown): string {
@@ -43,7 +43,15 @@ export function authErrorMessage(err: unknown): string {
   if (code === 'auth/operation-not-allowed' && import.meta.env.DEV) {
     console.error('⚠️ ספק Email/Password כבוי ב-Firebase Console');
   }
-  return AUTH_MESSAGES[code] ?? (err as Error)?.message ?? 'אירעה שגיאה. נסו שוב.';
+  const raw = (err as Error)?.message ?? '';
+  // הודעות שאנחנו עצמנו זרקנו כבר מנוסחות בעברית וברורות למשתמש;
+  // מחרוזת השגיאה הגולמית של Firebase (אנגלית) — לא.
+  const ourHebrewMessage = /[֐-׿]/.test(raw) ? raw : '';
+  return (
+    AUTH_MESSAGES[code] ||
+    ourHebrewMessage ||
+    'לא הצלחנו להשלים את הפעולה. בדקו את הפרטים ונסו שוב.'
+  );
 }
 
 /**

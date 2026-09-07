@@ -11,7 +11,7 @@ import { OfflineBanner } from './OfflineBanner';
  * הריפוד התחתון מחשב גם את גובה הניווט וגם את האזור הבטוח (פס הבית
  * באייפון) — בלעדיו התוכן האחרון ברשימה מוסתר מאחורי הסרגל.
  */
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, topBar }: { children: ReactNode; topBar?: ReactNode }) {
   // התראה מיידית כשהאפליקציה ברקע — בלי להמתין לשרת
   useLiveNotifications();
 
@@ -20,14 +20,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="relative min-h-[100dvh] overflow-x-clip bg-ink-50">
-      {/* ‼️ קישוט רקע בלבד — fixed ו-pointer-events-none, לא תופס מקום
-          בפריסה ולא מפריע לגלילה. מוסיף עומק עדין בלי לגעת בתוכן עצמו. */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-72 bg-gradient-to-b
-                   from-brand-200/40 via-brand-100/10 to-transparent"
-      />
       <OfflineBanner />
+
+      {/* ‼️ ה-TopBar מרונדר כאן — מחוץ ל-<main> ולריפוד ה-px-4 שלו — כדי
+          שהוא יהיה צמוד לקצוות המסך. כשהוא היה בתוך children הוא ירש 16px
+          ריווח מכל צד ונראה כמו סרגל מרחף במקום כותרת מסך. */}
+      {topBar}
 
       <main
         className="mx-auto max-w-lg px-4 safe-x"
@@ -64,7 +62,7 @@ export function PlainShell({
   hasTopBar?: boolean;
 }) {
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-b from-brand-50/60 to-ink-50">
+    <div className="min-h-[100dvh] bg-ink-50">
       <OfflineBanner />
       <main
         className="mx-auto flex max-w-md flex-col px-5 safe-x"

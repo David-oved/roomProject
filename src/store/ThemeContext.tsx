@@ -19,7 +19,7 @@ export type ResolvedTheme = 'light' | 'dark';
  * הסקריפט המוטבע, ואז React "מתקן" את זה רגע אחרי.
  */
 const STORAGE_KEY = 'rm:theme';
-const THEME_COLOR = { light: '#0f766e', dark: '#0f172a' } as const;
+const THEME_COLOR = { light: '#1f5673', dark: '#1c1917' } as const;
 
 function readStored(): ThemePreference {
   try {

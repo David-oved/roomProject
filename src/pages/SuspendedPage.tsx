@@ -124,7 +124,8 @@ export default function SuspendedPage() {
           התנתקות
         </Button>
 
-        <p className="text-center text-xs text-ink-400">{user?.email}</p>
+        {/* ink-400 על ink-50 ≈ 2.6:1 — נכשל. ink-500 ≈ 4.9:1. */}
+        <p className="text-center text-xs text-ink-500">{user?.email}</p>
       </div>
     </PlainShell>
   );

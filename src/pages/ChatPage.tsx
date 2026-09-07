@@ -31,17 +31,14 @@ export default function ChatPage() {
   // מציג רק את הצ'אט הכללי, כאילו פשוט אין עם מי לדבר.
   if (error && !fromCache) {
     return (
-      <AppShell>
-        <TopBar title="צ'אט" subtitle={metadata?.name} />
+      <AppShell topBar={<TopBar title="צ'אט" subtitle={metadata?.name} />}>
         <ErrorState message={friendlyError(error)} onRetry={() => location.reload()} />
       </AppShell>
     );
   }
 
   return (
-    <AppShell>
-      <TopBar title="צ'אט" subtitle={metadata?.name} />
-
+    <AppShell topBar={<TopBar title="צ'אט" subtitle={metadata?.name} />}>
       <div className="space-y-2 pt-4">
         <ConversationRow
           to={`/r/${roomCode}/chat/general`}

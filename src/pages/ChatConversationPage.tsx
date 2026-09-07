@@ -159,7 +159,7 @@ export default function ChatConversationPage() {
       {/* ── כותרת ── */}
       <header
         className="sticky top-0 z-10 flex shrink-0 items-center gap-2.5 border-b border-ink-200/70
-                   bg-surface/90 px-2 backdrop-blur-xl safe-x"
+                   bg-surface px-2 safe-x"
         style={{ paddingTop: 'var(--safe-top)', height: 'calc(var(--header-height) + var(--safe-top))' }}
       >
         <button
@@ -187,7 +187,7 @@ export default function ChatConversationPage() {
           </div>
         )}
 
-        <div className="min-w-0 flex-1 animate-header-in">
+        <div className="min-w-0 flex-1">
           <h1 className="truncate text-lg font-extrabold leading-tight tracking-tight text-ink-900">
             {title}
           </h1>

@@ -23,17 +23,18 @@ export default function ServiceUnavailablePage() {
       <div>
         <h1 className="text-lg font-bold text-ink-900">האפליקציה לא זמינה כרגע</h1>
         <p className="mt-2 text-sm leading-relaxed text-ink-500">
-          אנחנו עובדים על זה. נסו שוב בעוד כמה דקות.
+          התקלה אצלנו בשרת — לא במכשיר או בחיבור שלכם, והנתונים שלכם נשמרים.
+          נסו שוב בעוד כמה דקות.
         </p>
       </div>
 
       <button
         type="button"
         onClick={() => window.location.reload()}
-        className="tap rounded-xl bg-brand-700 px-6 font-semibold text-white
-                   transition active:scale-[.98] hover:bg-brand-800"
+        className="tap rounded-xl bg-brand-fill px-6 font-semibold text-white
+                   transition active:scale-[.98] hover:bg-brand-fill-hover"
       >
-        נסה שוב
+        רענון
       </button>
     </div>
   );

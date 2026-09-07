@@ -86,8 +86,8 @@ export function RoomCodeCard({
         <button
           ref={shareHintRef}
           onClick={share}
-          className="tap inline-flex items-center gap-1.5 rounded-xl bg-brand-700 px-3
-                     text-sm font-semibold text-white transition active:scale-95 hover:bg-brand-800"
+          className="tap inline-flex items-center gap-1.5 rounded-xl bg-brand-fill px-3
+                     text-sm font-semibold text-white transition active:scale-95 hover:bg-brand-fill-hover"
         >
           <ShareIcon width={17} height={17} />
           שתף

@@ -4,7 +4,7 @@ import { PlainShell } from '../components/layout/AppShell';
 import { AppLogo } from '../components/layout/AppLogo';
 import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
-import { CameraIcon } from '../components/ui/icons';
+import { CameraIcon, OfflineIcon } from '../components/ui/icons';
 import { Input, PasswordInput } from '../components/ui/Input';
 import { authErrorCode, authErrorMessage, register } from '../services/authService';
 import { uploadAvatar } from '../services/avatarService';
@@ -161,6 +161,15 @@ export default function RegisterPage() {
             </div>
           )}
 
+          {/* הודעת אופליין יזומה — בדיוק כמו במסך ההתחברות. בלעדיה הכפתור
+              מושבת בלי שום רמז למה. */}
+          {!isOnline && (
+            <p className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+              <OfflineIcon width={16} height={16} className="shrink-0" />
+              אין חיבור לאינטרנט. יצירת חשבון דורשת חיבור.
+            </p>
+          )}
+
           <Button type="submit" size="lg" fullWidth loading={busy} disabled={!canSubmit}>
             יצירת חשבון
           </Button>
@@ -233,8 +242,8 @@ function AvatarPromptStep({
             disabled={busy}
             aria-label="בחירת תמונה"
             className="tap absolute -bottom-1 -end-1 grid h-9 w-9 place-items-center
-                       rounded-full bg-brand-700 text-white shadow-card transition
-                       hover:bg-brand-800 disabled:opacity-60"
+                       rounded-full bg-brand-fill text-white shadow-card transition
+                       hover:bg-brand-fill-hover disabled:opacity-60"
           >
             <CameraIcon width={17} height={17} />
           </button>

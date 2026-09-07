@@ -107,8 +107,8 @@ export function UpdateNotice() {
           <button
             ref={applyHintRef}
             onClick={applyUpdate}
-            className="tap flex-1 rounded-xl bg-brand-700 px-4 text-sm font-semibold text-white
-                       transition active:scale-[.98] hover:bg-brand-800"
+            className="tap flex-1 rounded-xl bg-brand-fill px-4 text-sm font-semibold text-white
+                       transition active:scale-[.98] hover:bg-brand-fill-hover"
           >
             עדכן עכשיו
           </button>

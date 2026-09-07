@@ -71,29 +71,49 @@ export default function BalancesPage() {
   };
 
   return (
-    <AppShell>
-      <TopBar title="חשבון והוצאות" subtitle="מי חייב למי, ומי נשא בכמה מההוצאות" />
+    <AppShell
+      topBar={<TopBar title="חשבון והוצאות" subtitle="מי חייב למי, ומי נשא בכמה מההוצאות" />}
+    >
       <RoomArchivedBanner />
 
       <div className="pt-4">
-        {/* כרטיס המאזן האישי */}
+        {/* כרטיס המאזן האישי — אותו סגנון "פנקס" כמו בדשבורד: משטח נקי,
+            מספר גדול וצבוע, המצב צמוד אליו. לא כרטיס גרדיאנט. */}
         <section
           ref={myBalanceHintRef}
-          className={[
-            'rounded-card p-5 text-white shadow-lifted',
-            myBalance >= 0
-              ? 'bg-gradient-to-br from-emerald-600 to-teal-700'
-              : 'bg-gradient-to-br from-rose-500 to-rose-700',
-          ].join(' ')}
+          className="rounded-card border border-ink-200/70 bg-surface p-5 shadow-card"
         >
-          <p className="text-sm opacity-90">
-            {myBalance === 0 ? 'החשבון שלך מאוזן' : myBalance > 0 ? 'מגיע לך' : 'אתה חייב'}
-          </p>
-          <p className="num mt-1 text-4xl font-bold tracking-tight">
-            ₪{formatAmount(myBalance)}
-          </p>
+          <p className="text-sm font-semibold text-ink-600">היתרה שלי</p>
+          <div className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <p
+              dir="ltr"
+              className={[
+                'flex items-baseline gap-1.5 font-mono text-[2.75rem] font-bold leading-none tracking-tight',
+                myBalance === 0
+                  ? 'text-ink-900'
+                  : myBalance > 0
+                    ? 'text-emerald-700'
+                    : 'text-rose-700',
+              ].join(' ')}
+            >
+              <span className="text-3xl font-semibold opacity-60">₪</span>
+              <span className="num">{formatAmount(myBalance)}</span>
+            </p>
+            <span
+              className={[
+                'rounded-full px-3 py-1 text-sm font-bold',
+                myBalance === 0
+                  ? 'bg-ink-100 text-ink-600'
+                  : myBalance > 0
+                    ? 'bg-emerald-50 text-emerald-800'
+                    : 'bg-rose-50 text-rose-800',
+              ].join(' ')}
+            >
+              {myBalance === 0 ? 'מאוזן' : myBalance > 0 ? 'מגיע לך' : 'אתה חייב'}
+            </span>
+          </div>
           {!isConsistent && (
-            <p className="mt-3 flex items-center gap-1.5 rounded-lg bg-black/20 px-2.5 py-1.5 text-xs">
+            <p className="mt-3 flex items-center gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs text-rose-700">
               <WarningIcon width={13} height={13} className="shrink-0" />
               סכום המאזנים בחדר אינו מתאפס. ייתכן שנתון חסר.
             </p>

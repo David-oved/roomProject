@@ -155,8 +155,8 @@ export function AccountSettings() {
             disabled={!isOnline || uploadingAvatar}
             aria-label="החלפת תמונת פרופיל"
             className="tap-area absolute -bottom-1 -end-1 grid h-7 w-7 place-items-center
-                       rounded-full bg-brand-700 text-white shadow-card transition
-                       hover:bg-brand-800 disabled:opacity-60"
+                       rounded-full bg-brand-fill text-white shadow-card transition
+                       hover:bg-brand-fill-hover disabled:opacity-60"
           >
             <CameraIcon width={14} height={14} />
           </button>

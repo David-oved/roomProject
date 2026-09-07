@@ -33,6 +33,15 @@ export default function CreateRoomPage() {
 
   const canSubmit = name.trim().length >= 2 && categories.length > 0 && isOnline;
 
+  // ‼️ מצב מושבת בלי הסבר = המשתמש לא יודע מה חסר. טקסט צמוד לכפתור,
+  //    לא רק צבע אפור (חוק חלק א'). מקרה הקטגוריות הריקות מטופל בהתראה
+  //    נפרדת שצמודה לבורר עצמו — לכן לא חוזר עליו כאן.
+  const disabledReason = !isOnline
+    ? 'יצירת חדר דורשת חיבור לאינטרנט'
+    : name.trim().length < 2
+      ? 'כתבו שם לחדר (2 תווים לפחות) כדי להמשיך'
+      : null;
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!user || !profile) return;
@@ -82,7 +91,7 @@ export default function CreateRoomPage() {
 
           <fieldset>
             <legend className="mb-2 block text-sm font-medium text-ink-700">
-              אילו קטגוריות רלוונטיות לחדר?
+              קטגוריות בחדר
             </legend>
             <div className="grid grid-cols-2 gap-2">
               {ALL_CATEGORIES.map((c) => {
@@ -139,8 +148,7 @@ export default function CreateRoomPage() {
               <ChevronIcon width={20} height={20} className="shrink-0 text-ink-300" />
             </button>
             <p className="mt-1.5 text-xs leading-relaxed text-ink-500">
-              המוצרים שתמיד צריכים להיות בבית. כשמשהו נגמר — לחיצה אחת מדווחת עליו.
-              אפשר לשנות בכל רגע.
+              המוצרים שתמיד צריכים בבית — לחיצה אחת מדווחת כשנגמרו. אפשר לשנות מתי שרוצים.
             </p>
           </div>
 
@@ -153,14 +161,18 @@ export default function CreateRoomPage() {
           <div className="flex items-start gap-1.5 rounded-xl bg-brand-50/70 px-3.5 py-3 text-xs leading-relaxed text-brand-900">
             <LightbulbIcon width={14} height={14} className="mt-0.5 shrink-0" />
             <span>
-              עם יצירת החדר תקבלו <b>קוד בן 6 תווים</b>. שתפו אותו עם השותפים כדי שיוכלו
-              לבקש להצטרף. אתם תאשרו כל בקשה.
+              עם היצירה תקבלו <b>קוד בן 6 תווים</b> לשיתוף עם השותפים. כל בקשת הצטרפות מגיעה לאישורכם.
             </span>
           </div>
 
-          <Button type="submit" size="lg" fullWidth loading={busy} disabled={!canSubmit}>
-            צור חדר
-          </Button>
+          <div className="space-y-2">
+            <Button type="submit" size="lg" fullWidth loading={busy} disabled={!canSubmit}>
+              צור חדר
+            </Button>
+            {disabledReason && !busy && (
+              <p className="text-center text-xs text-ink-500">{disabledReason}</p>
+            )}
+          </div>
         </form>
 
         <StaplesPicker

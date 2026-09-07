@@ -89,19 +89,28 @@ export default function TasksPage() {
   }
 
   return (
-    <AppShell>
-      <TopBar
-        title="מטלות"
-        subtitle="תורנות קבועה בין חברי החדר, בסבב הוגן"
-        back={`/r/${roomCode}`}
-        actions={
-          isAdmin && (
-            <Button ref={addTaskHintRef} size="sm" onClick={() => setAddOpen(true)} disabled={!isOnline || isArchived}>
-              + מטלה
-            </Button>
-          )
-        }
-      />
+    <AppShell
+      topBar={
+        <TopBar
+          title="מטלות"
+          subtitle="תורנות קבועה בין חברי החדר, בסבב הוגן"
+          back={`/r/${roomCode}`}
+          actions={
+            isAdmin && (
+              <Button
+                ref={addTaskHintRef}
+                size="sm"
+                variant="secondary"
+                onClick={() => setAddOpen(true)}
+                disabled={!isOnline || isArchived}
+              >
+                + מטלה
+              </Button>
+            )
+          }
+        />
+      }
+    >
       <RoomArchivedBanner />
 
       <div className="space-y-5 pt-4">

@@ -22,8 +22,7 @@ export function TopBar({
 
   return (
     <header
-      className="sticky top-0 z-40 border-b border-ink-200/70 bg-surface/85
-                 backdrop-blur-xl backdrop-saturate-150"
+      className="sticky top-0 z-40 border-b border-ink-200/70 bg-surface"
       style={{ paddingTop: 'var(--safe-top)' }}
     >
       <div className="mx-auto flex h-[var(--header-height)] max-w-lg items-center gap-1 px-2">
@@ -42,7 +41,7 @@ export function TopBar({
           </button>
         )}
 
-        <div className={`min-w-0 flex-1 animate-header-in ${back ? '' : 'ps-2'}`}>
+        <div className={`min-w-0 flex-1 ${back ? '' : 'ps-2'}`}>
           <h1 className="truncate text-lg font-extrabold leading-tight tracking-tight text-ink-900">
             {title}
           </h1>

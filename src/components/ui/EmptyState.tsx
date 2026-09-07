@@ -24,12 +24,19 @@ export function EmptyState({
   );
 }
 
+/**
+ * מצב שגיאה בטעינת מסך. ‼️ הכותרת אומרת *מה* קרה, ה-body מקבל את
+ * ה*למה* הספציפי מ-`friendlyError` (אין הרשאה / אין חיבור / השירות
+ * עמוס…) ונופל להסבר קונקרטי, והכפתור הוא ה*מה לעשות עכשיו* — שלוש
+ * השאלות שמסך שגיאה חייב לענות עליהן (docs: חלק ג' של מסמך ה-UX).
+ * לא "משהו השתבש".
+ */
 export function ErrorState({ message, onRetry }: { message?: string; onRetry?: () => void }) {
   return (
     <EmptyState
       icon={<WarningIcon width={30} height={30} />}
-      title="משהו השתבש"
-      body={message || 'לא הצלחנו לטעון את הנתונים.'}
+      title="לא הצלחנו לטעון את המסך"
+      body={message || 'ייתכן שהחיבור לאינטרנט נפל לרגע. אפשר לרענן ולנסות שוב.'}
       action={
         onRetry && (
           <button
@@ -37,7 +44,7 @@ export function ErrorState({ message, onRetry }: { message?: string; onRetry?: (
             className="tap rounded-xl border border-ink-200 bg-surface px-4 text-sm font-semibold
                        text-ink-700 transition hover:bg-ink-50"
           >
-            נסה שוב
+            רענון
           </button>
         )
       }

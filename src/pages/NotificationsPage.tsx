@@ -77,13 +77,15 @@ export default function NotificationsPage() {
   }, [notifications, user, roomCode, isOnline]);
 
   return (
-    <AppShell>
-      <TopBar
-        title="התראות"
-        subtitle="עדכונים על תשלומים, מטלות ובקשות שממתינות לך"
-        back
-      />
-
+    <AppShell
+      topBar={
+        <TopBar
+          title="התראות"
+          subtitle="עדכונים על תשלומים, מטלות ובקשות שממתינות לך"
+          back
+        />
+      }
+    >
       <div className="pt-4">
         {loading ? (
           <ListSkeleton rows={5} />

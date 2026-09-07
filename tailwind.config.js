@@ -39,6 +39,13 @@ export default {
     extend: {
       colors: {
         brand: varColor('brand'),
+        // מילוי כפתור ראשי — לא נגזר מ-varColor כי הוא לא מתהפך במצב כהה
+        // (ראו ההערה ב-src/styles/index.css). טקסט לבן עליו עובר את התקן.
+        'brand-fill': {
+          DEFAULT: 'rgb(var(--brand-fill) / <alpha-value>)',
+          hover: 'rgb(var(--brand-fill-hover) / <alpha-value>)',
+          active: 'rgb(var(--brand-fill-active) / <alpha-value>)',
+        },
         // teal-* משמש רק ב-Avatar.tsx (פלטת צבעי ראשי-תיבות) — ומכיוון
         // ש"brand" הוא בעצם ה-teal של Tailwind בשם אחר, פשוט מצביע על
         // אותם משתנים. שינוי אחד, שני השמות עדיין מסונכרנים.
@@ -61,6 +68,10 @@ export default {
       },
       fontFamily: {
         sans: ['Assistant', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+        // כותרות (h1/h2, כותרות מסך) — סריף עברי בעל אופי. ה-fallback הוא
+        // Assistant *ולא* סריף מערכת: עד שהגופן נטען עדיף גוף מוכר על
+        // סריף גנרי, וגם למי שהגופן נכשל אצלו הטיפוגרפיה נשארת קוהרנטית.
+        serif: ['"Frank Ruhl Libre"', 'Assistant', 'Georgia', 'serif'],
         // לספרות בכרטיס היתרה — מראה "מסמך פיננסי" ולא רק טקסט מודגש
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Consolas', 'monospace'],
       },
@@ -68,9 +79,9 @@ export default {
         card: '1.125rem',
       },
       boxShadow: {
-        card: '0 1px 2px rgba(15,23,42,.04), 0 4px 16px -4px rgba(15,23,42,.08)',
-        lifted: '0 2px 4px rgba(15,23,42,.06), 0 12px 28px -8px rgba(15,23,42,.16)',
-        fab: '0 4px 14px -2px rgba(13,148,136,.45)',
+        card: '0 1px 2px rgba(28,25,23,.04), 0 4px 16px -4px rgba(28,25,23,.08)',
+        lifted: '0 2px 4px rgba(28,25,23,.06), 0 12px 28px -8px rgba(28,25,23,.16)',
+        fab: '0 4px 14px -2px rgba(31,86,115,.4)',
       },
       keyframes: {
         'slide-up': {
@@ -101,10 +112,6 @@ export default {
           from: { opacity: '0', transform: 'translateY(6px) scale(.99)' },
           to: { opacity: '1', transform: 'translateY(0) scale(1)' },
         },
-        'header-in': {
-          from: { opacity: '0', transform: 'translateY(-4px)' },
-          to: { opacity: '1', transform: 'translateY(0)' },
-        },
       },
       animation: {
         'slide-up': 'slide-up .28s cubic-bezier(.22,1,.36,1)',
@@ -113,7 +120,6 @@ export default {
         'glass-in': 'glass-in .32s cubic-bezier(.22,1,.36,1)',
         'check-pop': 'check-pop .45s cubic-bezier(.34,1.56,.64,1)',
         'page-in': 'page-in .32s cubic-bezier(.22,1,.36,1)',
-        'header-in': 'header-in .28s cubic-bezier(.22,1,.36,1)',
       },
     },
   },
