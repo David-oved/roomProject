@@ -126,13 +126,13 @@ describe('RequireRoomMember', () => {
    * ‼️ בלי זה: onboarding → חדר אחד → חזרה לחדר → פסק זמן → onboarding.
    *    לולאה שקטה של 20 שניות במקום מסך שאפשר לפעול בו.
    */
-  it('פסק זמן בחיבור → מסך "נסה שוב", ולא ניווט החוצה', async () => {
+  it('פסק זמן בחיבור → מסך שגיאה עם פעולת רענון, ולא ניווט החוצה', async () => {
     const { RtdbTimeoutError } = await import('../../src/hooks/useRtdb');
     useRoom.mockReturnValue({ ...BASE, metadata: null, error: new RtdbTimeoutError() });
     renderGuard();
 
     expect(screen.queryByTestId('onboarding')).toBeNull();
-    expect(screen.getByText('משהו השתבש')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'נסה שוב' })).toBeTruthy();
+    expect(screen.getByText('לא הצלחנו לטעון את המסך')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'רענון' })).toBeTruthy();
   });
 });

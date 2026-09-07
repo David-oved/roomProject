@@ -143,6 +143,36 @@ export function validateCustomSplit(
   return { valid: sum === total, remaining: total - sum };
 }
 
+export interface SettlementApprovalContext {
+  /** מזהי החברים הפעילים בחדר — בסיס חישוב "רוב" */
+  activeMemberIds: string[];
+  adminId: string;
+}
+
+/**
+ * האם תשלום נחשב סגור.
+ *
+ * תשלום רגיל: המקבל (to) מאשר קבלה בעצמו — s.confirmedBy. ראו
+ * confirmSettlement ב-purchaseService.
+ *
+ * תשלום שמקורו בקנייה גדולה (s.tripId): החוב התחלק בין כל החדר, ולכן
+ * אישור יחיד של הנושה לא מספיק — נדרש אישור מנהל **או** רוב מוחלט
+ * מהחברים הפעילים (s.approvals). confirmedBy מתעלמים ממנו במקרה הזה
+ * לגמרי — ראו approveTripSettlement ב-purchaseService.
+ */
+export function isSettlementSettled(s: Settlement, ctx?: SettlementApprovalContext): boolean {
+  if (!s.tripId) return !!s.confirmedBy;
+  // בלי ctx אין דרך לדעת מי "רוב" — ברירת המחדל הבטוחה היא לא סגור,
+  // ולא ליפול חזרה על confirmedBy (זה בדיוק האישור היחיד שהמנגנון הזה בא לעקוף).
+  if (!ctx) return false;
+
+  const approvals = s.approvals ?? {};
+  if (approvals[ctx.adminId]) return true;
+
+  const approvedCount = ctx.activeMemberIds.filter((id) => approvals[id]).length;
+  return approvedCount > ctx.activeMemberIds.length / 2;
+}
+
 /**
  * מחשב את המאזן של כל חבר מתוך יומן הקניות.
  *
@@ -154,7 +184,8 @@ export function validateCustomSplit(
 export function computeBalances(
   purchases: Purchase[],
   settlements: Settlement[],
-  memberIds: string[]
+  memberIds: string[],
+  approvalCtx?: SettlementApprovalContext
 ): Record<string, Agorot> {
   const balances: Record<string, Agorot> = Object.fromEntries(memberIds.map((id) => [id, 0]));
 
@@ -168,9 +199,7 @@ export function computeBalances(
   }
 
   for (const s of settlements) {
-    // תשלום שטרם אושר ע"י מי שמגיע לו הכסף לא משפיע על המאזן — רק
-    // טענה, לא עובדה. ראו confirmSettlement ב-purchaseService.
-    if (!s.confirmedBy) continue;
+    if (!isSettlementSettled(s, approvalCtx)) continue;
     balances[s.from] = (balances[s.from] ?? 0) + s.amount;
     balances[s.to] = (balances[s.to] ?? 0) - s.amount;
   }
