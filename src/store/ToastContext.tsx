@@ -40,18 +40,20 @@ const Ctx = createContext<ToastApi>({
 export const useToast = () => useContext(Ctx);
 
 /**
- * ‼️ הגוונים כאן נבחרו לפי יחס ניגודיות מדוד מול טקסט לבן, לא לפי העין:
- *   warn   amber-500 = 2.15:1  →  amber-700 = 5.02:1
- *          זה הגוון של טוסט "אין חיבור לאינטרנט" — ההודעה שהכי חשוב
- *          שתיקרא, ובדיוק היא הייתה הכי פחות קריאה.
- *   success emerald-600 = 3.77:1 → emerald-700 = 5.48:1
- *   error   rose-600 = 4.70:1 ו-info ink-800 = 14.63:1 — עוברים, לא נגענו.
+ * ‼️ מילויים ייעודיים שלא מתהפכים במצב כהה — ראו ההסבר המלא ליד
+ * --success-fill ב-src/styles/index.css.
+ *
+ * בקצרה: כאן ישבו קודם emerald-700/amber-700/ink-800, שנבחרו לפי
+ * ניגודיות מדודה מול לבן — אבל רק במצב בהיר. שלושתם מתהפכים לבהיר
+ * תחת .dark בזמן ש-text-white נשאר לבן, ואז info ירד ל-1.07:1
+ * (בלתי-נראה), warn ל-1.93:1 ו-success ל-2.46:1. הטוקנים החדשים
+ * מוגדרים במפורש בשני המצבים ולבן עליהם עובר 4.5:1 בשניהם.
  */
 const TONE_STYLES: Record<ToastTone, string> = {
-  success: 'bg-emerald-700 text-white',
-  error: 'bg-rose-600 text-white',
-  warn: 'bg-amber-700 text-white',
-  info: 'bg-ink-800 text-white',
+  success: 'bg-success-fill text-white',
+  error: 'bg-danger-fill text-white',
+  warn: 'bg-warn-fill text-white',
+  info: 'bg-info-fill text-white',
 };
 
 const TONE_ICONS: Record<ToastTone, (p: IconProps) => JSX.Element> = {

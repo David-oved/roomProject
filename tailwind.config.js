@@ -46,6 +46,12 @@ export default {
           hover: 'rgb(var(--brand-fill-hover) / <alpha-value>)',
           active: 'rgb(var(--brand-fill-active) / <alpha-value>)',
         },
+        // מילויי סטטוס לטוסטים ולבאנרים — אותו היגיון כמו brand-fill:
+        // לא נגזרים מהסולם כי הם נושאים טקסט לבן ולכן אסור להם להתהפך.
+        'success-fill': 'rgb(var(--success-fill) / <alpha-value>)',
+        'warn-fill': 'rgb(var(--warn-fill) / <alpha-value>)',
+        'info-fill': 'rgb(var(--info-fill) / <alpha-value>)',
+        'danger-fill': 'rgb(var(--danger-fill) / <alpha-value>)',
         // teal-* משמש רק ב-Avatar.tsx (פלטת צבעי ראשי-תיבות) — ומכיוון
         // ש"brand" הוא בעצם ה-teal של Tailwind בשם אחר, פשוט מצביע על
         // אותם משתנים. שינוי אחד, שני השמות עדיין מסונכרנים.
