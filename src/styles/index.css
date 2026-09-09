@@ -15,6 +15,9 @@
     --safe-right: env(safe-area-inset-right, 0px);
 
     --nav-height: 3.5rem;
+    /* המרווח הצף בין הסרגל התחתון לקצה המסך — הסרגל כבר לא נצמד לתחתית
+       (עיצוב מחדש בהשראת Apple Music: כפתורים מרחפים, לא פס קבוע). */
+    --nav-gap: 0.75rem;
     --header-height: 3.5rem;
 
     color-scheme: light;

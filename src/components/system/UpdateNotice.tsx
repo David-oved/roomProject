@@ -53,7 +53,7 @@ export function UpdateNotice() {
   return (
     <div
       className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex justify-center px-3"
-      style={{ paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom) + 0.75rem)' }}
+      style={{ paddingBottom: 'calc(var(--nav-height) + var(--nav-gap) + var(--safe-bottom) + 0.75rem)' }}
     >
       <div
         role="status"

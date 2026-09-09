@@ -29,7 +29,7 @@ export function AppShell({ children, topBar }: { children: ReactNode; topBar?: R
 
       <main
         className="mx-auto max-w-lg px-4 safe-x"
-        style={{ paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom) + 1.5rem)' }}
+        style={{ paddingBottom: 'calc(var(--nav-height) + var(--nav-gap) + var(--safe-bottom) + 1.5rem)' }}
       >
         <PageTransition>{children}</PageTransition>
       </main>

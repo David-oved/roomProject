@@ -13,18 +13,22 @@ import { useHintRef } from '../../store/HintContext';
 import { useToast } from '../../store/ToastContext';
 
 /**
- * סרגל ניווט תחתון — 5 מקומות, כשהאמצעי הוא כפתור הפעולה הראשי.
+ * סרגל ניווט תחתון — בהשראת סרגל הכלים של Apple Music: לא פס קבוע
+ * שנצמד לתחתית המסך, אלא שני אלמנטים צפים ונפרדים —
  *
- *   🏠 בית    🛒 חסרים    ➕    💰 חשבון    💬 צ'אט
+ *   [כפתור פעולה עגול]    [פיל זכוכית עם 4 טאבים: בית · חסרים · חשבון · צ'אט]
+ *        (ימין)                              (משמאלו)
  *
- * למה במרכז: "דיווח על מוצר חסר" היא הפעולה התכופה ביותר באפליקציה,
- * ומרכז התחתית הוא האזור הכי נוח לאגודל בכל גודל מסך.
+ * כפתור הפעולה בצד ימין במפורש (לא "קצה מוביל ב-RTL") — כך התבקש: אותו
+ * מיקום מסך פיזי שבו יושב כפתור החיפוש בתמונות ההשראה. כדי לקבל את זה
+ * תחת RTL, הכפתור *ראשון* ב-DOM (ראו את סדר הרינדור למטה) — בשורת flex
+ * עם dir=rtl הילד הראשון ב-DOM מוצג בקצה הימני של המסך.
  *
  * ‼️ האינדיקטור הפעיל הוא "בועה" אחת משותפת (לא רקע פר-טאב) שגולשת בין
- * הטאבים, ניתנת לגרירה, ותוך כדי גרירה מקבלת מראה זכוכית (Liquid Glass).
+ * הטאבים, ניתנת לגרירה, ותוך כדי גרירה מקבלת מראה זכוכית בולט יותר.
  * המיקום נמדד בפועל מה-DOM (getBoundingClientRect) ולא מחושב לפי אחוזים —
  * זה נכון אוטומטית תחת RTL בלי מיפוי אינדקסים ידני, ולא רגיש לריפוד/
- * לרוחב המקסימלי של השורה.
+ * לרוחב הפיל (שכעת מתאים את עצמו לתוכן ולא נמתח לכל רוחב המסך).
  */
 
 interface Tab {
@@ -273,11 +277,28 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
   return (
     <nav
       aria-label="ניווט ראשי"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-ink-200/70 bg-surface
-                 shadow-[0_-4px_16px_-12px_rgba(0,0,0,.2)]"
-      style={{ paddingBottom: 'var(--safe-bottom)' }}
+      className="fixed inset-x-0 bottom-0 z-50 flex items-end justify-center gap-2 px-4"
+      style={{ paddingBottom: 'calc(var(--safe-bottom) + var(--nav-gap))' }}
     >
-      <div ref={wrapRef} className="relative mx-auto max-w-lg">
+      {/* ── כפתור הפעולה — עגול, נפרד, אותו חומר זכוכית כמו הפיל.
+          ‼️ ראשון ב-DOM כדי לשבת בקצה הימני תחת RTL (ראו ההערה למעלה). */}
+      <button
+        ref={fabHintRef}
+        type="button"
+        onClick={() => (blockedReason ? toast.warn(blockedReason) : navigate(`${base}/items?new=1`))}
+        aria-disabled={blockedReason ? true : undefined}
+        aria-label={blockedReason ? `דיווח על מוצר חסר — ${blockedReason}` : 'דיווח על מוצר חסר'}
+        className={[
+          'glass-panel grid h-14 w-14 shrink-0 place-items-center rounded-full shadow-lifted',
+          'transition-transform duration-150 ease-out active:scale-95',
+          blockedReason ? 'text-ink-400' : 'text-ink-800',
+        ].join(' ')}
+      >
+        <PlusIcon width={22} height={22} />
+      </button>
+
+      {/* ── הפיל — 4 טאבים, מתאים את עצמו לתוכן (לא נמתח לרוחב המסך) ── */}
+      <div ref={wrapRef} className="glass-panel relative flex h-14 shrink-0 items-center rounded-full px-1 shadow-lifted">
         {/* ‼️ z-index: ה-<ul> מצויר *מעל* הבועה (z-10 מול z-0) כדי
             שהאייקונים לא ייעלמו מתחתיה. הבועה עצמה pointer-events-none —
             היא לא מקבלת אף אירוע ישירות; הגרירה מטופלת ב-<ul> עצמו (ראו
@@ -289,62 +310,19 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
           className={[
             'pointer-events-none absolute z-0 rounded-full',
             dragging
-              ? 'border border-white/40 bg-surface/60 shadow-glass backdrop-blur-xl backdrop-saturate-150'
+              ? 'border border-white/50 bg-surface/50 shadow-glass backdrop-blur-xl backdrop-saturate-150'
               : 'border border-transparent bg-brand-50 transition-[left,top,width,height,background-color,box-shadow,border-color] duration-300 ease-[cubic-bezier(.34,1.56,.64,1)]',
           ].join(' ')}
         />
 
         <ul
-          className="relative z-10 flex h-[var(--nav-height)] touch-none items-center px-1"
+          className="relative z-10 flex h-full touch-none items-center"
           onPointerDown={handleListPointerDown}
           onPointerMove={handleListPointerMove}
           onPointerUp={handleListPointerUp}
           onPointerCancel={handleListPointerCancel}
         >
-          {left.map((t) => (
-            <TabButton
-              key={t.to}
-              {...t}
-              focused={focusedTo === t.to}
-              pillRef={(el) => {
-                if (el) pillRefs.current.set(t.to, el);
-                else pillRefs.current.delete(t.to);
-              }}
-            />
-          ))}
-
-          {/* ── כפתור הפעולה המרכזי ── */}
-          <li className="relative flex w-[20%] shrink-0 items-center justify-center self-stretch">
-            {/* ‼️ aria-disabled ולא disabled, והסיבה בטוסט ולא ב-title.
-                קודם היה כאן כפתור disabled עם ההסבר ב-title בלבד — ושני
-                הערוצים האלה לא קיימים בדפדפן נייד: title לא מוצג במגע,
-                וכפתור disabled גם לא מקבל פוקוס ולא מגיב ללחיצה. כלומר
-                המשתמש ראה ריבוע אפור בלי שום דרך לגלות למה. עכשיו הכפתור
-                נשאר לחיץ וממוקד, השם הנגיש נושא את הסיבה, ולחיצה אומרת
-                אותה בקול. */}
-            <button
-              ref={fabHintRef}
-              type="button"
-              onClick={() =>
-                blockedReason ? toast.warn(blockedReason) : navigate(`${base}/items?new=1`)
-              }
-              aria-disabled={blockedReason ? true : undefined}
-              aria-label={
-                blockedReason ? `דיווח על מוצר חסר — ${blockedReason}` : 'דיווח על מוצר חסר'
-              }
-              className={[
-                'relative -mt-2 grid h-12 w-12 place-items-center rounded-2xl text-white',
-                'ring-[3px] ring-surface transition-transform duration-150 ease-out',
-                blockedReason
-                  ? 'bg-muted-fill shadow-none'
-                  : 'bg-brand-fill shadow-fab active:scale-90',
-              ].join(' ')}
-            >
-              <PlusIcon width={22} height={22} />
-            </button>
-          </li>
-
-          {right.map((t) => (
+          {allTabs.map((t) => (
             <TabButton
               key={t.to}
               {...t}
@@ -375,7 +353,7 @@ function TabButton({
   const hintRef = useHintRef<HTMLAnchorElement>(hintId, hintText);
   const hasUnread = !!unreadCount && unreadCount > 0;
   return (
-    <li className="flex-1 self-stretch">
+    <li className="w-16 shrink-0 self-stretch">
       <NavLink
         ref={hintRef}
         to={to}
