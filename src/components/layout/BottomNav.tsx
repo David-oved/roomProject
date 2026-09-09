@@ -277,7 +277,7 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
   return (
     <nav
       aria-label="ניווט ראשי"
-      className="fixed inset-x-0 bottom-0 z-50 flex items-end justify-center gap-2.5 px-3"
+      className="fixed inset-x-0 bottom-0 z-50 flex items-end gap-2 px-[21px]"
       style={{ paddingBottom: 'calc(var(--safe-bottom) + var(--nav-gap))' }}
     >
       {/* ── כפתור הפעולה — עגול, נפרד, אותו חומר זכוכית כמו הפיל.
@@ -289,7 +289,7 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
         aria-disabled={blockedReason ? true : undefined}
         aria-label={blockedReason ? `דיווח על מוצר חסר — ${blockedReason}` : 'דיווח על מוצר חסר'}
         className={[
-          'glass-panel grid h-14 w-14 shrink-0 place-items-center rounded-full shadow-lifted',
+          'glass-panel grid h-[62px] w-[62px] shrink-0 place-items-center rounded-full shadow-lifted',
           'transition-transform duration-150 ease-out active:scale-95',
           blockedReason ? 'text-ink-400' : 'text-ink-800',
         ].join(' ')}
@@ -297,8 +297,11 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
         <PlusIcon width={22} height={22} />
       </button>
 
-      {/* ── הפיל — 4 טאבים, מתאים את עצמו לתוכן (לא נמתח לרוחב המסך) ── */}
-      <div ref={wrapRef} className="glass-panel relative flex h-14 shrink-0 items-center rounded-full px-2 shadow-lifted">
+      {/* ── הפיל — 4 טאבים, נמתח לכל הרוחב שנשאר עד לכפתור (לא מתאים
+          עצמו לתוכן). זה בדיוק ההבדל מהניסיון הקודם: ב-FabBar המקורי
+          של אפל (ראו למעלה) הפיל תפוס כל הרוחב הפנוי — וזה מה שגרם
+          לתחושת ה"מצומק", לא הרווח הפנימי בין הטאבים. */}
+      <div ref={wrapRef} className="glass-panel relative flex h-[62px] flex-1 items-center rounded-full px-0.5 shadow-lifted">
         {/* ‼️ z-index: ה-<ul> מצויר *מעל* הבועה (z-10 מול z-0) כדי
             שהאייקונים לא ייעלמו מתחתיה. הבועה עצמה pointer-events-none —
             היא לא מקבלת אף אירוע ישירות; הגרירה מטופלת ב-<ul> עצמו (ראו
@@ -316,7 +319,7 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
         />
 
         <ul
-          className="relative z-10 flex h-full touch-none items-center"
+          className="relative z-10 flex h-full w-full touch-none items-center"
           onPointerDown={handleListPointerDown}
           onPointerMove={handleListPointerMove}
           onPointerUp={handleListPointerUp}
@@ -353,7 +356,7 @@ function TabButton({
   const hintRef = useHintRef<HTMLAnchorElement>(hintId, hintText);
   const hasUnread = !!unreadCount && unreadCount > 0;
   return (
-    <li className="w-20 shrink-0 self-stretch">
+    <li className="flex-1 self-stretch">
       <NavLink
         ref={hintRef}
         to={to}
@@ -364,7 +367,7 @@ function TabButton({
         // aria-current="page" מגיע אוטומטית מ-NavLink לפי המסלול בפועל —
         // עצמאי מ-focused (שגם מגיב לתצוגת-מקדימה של גרירה).
         aria-label={hasUnread ? `${label}, ${unreadCount} הודעות שלא נקראו` : undefined}
-        className="tap flex h-full flex-col items-center justify-center gap-1
+        className="tap flex h-full flex-col items-center justify-center gap-0.5
                    text-xs font-semibold outline-none transition-transform
                    duration-150 active:scale-90"
       >

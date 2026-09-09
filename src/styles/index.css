@@ -15,9 +15,11 @@
     --safe-right: env(safe-area-inset-right, 0px);
 
     --nav-height: 3.5rem;
-    /* המרווח הצף בין הסרגל התחתון לקצה המסך — הסרגל כבר לא נצמד לתחתית
-       (עיצוב מחדש בהשראת Apple Music: כפתורים מרחפים, לא פס קבוע). */
-    --nav-gap: 0.75rem;
+    /* המרווח הצף בין הסרגל התחתון לקצה המסך — הסרגל כבר לא נצמד לתחתית.
+       21px = הערך המדויק מ-FabBar (github.com/ryanashcraft/FabBar), שחושף
+       את הקבועים הפנימיים של סרגל ה-Liquid Glass האמיתי של אפל (iOS 26):
+       Constants.bottomPadding = 21pt, ואותו ערך גם ל-horizontalPadding. */
+    --nav-gap: 21px;
     --header-height: 3.5rem;
 
     color-scheme: light;
