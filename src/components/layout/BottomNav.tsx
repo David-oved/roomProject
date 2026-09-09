@@ -1,4 +1,11 @@
-import { NavLink, useNavigate, useParams } from 'react-router-dom';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+} from 'react';
+import { NavLink, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { CartIcon, ChatIcon, HomeIcon, PlusIcon, WalletIcon } from '../ui/icons';
 import { useConnection } from '../../store/ConnectionContext';
 import { useRoom } from '../../store/RoomContext';
@@ -12,6 +19,12 @@ import { useToast } from '../../store/ToastContext';
  *
  * למה במרכז: "דיווח על מוצר חסר" היא הפעולה התכופה ביותר באפליקציה,
  * ומרכז התחתית הוא האזור הכי נוח לאגודל בכל גודל מסך.
+ *
+ * ‼️ האינדיקטור הפעיל הוא "בועה" אחת משותפת (לא רקע פר-טאב) שגולשת בין
+ * הטאבים, ניתנת לגרירה, ותוך כדי גרירה מקבלת מראה זכוכית (Liquid Glass).
+ * המיקום נמדד בפועל מה-DOM (getBoundingClientRect) ולא מחושב לפי אחוזים —
+ * זה נכון אוטומטית תחת RTL בלי מיפוי אינדקסים ידני, ולא רגיש לריפוד/
+ * לרוחב המקסימלי של השורה.
  */
 
 interface Tab {
@@ -24,9 +37,17 @@ interface Tab {
   hintText: string;
 }
 
+interface Rect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isOnline } = useConnection();
   const { isArchived } = useRoom();
   const toast = useToast();
@@ -35,11 +56,9 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
     'פותח ישר טופס להוספת מוצר חסר חדש'
   );
 
-  if (!code) return null;
-
-  const base = `/r/${code}`;
-  // למה אי אפשר לדווח כרגע — null כשאפשר. ארכיון קודם לאופליין: הוא
-  // המצב הקבוע מביניהם, ולכן ההסבר המועיל יותר.
+  // מחושבים תמיד (גם אם code עדיין לא ידוע) כדי לא לשבור את סדר ה-hooks
+  // למטה — ה-early return היחיד מגיע רק אחרי כל קריאות ה-hook.
+  const base = code ? `/r/${code}` : '';
   const blockedReason = isArchived
     ? 'החדר בארכיון, לצפייה בלבד'
     : !isOnline
@@ -79,6 +98,177 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
       hintText: 'צ׳אט קבוצתי ושיחות פרטיות עם חברי החדר',
     },
   ];
+  const allTabs = [...left, ...right];
+
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const bubbleRef = useRef<HTMLDivElement>(null);
+  const pillRefs = useRef<Map<string, HTMLSpanElement>>(new Map());
+  const isFirstMeasure = useRef(true);
+  const dragRef = useRef<{
+    pointerId: number;
+    startClientX: number;
+    startLeft: number;
+    startTo: string;
+    centers: { to: string; center: number }[];
+  } | null>(null);
+
+  const [dragging, setDragging] = useState(false);
+  const [focusedTo, setFocusedTo] = useState<string | null>(null);
+
+  /** מיקום/גודל של הפיל שממוקם מתחת לטאב to, יחסית ל-wrapRef. */
+  const measure = (to: string): Rect | null => {
+    const wrap = wrapRef.current;
+    const pill = pillRefs.current.get(to);
+    if (!wrap || !pill) return null;
+    const w = wrap.getBoundingClientRect();
+    const p = pill.getBoundingClientRect();
+    return { left: p.left - w.left, top: p.top - w.top, width: p.width, height: p.height };
+  };
+
+  /**
+   * instant=true משתמש בטריק הרגיל להשבתת טרנזישן לרגע אחד: כותבים
+   * transition:none ישירות (inline מנצח קלאס), כופים reflow (offsetHeight)
+   * כדי שהדפדפן יישם את ה-none *לפני* שממשיכים, ורק אז משחזרים — כך
+   * הקפיצה הראשונה במיקום (בטעינה, ב-resize) לא "גולשת" מהפינה.
+   */
+  const placeBubble = (rect: Rect | null, instant: boolean) => {
+    const bubble = bubbleRef.current;
+    if (!rect || !bubble) return;
+    if (instant) {
+      const prev = bubble.style.transition;
+      bubble.style.transition = 'none';
+      bubble.style.left = `${rect.left}px`;
+      bubble.style.top = `${rect.top}px`;
+      bubble.style.width = `${rect.width}px`;
+      bubble.style.height = `${rect.height}px`;
+      void bubble.offsetHeight;
+      bubble.style.transition = prev;
+    } else {
+      bubble.style.left = `${rect.left}px`;
+      bubble.style.top = `${rect.top}px`;
+      bubble.style.width = `${rect.width}px`;
+      bubble.style.height = `${rect.height}px`;
+    }
+  };
+
+  // ‼️ allTabs במתכוון לא ברשימת התלויות: התוכן שלו נגזר כולו מ-code,
+  // וזה כבר שם. הוספתו הייתה מפעילה את ה-effect בכל רינדור (מערך חדש
+  // בכל קריאה לפונקציה), בלי שום שינוי אמיתי במיקום שצריך למדוד.
+  useLayoutEffect(() => {
+    if (!code) return;
+    const active =
+      allTabs.find((t) => (t.end ? location.pathname === t.to : location.pathname.startsWith(t.to))) ??
+      allTabs[0];
+    setFocusedTo(active.to);
+    placeBubble(measure(active.to), isFirstMeasure.current);
+    isFirstMeasure.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, code]);
+
+  // שינוי גודל חלון (סיבוב מכשיר, שינוי DevTools) — מיקום מחדש בלי אנימציה,
+  // זו לא תזוזה בין טאבים.
+  useEffect(() => {
+    function onResize() {
+      if (!focusedTo) return;
+      placeBubble(measure(focusedTo), true);
+    }
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusedTo]);
+
+  if (!code) return null;
+
+  // ── גרירת הבועה ──
+  // הבועה עצמה aria-hidden ו-pointer-events-none: זו תוספת מגע אופציונלית,
+  // לא ערוץ הניווט היחיד. הקשה על טאב, מקלדת וקורא-מסך ממשיכים לעבוד דרך
+  // ה-NavLink הרגיל בלי שום שינוי.
+  //
+  // ‼️ המאזינים על ה-<ul> ולא על הבועה עצמה. הבועה יושבת מאחורי ה-<ul>
+  // (z-0 מול z-10) כדי שהאייקונים יצוירו מעליה — אבל בדיוק בגלל זה שום
+  // pointerdown לא היה מגיע אליה: ה-NavLink הגדול (יעד מגע 44px) שמעליה
+  // תמיד "מנצח" בבדיקת ה-hit-test, לפני שהאירוע בכלל מגיע לאלמנט שמתחתיו.
+  // הפתרון: ה-<ul> (שכבר מקבל כל אירוע באזור, בלי קונפליקט) בודק בעצמו
+  // אם הנקודה שבה החלה הנגיעה נופלת בתוך המלבן הנוכחי של הבועה — ורק אז
+  // מתחיל גרירה. נגיעה במקום אחר לא נעצרת (אין preventDefault/stopPropagation)
+  // וממשיכה כרגיל אל ה-NavLink שמתחתיה.
+  function handleListPointerDown(e: PointerEvent<HTMLUListElement>) {
+    const bubble = bubbleRef.current;
+    const wrap = wrapRef.current;
+    if (!bubble || !wrap || !focusedTo) return;
+    const r = bubble.getBoundingClientRect();
+    const withinBubble = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    if (!withinBubble) return;
+
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const wrapRect = wrap.getBoundingClientRect();
+    const centers = allTabs
+      .map((t) => {
+        const rect = measure(t.to);
+        return rect ? { to: t.to, center: rect.left + rect.width / 2 } : null;
+      })
+      .filter((c): c is { to: string; center: number } => c !== null);
+    dragRef.current = {
+      pointerId: e.pointerId,
+      startClientX: e.clientX,
+      startLeft: r.left - wrapRect.left,
+      startTo: focusedTo,
+      centers,
+    };
+    setDragging(true);
+  }
+
+  function handleListPointerMove(e: PointerEvent<HTMLUListElement>) {
+    const drag = dragRef.current;
+    const bubble = bubbleRef.current;
+    const wrap = wrapRef.current;
+    if (!drag || !bubble || !wrap || drag.pointerId !== e.pointerId) return;
+    const dx = e.clientX - drag.startClientX;
+    const wrapWidth = wrap.getBoundingClientRect().width;
+    const bubbleWidth = bubble.getBoundingClientRect().width;
+    const left = Math.min(Math.max(drag.startLeft + dx, 0), Math.max(0, wrapWidth - bubbleWidth));
+    bubble.style.left = `${left}px`;
+
+    const center = left + bubbleWidth / 2;
+    let nearest = drag.centers[0];
+    let nearestDist = Infinity;
+    for (const c of drag.centers) {
+      const d = Math.abs(c.center - center);
+      if (d < nearestDist) {
+        nearestDist = d;
+        nearest = c;
+      }
+    }
+    if (nearest && nearest.to !== focusedTo) setFocusedTo(nearest.to);
+  }
+
+  function handleListPointerUp(e: PointerEvent<HTMLUListElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    dragRef.current = null;
+    setDragging(false);
+    const target = focusedTo ?? drag.startTo;
+    if (target !== location.pathname) {
+      navigate(target);
+    } else {
+      // כבר באותו טאב שהתחלנו בו — ה-route לא משתנה, אז ה-effect שמזיז
+      // את הבועה לא ירוץ. מציבים אותה בעצמנו בחזרה, עם טרנזישן (לא
+      // instant) כדי שהיא "תיפול למקום" בצורה חלקה.
+      placeBubble(measure(target), false);
+    }
+  }
+
+  // ‼️ pointercancel (למשל שיחה נכנסת שמפריעה למחווה) חוזר לטאב שבו
+  // התחילה הגרירה, בלי לנווט — עדיף לבטל בבטחה מאשר "לנחש" יעד.
+  function handleListPointerCancel(e: PointerEvent<HTMLUListElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    dragRef.current = null;
+    setDragging(false);
+    setFocusedTo(drag.startTo);
+    placeBubble(measure(drag.startTo), false);
+  }
 
   return (
     <nav
@@ -87,51 +277,101 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
                  shadow-[0_-4px_16px_-12px_rgba(0,0,0,.2)]"
       style={{ paddingBottom: 'var(--safe-bottom)' }}
     >
-      <ul className="mx-auto flex h-[var(--nav-height)] max-w-lg items-center px-1">
-        {left.map((t) => (
-          <TabButton key={t.to} {...t} />
-        ))}
+      <div ref={wrapRef} className="relative mx-auto max-w-lg">
+        {/* ‼️ z-index: ה-<ul> מצויר *מעל* הבועה (z-10 מול z-0) כדי
+            שהאייקונים לא ייעלמו מתחתיה. הבועה עצמה pointer-events-none —
+            היא לא מקבלת אף אירוע ישירות; הגרירה מטופלת ב-<ul> עצמו (ראו
+            handleListPointerDown). */}
+        <div
+          ref={bubbleRef}
+          aria-hidden
+          style={{ left: 0, top: 4, width: 44, height: 32 }}
+          className={[
+            'pointer-events-none absolute z-0 rounded-full',
+            dragging
+              ? 'border border-white/40 bg-surface/60 shadow-glass backdrop-blur-xl backdrop-saturate-150'
+              : 'border border-transparent bg-brand-50 transition-[left,top,width,height,background-color,box-shadow,border-color] duration-300 ease-[cubic-bezier(.34,1.56,.64,1)]',
+          ].join(' ')}
+        />
 
-        {/* ── כפתור הפעולה המרכזי ── */}
-        <li className="relative flex w-[20%] shrink-0 items-center justify-center self-stretch">
-          {/* ‼️ aria-disabled ולא disabled, והסיבה בטוסט ולא ב-title.
-              קודם היה כאן כפתור disabled עם ההסבר ב-title בלבד — ושני
-              הערוצים האלה לא קיימים בדפדפן נייד: title לא מוצג במגע,
-              וכפתור disabled גם לא מקבל פוקוס ולא מגיב ללחיצה. כלומר
-              המשתמש ראה ריבוע אפור בלי שום דרך לגלות למה. עכשיו הכפתור
-              נשאר לחיץ וממוקד, השם הנגיש נושא את הסיבה, ולחיצה אומרת
-              אותה בקול. */}
-          <button
-            ref={fabHintRef}
-            type="button"
-            onClick={() =>
-              blockedReason ? toast.warn(blockedReason) : navigate(`${base}/items?new=1`)
-            }
-            aria-disabled={blockedReason ? true : undefined}
-            aria-label={
-              blockedReason ? `דיווח על מוצר חסר — ${blockedReason}` : 'דיווח על מוצר חסר'
-            }
-            className={[
-              'relative -mt-2 grid h-12 w-12 place-items-center rounded-2xl text-white',
-              'ring-[3px] ring-surface transition-transform duration-150 ease-out',
-              blockedReason
-                ? 'bg-muted-fill shadow-none'
-                : 'bg-brand-fill shadow-fab active:scale-90',
-            ].join(' ')}
-          >
-            <PlusIcon width={22} height={22} />
-          </button>
-        </li>
+        <ul
+          className="relative z-10 flex h-[var(--nav-height)] touch-none items-center px-1"
+          onPointerDown={handleListPointerDown}
+          onPointerMove={handleListPointerMove}
+          onPointerUp={handleListPointerUp}
+          onPointerCancel={handleListPointerCancel}
+        >
+          {left.map((t) => (
+            <TabButton
+              key={t.to}
+              {...t}
+              focused={focusedTo === t.to}
+              pillRef={(el) => {
+                if (el) pillRefs.current.set(t.to, el);
+                else pillRefs.current.delete(t.to);
+              }}
+            />
+          ))}
 
-        {right.map((t) => (
-          <TabButton key={t.to} {...t} />
-        ))}
-      </ul>
+          {/* ── כפתור הפעולה המרכזי ── */}
+          <li className="relative flex w-[20%] shrink-0 items-center justify-center self-stretch">
+            {/* ‼️ aria-disabled ולא disabled, והסיבה בטוסט ולא ב-title.
+                קודם היה כאן כפתור disabled עם ההסבר ב-title בלבד — ושני
+                הערוצים האלה לא קיימים בדפדפן נייד: title לא מוצג במגע,
+                וכפתור disabled גם לא מקבל פוקוס ולא מגיב ללחיצה. כלומר
+                המשתמש ראה ריבוע אפור בלי שום דרך לגלות למה. עכשיו הכפתור
+                נשאר לחיץ וממוקד, השם הנגיש נושא את הסיבה, ולחיצה אומרת
+                אותה בקול. */}
+            <button
+              ref={fabHintRef}
+              type="button"
+              onClick={() =>
+                blockedReason ? toast.warn(blockedReason) : navigate(`${base}/items?new=1`)
+              }
+              aria-disabled={blockedReason ? true : undefined}
+              aria-label={
+                blockedReason ? `דיווח על מוצר חסר — ${blockedReason}` : 'דיווח על מוצר חסר'
+              }
+              className={[
+                'relative -mt-2 grid h-12 w-12 place-items-center rounded-2xl text-white',
+                'ring-[3px] ring-surface transition-transform duration-150 ease-out',
+                blockedReason
+                  ? 'bg-muted-fill shadow-none'
+                  : 'bg-brand-fill shadow-fab active:scale-90',
+              ].join(' ')}
+            >
+              <PlusIcon width={22} height={22} />
+            </button>
+          </li>
+
+          {right.map((t) => (
+            <TabButton
+              key={t.to}
+              {...t}
+              focused={focusedTo === t.to}
+              pillRef={(el) => {
+                if (el) pillRefs.current.set(t.to, el);
+                else pillRefs.current.delete(t.to);
+              }}
+            />
+          ))}
+        </ul>
+      </div>
     </nav>
   );
 }
 
-function TabButton({ to, label, Icon, end, unreadCount, hintId, hintText }: Tab) {
+function TabButton({
+  to,
+  label,
+  Icon,
+  end,
+  unreadCount,
+  hintId,
+  hintText,
+  focused,
+  pillRef,
+}: Tab & { focused: boolean; pillRef: (el: HTMLSpanElement | null) => void }) {
   const hintRef = useHintRef<HTMLAnchorElement>(hintId, hintText);
   const hasUnread = !!unreadCount && unreadCount > 0;
   return (
@@ -143,48 +383,41 @@ function TabButton({ to, label, Icon, end, unreadCount, hintId, hintText }: Tab)
         // ‼️ הנקודה האדומה היא רמז ויזואלי גרידא (aria-hidden) — בלי
         // aria-label דינמי כאן, קורא-מסך לא היה יודע שיש הודעות שלא
         // נקראו. אותו דפוס בדיוק כמו aria-label של פעמון ההתראות.
+        // aria-current="page" מגיע אוטומטית מ-NavLink לפי המסלול בפועל —
+        // עצמאי מ-focused (שגם מגיב לתצוגת-מקדימה של גרירה).
         aria-label={hasUnread ? `${label}, ${unreadCount} הודעות שלא נקראו` : undefined}
         className="tap flex h-full flex-col items-center justify-center gap-1
                    text-xs font-semibold outline-none transition-transform
                    duration-150 active:scale-90"
       >
-        {({ isActive }) => (
-          <>
+        {/* span זה הוא רק עוגן-מדידה וריכוז לאייקון — הרקע/הבועה עצמם
+            כבר לא כאן, הם האלמנט המשותף שגולש מלמעלה. */}
+        <span ref={pillRef} className="relative grid h-8 w-11 place-items-center rounded-full">
+          <Icon
+            width={21}
+            height={21}
+            filled={focused}
+            className={[
+              'transition-colors duration-200',
+              focused ? 'text-brand-700' : 'text-ink-500',
+            ].join(' ')}
+          />
+          {hasUnread && (
             <span
-              className={[
-                'relative grid h-8 w-11 place-items-center rounded-full transition-all duration-300',
-                'ease-[cubic-bezier(.34,1.56,.64,1)]',
-                isActive ? 'scale-100 bg-brand-50' : 'scale-90 bg-transparent',
-              ].join(' ')}
-            >
-              <Icon
-                width={21}
-                height={21}
-                filled={isActive}
-                className={[
-                  'transition-colors duration-200',
-                  isActive ? 'text-brand-700' : 'text-ink-500',
-                ].join(' ')}
-              />
-              {hasUnread && (
-                <span
-                  aria-hidden
-                  className="absolute end-1.5 top-0.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-surface"
-                />
-              )}
-            </span>
-            {/* ‼️ ink-400 = 2.56:1 מול לבן — כשל ניגודיות בטקסט הניווט
-                הראשי של האפליקציה. ink-500 = 4.76:1. */}
-            <span
-              className={[
-                'transition-colors duration-200',
-                isActive ? 'text-brand-700' : 'text-ink-500',
-              ].join(' ')}
-            >
-              {label}
-            </span>
-          </>
-        )}
+              aria-hidden
+              className="absolute end-1.5 top-0.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-surface"
+            />
+          )}
+        </span>
+        {/* ‼️ ink-400 = 2.56:1 מול לבן — כשל ניגודיות בטקסט הניווט
+            הראשי של האפליקציה. ink-500 = 4.76:1. */}
+        <span
+          className={['transition-colors duration-200', focused ? 'text-brand-700' : 'text-ink-500'].join(
+            ' '
+          )}
+        >
+          {label}
+        </span>
       </NavLink>
     </li>
   );
