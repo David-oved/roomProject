@@ -128,23 +128,30 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         onClose={() => close(pending?.kind === 'prompt' ? null : false)}
         title={pending?.opts.title ?? ''}
         footer={
-          <div className="flex gap-2">
-            <Button
-              size="lg"
-              variant={confirmOpts?.danger ? 'danger' : 'primary'}
-              fullWidth
-              disabled={isConfirm ? !typingSatisfied : !promptSatisfied}
-              onClick={() => close(isConfirm ? true : text.trim())}
-            >
-              {pending?.opts.confirmLabel ??
-                (confirmOpts?.danger ? 'מחיקה' : 'אישור')}
-            </Button>
+          /*
+           * ‼️ ביטול ראשון, אישור שני — כלומר ביטול בקצה המוביל (ימין ב-RTL).
+           * זו מוסכמת הפלטפורמה בהיפוך ל-RTL, וכאן היא חשובה במיוחד: הסדר
+           * ההפוך שם את הפעולה ההרסנית בדיוק במקום שהאצבע הולכת אליו
+           * מתוך הרגל כשהיא מתכוונת לצאת. שני הכפתורים גם ברוחב זהה —
+           * קודם ההרסני היה fullWidth וה"ביטול" צר, כלומר גם הראשון וגם
+           * הגדול מבין השניים.
+           */
+          <div className="flex gap-2 [&>*]:flex-1">
             <Button
               size="lg"
               variant="secondary"
               onClick={() => close(pending?.kind === 'prompt' ? null : false)}
             >
               {confirmOpts?.cancelLabel ?? 'ביטול'}
+            </Button>
+            <Button
+              size="lg"
+              variant={confirmOpts?.danger ? 'danger' : 'primary'}
+              disabled={isConfirm ? !typingSatisfied : !promptSatisfied}
+              onClick={() => close(isConfirm ? true : text.trim())}
+            >
+              {pending?.opts.confirmLabel ??
+                (confirmOpts?.danger ? 'מחיקה' : 'אישור')}
             </Button>
           </div>
         }

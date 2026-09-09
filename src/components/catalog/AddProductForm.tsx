@@ -109,12 +109,12 @@ export function AddProductForm({
         />
       </div>
 
-      <div className="flex gap-2">
-        <Button fullWidth loading={busy} disabled={!valid} onClick={submit}>
-          הוספה לקטלוג
-        </Button>
+      <div className="flex gap-2 [&>*]:flex-1">
         <Button variant="ghost" onClick={onCancel}>
           ביטול
+        </Button>
+        <Button loading={busy} disabled={!valid} onClick={submit}>
+          הוספה לקטלוג
         </Button>
       </div>
     </div>

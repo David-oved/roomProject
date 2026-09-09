@@ -233,15 +233,7 @@ export function AccountSettings() {
               autoComplete="new-password"
               error={passwordError || undefined}
             />
-            <div className="flex gap-2">
-              <Button
-                fullWidth
-                loading={busyPassword}
-                disabled={!isOnline || !passwordValid || currentPassword.length === 0}
-                onClick={savePassword}
-              >
-                עדכון סיסמה
-              </Button>
+            <div className="flex gap-2 [&>*]:flex-1">
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -253,6 +245,13 @@ export function AccountSettings() {
                 }}
               >
                 ביטול
+              </Button>
+              <Button
+                loading={busyPassword}
+                disabled={!isOnline || !passwordValid || currentPassword.length === 0}
+                onClick={savePassword}
+              >
+                עדכון סיסמה
               </Button>
             </div>
           </div>
@@ -287,16 +286,10 @@ export function AccountSettings() {
               autoComplete="current-password"
               error={deleteError || undefined}
             />
-            <div className="flex gap-2">
-              <Button
-                variant="danger"
-                fullWidth
-                loading={busyDelete}
-                disabled={!isOnline || deletePassword.length === 0}
-                onClick={doDeleteAccount}
-              >
-                מחיקה סופית
-              </Button>
+            {/* ‼️ ביטול ראשון וברוחב זהה למחיקה — ראו ההסבר ב-ConfirmContext.
+                זו המחיקה הבלתי-הפיכה ביותר באפליקציה, ולכן דווקא כאן אסור
+                שהפעולה ההרסנית תהיה גם הראשונה וגם הרחבה מבין השתיים. */}
+            <div className="flex gap-2 [&>*]:flex-1">
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -306,6 +299,14 @@ export function AccountSettings() {
                 }}
               >
                 ביטול
+              </Button>
+              <Button
+                variant="danger"
+                loading={busyDelete}
+                disabled={!isOnline || deletePassword.length === 0}
+                onClick={doDeleteAccount}
+              >
+                מחיקה סופית
               </Button>
             </div>
           </div>
