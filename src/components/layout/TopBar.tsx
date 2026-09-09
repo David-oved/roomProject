@@ -8,12 +8,10 @@ import { ChevronIcon } from '../ui/icons';
  */
 export function TopBar({
   title,
-  subtitle,
   back,
   actions,
 }: {
   title: string;
-  subtitle?: ReactNode;
   /** להציג חץ חזרה */
   back?: boolean | string;
   actions?: ReactNode;
@@ -42,14 +40,13 @@ export function TopBar({
         )}
 
         <div className={`min-w-0 flex-1 ${back ? '' : 'ps-2'}`}>
-          <h1 className="truncate text-lg font-extrabold leading-tight tracking-tight text-ink-900">
+          {/* ‼️ font-sans מפורש — בלעדיו ה-h1 יורש font-serif (Frank Ruhl
+              Libre) מהכלל הגורף על h1/h2 ב-index.css, שנועד לכותרות תוכן
+              (h1/h2 בתוך מסכים) ולא לכותרת המסך המשותפת. התוצאה בלי
+              העקיפה: גופן סריף דקורטיבי לא-קשור על כל כותרת מסך באפליקציה. */}
+          <h1 className="truncate font-sans text-2xl font-extrabold leading-tight tracking-tight text-ink-900">
             {title}
           </h1>
-          {subtitle && (
-            <div className="truncate text-[13px] font-medium leading-snug text-ink-500">
-              {subtitle}
-            </div>
-          )}
         </div>
 
         {actions && <div className="flex shrink-0 items-center gap-0.5 pe-1">{actions}</div>}

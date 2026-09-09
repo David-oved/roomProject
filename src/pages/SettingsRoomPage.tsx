@@ -82,7 +82,6 @@ export default function SettingsRoomPage() {
     <>
       <TopBar
         title="החדר"
-        subtitle="שם, תיאור וניהול מתקדם של החדר"
         back={`/r/${roomCode}/settings`}
       />
       <PlainShell hasTopBar>

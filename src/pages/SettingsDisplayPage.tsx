@@ -30,7 +30,6 @@ export default function SettingsDisplayPage() {
     <>
       <TopBar
         title="תצוגה"
-        subtitle="בהיר, כהה או לפי הגדרת המכשיר"
         back={`/r/${roomCode}/settings`}
       />
       <PlainShell hasTopBar>

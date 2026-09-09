@@ -101,13 +101,6 @@ export default function ItemsPage() {
       topBar={
       <TopBar
         title="מוצרים חסרים"
-        subtitle={
-          !isStaples && items.length > 0 ? (
-            <>
-              <span className="num">{items.length}</span> פריטים
-            </>
-          ) : undefined
-        }
         actions={
           // מתאר ולא מילוי: הפעולה הראשית לדיווח היא כפתור ה-+ בניווט
           // התחתון. כאן זה קיצור נוח, לא כפתור ראשי מתחרה.

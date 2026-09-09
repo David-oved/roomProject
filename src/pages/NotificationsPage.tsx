@@ -81,7 +81,6 @@ export default function NotificationsPage() {
       topBar={
         <TopBar
           title="התראות"
-          subtitle="עדכונים על תשלומים, מטלות ובקשות שממתינות לך"
           back
         />
       }

@@ -49,7 +49,7 @@ export default function SettingsMembersPage() {
 
   return (
     <>
-      <TopBar title="חברי החדר" back={`/r/${roomCode}/settings`} subtitle={metadata?.name} />
+      <TopBar title="חברי החדר" back={`/r/${roomCode}/settings`} />
       <PlainShell hasTopBar>
         <div className="space-y-5 py-4">
           {/* בקשות הצטרפות — מנהל בלבד */}

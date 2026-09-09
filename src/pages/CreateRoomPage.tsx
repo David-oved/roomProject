@@ -66,7 +66,6 @@ export default function CreateRoomPage() {
     <>
       <TopBar
         title="יצירת חדר חדש"
-        subtitle="קבעו שם, ותקבלו קוד להזמנת שותפים"
         back="/onboarding"
       />
       <PlainShell hasTopBar>

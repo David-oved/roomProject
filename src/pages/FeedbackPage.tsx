@@ -111,7 +111,6 @@ export default function FeedbackPage() {
     <>
       <TopBar
         title="פנייה למנהל המערכת"
-        subtitle="שאלה, באג או הצעה — נשמח לשמוע"
         back
       />
       <PlainShell hasTopBar>

@@ -73,7 +73,7 @@ export default function BalancesPage() {
 
   return (
     <AppShell
-      topBar={<TopBar title="חשבון והוצאות" subtitle="מי חייב למי, ומי נשא בכמה מההוצאות" />}
+      topBar={<TopBar title="חשבון והוצאות" />}
     >
       <RoomArchivedBanner />
 

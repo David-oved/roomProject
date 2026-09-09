@@ -47,7 +47,7 @@ const KIND_STYLE: Record<AdminMessageKind, { ring: string; chip: string; label: 
 export default function AdminMessagesPage() {
   const { user } = useAuth();
   const { isOnline } = useConnection();
-  const { messages, loading, error, fromCache, unreadCount } = useAdminMessages();
+  const { messages, loading, error, fromCache } = useAdminMessages();
   const [openId, setOpenId] = useState<string | null>(null);
 
   // ההודעה הראשונה שלא נקראה נפתחת מעצמה — היא הסיבה שנכנסו לכאן
@@ -69,7 +69,6 @@ export default function AdminMessagesPage() {
     <>
       <TopBar
         title="הודעות ממנהל המערכת"
-        subtitle={unreadCount > 0 ? `${unreadCount} חדשות` : 'עדכוני מערכת ותשובות לפניות ששלחתם'}
         back
       />
       <PlainShell hasTopBar>

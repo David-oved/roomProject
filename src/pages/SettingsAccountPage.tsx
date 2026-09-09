@@ -17,7 +17,6 @@ export default function SettingsAccountPage() {
     <>
       <TopBar
         title="חשבון"
-        subtitle="פרטי ההתחברות והפרופיל שלכם"
         back={`/r/${roomCode}/settings`}
       />
       <PlainShell hasTopBar>

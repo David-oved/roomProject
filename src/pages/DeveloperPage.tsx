@@ -28,7 +28,7 @@ type Tab = 'rooms' | 'users';
  * ═══════════════════════════════════════════════════════════════
  */
 export default function DeveloperPage() {
-  const { loading, error, rooms, users, loadedAt, reload } = useDeveloperOverview();
+  const { loading, error, rooms, users, reload } = useDeveloperOverview();
   const [tab, setTab] = useState<Tab>('rooms');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -67,7 +67,6 @@ export default function DeveloperPage() {
     <>
       <TopBar
         title="פאנל מפתח"
-        subtitle={loadedAt ? `עודכן ${formatRelativeTime(loadedAt)}` : undefined}
         actions={
           <button
             onClick={() => void reload()}

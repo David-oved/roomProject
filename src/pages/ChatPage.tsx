@@ -21,7 +21,7 @@ import { useHintRef } from '../store/HintContext';
  * קומפוננטה נפרדת לכל שורה עם hook קבוע אחד היא בדיוק התבנית הנכונה.
  */
 export default function ChatPage() {
-  const { roomCode, metadata, activeMembers, onlineMemberIds, error, fromCache } = useRoom();
+  const { roomCode, activeMembers, onlineMemberIds, error, fromCache } = useRoom();
   const { user } = useAuth();
 
   const others = activeMembers.filter((m) => m.id !== user?.uid);
@@ -31,14 +31,14 @@ export default function ChatPage() {
   // מציג רק את הצ'אט הכללי, כאילו פשוט אין עם מי לדבר.
   if (error && !fromCache) {
     return (
-      <AppShell topBar={<TopBar title="צ'אט" subtitle={metadata?.name} />}>
+      <AppShell topBar={<TopBar title="צ'אט" />}>
         <ErrorState message={friendlyError(error)} onRetry={() => location.reload()} />
       </AppShell>
     );
   }
 
   return (
-    <AppShell topBar={<TopBar title="צ'אט" subtitle={metadata?.name} />}>
+    <AppShell topBar={<TopBar title="צ'אט" />}>
       <div className="space-y-2 pt-4">
         <ConversationRow
           to={`/r/${roomCode}/chat/general`}

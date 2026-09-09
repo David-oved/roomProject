@@ -22,7 +22,6 @@ export default function ProfilePage() {
     <>
       <TopBar
         title="החשבון שלי"
-        subtitle="פרטים אישיים, התראות ומידע על האפליקציה"
         back
       />
       <PlainShell hasTopBar>

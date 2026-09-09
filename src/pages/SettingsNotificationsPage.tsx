@@ -10,7 +10,6 @@ export default function SettingsNotificationsPage() {
     <>
       <TopBar
         title="התראות"
-        subtitle="בחרו על מה תרצו לקבל התראה"
         back={`/r/${roomCode}/settings`}
       />
       <PlainShell hasTopBar>

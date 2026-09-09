@@ -96,7 +96,6 @@ export default function SettingsPage() {
     <>
       <TopBar
         title="הגדרות"
-        subtitle="ניהול החדר, החברים והחשבון שלכם"
         back={`/r/${roomCode}`}
       />
       <PlainShell hasTopBar>

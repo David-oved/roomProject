@@ -10,7 +10,6 @@ export default function SettingsAboutPage() {
     <>
       <TopBar
         title="אודות"
-        subtitle="גרסה, עדכונים ומידע על האפליקציה"
         back={`/r/${roomCode}/settings`}
       />
       <PlainShell hasTopBar>

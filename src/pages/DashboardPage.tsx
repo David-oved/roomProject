@@ -203,7 +203,6 @@ export default function DashboardPage() {
       topBar={
         <TopBar
           title={metadata?.name ?? 'החדר שלי'}
-          subtitle="תמונת מצב מהירה — יתרה, חסרים ומטלות"
           actions={
             <>
             <Link

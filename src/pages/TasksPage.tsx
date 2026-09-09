@@ -93,7 +93,6 @@ export default function TasksPage() {
       topBar={
         <TopBar
           title="מטלות"
-          subtitle="תורנות קבועה בין חברי החדר, בסבב הוגן"
           back={`/r/${roomCode}`}
           actions={
             isAdmin && (
