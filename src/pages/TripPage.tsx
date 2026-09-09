@@ -352,7 +352,7 @@ function LineRow({
               'tap grid h-8 w-8 place-items-center rounded-lg border transition',
               line.state === 'bought'
                 ? 'border-emerald-500 bg-emerald-500 text-white'
-                : 'border-ink-200 text-ink-400 hover:border-emerald-400 hover:text-emerald-600',
+                : 'border-ink-200 text-ink-500 hover:border-emerald-400 hover:text-emerald-600',
             ].join(' ')}
           >
             <CheckIcon width={14} height={14} />
@@ -366,7 +366,7 @@ function LineRow({
               'tap grid h-8 w-8 place-items-center rounded-lg border transition',
               line.state === 'not_found'
                 ? 'border-rose-500 bg-rose-500 text-white'
-                : 'border-ink-200 text-ink-400 hover:border-rose-400 hover:text-rose-600',
+                : 'border-ink-200 text-ink-500 hover:border-rose-400 hover:text-rose-600',
             ].join(' ')}
           >
             <CloseIcon width={14} height={14} />

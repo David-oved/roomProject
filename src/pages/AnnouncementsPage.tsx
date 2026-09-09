@@ -104,7 +104,7 @@ export default function AnnouncementsPage() {
           <ErrorState message={friendlyError(error)} onRetry={() => location.reload()} />
         ) : sorted.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-ink-100 text-ink-400">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-ink-100 text-ink-600">
               <MegaphoneIcon width={22} height={22} />
             </span>
             <p className="text-sm text-ink-500">

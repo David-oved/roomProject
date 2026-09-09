@@ -153,7 +153,7 @@ function TabButton({ to, label, Icon, end, unreadCount, hintId, hintText }: Tab)
               {hasUnread && (
                 <span
                   aria-hidden
-                  className="absolute end-1.5 top-0.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white"
+                  className="absolute end-1.5 top-0.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-surface"
                 />
               )}
             </span>

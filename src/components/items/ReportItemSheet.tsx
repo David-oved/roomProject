@@ -152,7 +152,10 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
     <GlassModal open={open} onClose={onClose} labelledBy="report-item-title">
       {step === 'sending' ? (
         <div className="flex flex-col items-center justify-center gap-3 px-8 py-16 text-center">
-          <div className="grid h-16 w-16 animate-check-pop place-items-center rounded-full bg-emerald-100 text-emerald-600">
+          {/* ‼️ emerald-800 ולא 600: הגוונים 400-600 לא מתהפכים במצב כהה,
+              ולכן emerald-600 על bg-emerald-100 (שכן מתהפך) ירד ל-1.68:1 —
+              ירוק כהה על ירוק כהה. 800 מתהפך יחד עם הרקע ונשאר קריא בשניהם. */}
+          <div className="grid h-16 w-16 animate-check-pop place-items-center rounded-full bg-emerald-100 text-emerald-800">
             <CheckIcon width={32} height={32} />
           </div>
           <p className="font-bold text-ink-900">{name} נוסף לרשימה</p>

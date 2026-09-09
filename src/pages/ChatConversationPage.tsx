@@ -181,7 +181,7 @@ export default function ChatConversationPage() {
             {otherOnline && (
               <span
                 aria-hidden
-                className="absolute -end-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white"
+                className="absolute -end-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-surface"
               />
             )}
           </div>
@@ -215,7 +215,7 @@ export default function ChatConversationPage() {
           </div>
         ) : sorted.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-ink-100 text-ink-400">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-ink-100 text-ink-600">
               <ChatIcon width={22} height={22} />
             </span>
             <p className="text-sm text-ink-500">עדיין אין הודעות. תתחילו את השיחה!</p>

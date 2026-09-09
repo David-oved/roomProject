@@ -122,7 +122,7 @@ function ConversationRow({
         {online && (
           <span
             aria-hidden
-            className="absolute -end-0.5 -bottom-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white"
+            className="absolute -end-0.5 -bottom-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-surface"
           />
         )}
       </div>

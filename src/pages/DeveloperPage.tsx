@@ -232,13 +232,13 @@ function UserRow({
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-bold text-ink-900">{user.displayName}</p>
         <p className="truncate text-xs text-ink-500">{user.email}</p>
-        <p className="mt-0.5 text-[11px] text-ink-400">
+        <p className="mt-0.5 text-[11px] text-ink-500">
           נרשם {formatFullDate(user.createdAt)}
           {user.lastActiveAt ? ` · פעיל ${formatRelativeTime(user.lastActiveAt)}` : ''}
         </p>
 
         {memberships.length === 0 ? (
-          <p className="mt-1.5 text-[11px] text-ink-400">לא חבר באף חדר</p>
+          <p className="mt-1.5 text-[11px] text-ink-500">לא חבר באף חדר</p>
         ) : (
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {memberships.map((m) => (
