@@ -277,7 +277,7 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
   return (
     <nav
       aria-label="ניווט ראשי"
-      className="fixed inset-x-0 bottom-0 z-50 flex items-end justify-center gap-2 px-4"
+      className="fixed inset-x-0 bottom-0 z-50 flex items-end justify-center gap-2.5 px-3"
       style={{ paddingBottom: 'calc(var(--safe-bottom) + var(--nav-gap))' }}
     >
       {/* ── כפתור הפעולה — עגול, נפרד, אותו חומר זכוכית כמו הפיל.
@@ -298,7 +298,7 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
       </button>
 
       {/* ── הפיל — 4 טאבים, מתאים את עצמו לתוכן (לא נמתח לרוחב המסך) ── */}
-      <div ref={wrapRef} className="glass-panel relative flex h-14 shrink-0 items-center rounded-full px-1 shadow-lifted">
+      <div ref={wrapRef} className="glass-panel relative flex h-14 shrink-0 items-center rounded-full px-2 shadow-lifted">
         {/* ‼️ z-index: ה-<ul> מצויר *מעל* הבועה (z-10 מול z-0) כדי
             שהאייקונים לא ייעלמו מתחתיה. הבועה עצמה pointer-events-none —
             היא לא מקבלת אף אירוע ישירות; הגרירה מטופלת ב-<ul> עצמו (ראו
@@ -353,7 +353,7 @@ function TabButton({
   const hintRef = useHintRef<HTMLAnchorElement>(hintId, hintText);
   const hasUnread = !!unreadCount && unreadCount > 0;
   return (
-    <li className="w-16 shrink-0 self-stretch">
+    <li className="w-20 shrink-0 self-stretch">
       <NavLink
         ref={hintRef}
         to={to}
