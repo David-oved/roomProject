@@ -415,7 +415,7 @@ const Bubble = memo(function Bubble({
       <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">{message.text}</p>
       <div
         className={[
-          'mt-0.5 flex items-center justify-end gap-1 text-[10px]',
+          'mt-0.5 flex items-center justify-end gap-1 text-[11px]',
           // white/75 על הבועה = 2.76:1 בקצה הבהיר של הגרדיאנט. /90 = 3.32:1.
           mine ? 'text-white/90' : 'text-ink-500',
         ].join(' ')}

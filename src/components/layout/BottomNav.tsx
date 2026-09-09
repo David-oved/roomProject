@@ -3,6 +3,7 @@ import { CartIcon, ChatIcon, HomeIcon, PlusIcon, WalletIcon } from '../ui/icons'
 import { useConnection } from '../../store/ConnectionContext';
 import { useRoom } from '../../store/RoomContext';
 import { useHintRef } from '../../store/HintContext';
+import { useToast } from '../../store/ToastContext';
 
 /**
  * סרגל ניווט תחתון — 5 מקומות, כשהאמצעי הוא כפתור הפעולה הראשי.
@@ -28,6 +29,7 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
   const navigate = useNavigate();
   const { isOnline } = useConnection();
   const { isArchived } = useRoom();
+  const toast = useToast();
   const fabHintRef = useHintRef<HTMLButtonElement>(
     'nav.fab',
     'פותח ישר טופס להוספת מוצר חסר חדש'
@@ -36,6 +38,13 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
   if (!code) return null;
 
   const base = `/r/${code}`;
+  // למה אי אפשר לדווח כרגע — null כשאפשר. ארכיון קודם לאופליין: הוא
+  // המצב הקבוע מביניהם, ולכן ההסבר המועיל יותר.
+  const blockedReason = isArchived
+    ? 'החדר בארכיון, לצפייה בלבד'
+    : !isOnline
+      ? 'הפעולה דורשת חיבור לאינטרנט'
+      : null;
   const left: Tab[] = [
     {
       to: base,
@@ -85,23 +94,30 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
 
         {/* ── כפתור הפעולה המרכזי ── */}
         <li className="relative flex w-[20%] shrink-0 items-center justify-center self-stretch">
+          {/* ‼️ aria-disabled ולא disabled, והסיבה בטוסט ולא ב-title.
+              קודם היה כאן כפתור disabled עם ההסבר ב-title בלבד — ושני
+              הערוצים האלה לא קיימים בדפדפן נייד: title לא מוצג במגע,
+              וכפתור disabled גם לא מקבל פוקוס ולא מגיב ללחיצה. כלומר
+              המשתמש ראה ריבוע אפור בלי שום דרך לגלות למה. עכשיו הכפתור
+              נשאר לחיץ וממוקד, השם הנגיש נושא את הסיבה, ולחיצה אומרת
+              אותה בקול. */}
           <button
             ref={fabHintRef}
             type="button"
-            onClick={() => navigate(`${base}/items?new=1`)}
-            disabled={!isOnline || isArchived}
-            title={
-              isArchived
-                ? 'החדר בארכיון — לצפייה בלבד'
-                : isOnline
-                  ? 'דיווח על מוצר חסר'
-                  : 'פעולה זו דורשת חיבור לאינטרנט'
+            onClick={() =>
+              blockedReason ? toast.warn(blockedReason) : navigate(`${base}/items?new=1`)
             }
-            aria-label="דיווח על מוצר חסר"
-            className="relative -mt-2 grid h-12 w-12 place-items-center rounded-2xl text-white
-                       shadow-fab ring-[3px] ring-surface transition-transform duration-150 ease-out
-                       active:scale-90 bg-brand-fill
-                       disabled:bg-ink-300 disabled:shadow-none disabled:active:scale-100"
+            aria-disabled={blockedReason ? true : undefined}
+            aria-label={
+              blockedReason ? `דיווח על מוצר חסר — ${blockedReason}` : 'דיווח על מוצר חסר'
+            }
+            className={[
+              'relative -mt-2 grid h-12 w-12 place-items-center rounded-2xl text-white',
+              'ring-[3px] ring-surface transition-transform duration-150 ease-out',
+              blockedReason
+                ? 'bg-muted-fill shadow-none'
+                : 'bg-brand-fill shadow-fab active:scale-90',
+            ].join(' ')}
           >
             <PlusIcon width={22} height={22} />
           </button>

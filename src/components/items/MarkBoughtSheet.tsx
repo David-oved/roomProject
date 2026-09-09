@@ -546,7 +546,7 @@ function ModeCard({
       >
         {title}
       </span>
-      <span className="mt-0.5 block text-[10px] leading-snug text-ink-500">{body}</span>
+      <span className="mt-0.5 block text-[11px] leading-snug text-ink-500">{body}</span>
 
       {show && (
         <span className="num mt-1.5 block border-t border-ink-100 pt-1.5 text-[11px] leading-tight">

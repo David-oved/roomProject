@@ -221,7 +221,7 @@ export default function DashboardPage() {
               {unreadCount > 0 && (
                 <span
                   className="animate-check-pop absolute -end-1 -top-1 grid h-5 min-w-5 place-items-center
-                             rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white
+                             rounded-full bg-rose-500 px-1 text-[11px] font-bold text-white
                              ring-2 ring-surface"
                 >
                   {unreadCount > 9 ? '9+' : unreadCount}

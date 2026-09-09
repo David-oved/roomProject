@@ -70,15 +70,15 @@ export function GlassModal({
         aria-labelledby={labelledBy}
         tabIndex={-1}
         style={{ maxHeight: viewport.height * 0.88 }}
-        className="relative flex w-full max-w-sm animate-glass-in flex-col
-                   overflow-hidden rounded-[2rem] border border-surface/60 bg-surface/90
-                   shadow-lifted outline-none backdrop-blur-2xl"
+        className="glass-panel relative flex w-full max-w-sm animate-glass-in flex-col
+                   overflow-hidden rounded-[2rem] border border-surface/60
+                   shadow-lifted outline-none"
       >
         <button
           onClick={onClose}
           aria-label="סגור"
-          className="tap-area absolute end-3 top-3 z-10 grid h-8 w-8 place-items-center
-                     rounded-full bg-surface/70 text-ink-500 backdrop-blur transition
+          className="glass-chip tap-area absolute end-3 top-3 z-10 grid h-8 w-8 place-items-center
+                     rounded-full text-ink-500 transition
                      hover:bg-surface hover:text-ink-800"
         >
           <CloseIcon width={17} height={17} />

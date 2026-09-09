@@ -52,6 +52,7 @@ export default {
         'warn-fill': 'rgb(var(--warn-fill) / <alpha-value>)',
         'info-fill': 'rgb(var(--info-fill) / <alpha-value>)',
         'danger-fill': 'rgb(var(--danger-fill) / <alpha-value>)',
+        'muted-fill': 'rgb(var(--muted-fill) / <alpha-value>)',
         // teal-* משמש רק ב-Avatar.tsx (פלטת צבעי ראשי-תיבות) — ומכיוון
         // ש"brand" הוא בעצם ה-teal של Tailwind בשם אחר, פשוט מצביע על
         // אותם משתנים. שינוי אחד, שני השמות עדיין מסונכרנים.

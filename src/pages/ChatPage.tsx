@@ -143,7 +143,7 @@ function ConversationRow({
             {loading ? '' : last ? (last.senderId === myUid ? `אתה: ${last.text}` : last.text) : subtitle ?? 'אין הודעות עדיין'}
           </span>
           {unread > 0 && (
-            <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-brand-600 px-1.5 text-[10px] font-bold text-white">
+            <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-brand-600 px-1.5 text-[11px] font-bold text-white">
               {unread > 9 ? '9+' : unread}
             </span>
           )}

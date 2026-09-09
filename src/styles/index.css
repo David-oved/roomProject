@@ -82,6 +82,10 @@
     --warn-fill: 146 96 27;
     --info-fill: 39 44 53;
     --danger-fill: 178 59 46;
+    /* פקד חסום שעדיין נושא אייקון לבן (ה-FAB כשאין חיבור/החדר בארכיון).
+       זהה בשני המצבים מאותה סיבה: כל טוקן ink מתהפך, ואז הלבן שעליו
+       מאבד ניגודיות בדיוק במצב אחד מהשניים. לבן עליו = 4.71:1 בשניהם. */
+    --muted-fill: 108 116 130;
 
     /* שלילי ("אתה חייב") + פעולות הרסניות — אדום חמרה. גוון אחד לשניהם:
        פחות צבעים, וקישור ברור בין "חוב" ל"מחיקה". */
@@ -291,13 +295,16 @@
     overscroll-behavior-y: none;
   }
 
-  /* ‼️ 16px מינימום בשדות קלט — אחרת iOS מזייף זום בכל לחיצה על שדה */
+  /* ‼️ 1rem מינימום בשדות קלט — אחרת iOS מזייף זום בכל לחיצה על שדה.
+     rem ולא px בכוונה: 16px קשיח פותר את הזום אבל גם מבטל לחלוטין את
+     הגדלת הטקסט של המשתמש בכל שדה קלט באפליקציה. rem נשאר 16px בברירת
+     המחדל (ולכן ה-iOS עדיין מרוצה) ומתכוונן כשמגדילים את גופן הבסיס. */
   input,
   select,
   textarea,
   button {
     font-family: inherit;
-    font-size: 16px;
+    font-size: 1rem;
   }
 
   /*
@@ -401,6 +408,40 @@
   .scroll-area {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+  }
+
+  /*
+   * משטחי זכוכית — GlassModal והמסך שמאחוריו.
+   *
+   * ‼️ מרוכזים כאן ולא כשירשור utilities על האלמנט, כי הם צריכים נקודת
+   * אחיזה אחת ל-prefers-reduced-transparency (ראו למטה). ההעדפה הזו היא
+   * מקבילה מדויקת ל-prefers-reduced-motion שכבר נתמך כאן: מי שמבקש
+   * שקיפות מופחתת מבקש שהתוכן שמאחור יפסיק להסיח, לא שהמודאל ייעלם.
+   */
+  .glass-panel {
+    @apply bg-surface/90 backdrop-blur-2xl;
+  }
+  .glass-chip {
+    @apply bg-surface/70 backdrop-blur;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   העדפת שקיפות מופחתת
+   ═══════════════════════════════════════════════════════════ */
+@media (prefers-reduced-transparency: reduce) {
+  /* המשטחים הופכים אטומים לגמרי, והטשטוש יורד לחלוטין — כולל של
+     המסכים (scrim), ששומרים על ההחשכה אבל בלי לטשטש את מה שמאחור. */
+  .glass-panel,
+  .glass-chip {
+    @apply bg-surface;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  [class*='backdrop-blur'] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 }
 

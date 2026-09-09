@@ -23,7 +23,7 @@ interface FieldProps {
  * → rose-600 מלא = 4.70:1).
  */
 const fieldBase =
-  'w-full rounded-xl border bg-surface px-3.5 text-[16px] text-ink-900 ' +
+  'w-full rounded-xl border bg-surface px-3.5 text-base text-ink-900 ' +
   'placeholder:text-ink-500 transition-colors ' +
   'focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600 ' +
   'disabled:bg-ink-50 disabled:text-ink-500';
@@ -118,7 +118,6 @@ export const PasswordInput = forwardRef<
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? 'הסתר סיסמה' : 'הצג סיסמה'}
           aria-pressed={visible}
-          tabIndex={-1}
           className="tap absolute inset-y-0 end-0 grid w-12 place-items-center
                      rounded-e-xl text-ink-500 transition hover:text-ink-600"
         >
