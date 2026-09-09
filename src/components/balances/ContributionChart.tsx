@@ -1,15 +1,21 @@
 import { formatILS } from '../../lib/format';
 
-/** פלטת צבעים יציבה — נגזרת מה-uid, כך שהיא זהה בכל מסך ובכל מכשיר. */
+/**
+ * פלטת צבעים יציבה — נגזרת מה-uid, כך שהיא זהה בכל מסך ובכל מכשיר.
+ *
+ * ‼️ הערכים עצמם ב-src/styles/index.css ולא כאן: כשהם היו הקסים קשיחים
+ * הם נבחרו מול כרטיס לבן בלבד, ועל המשטח הכהה violet ירד ל-2.77:1 —
+ * מתחת ל-3:1 שאובייקט גרפי חייב. דרך המשתנים כל גוון מקבל וריאנט כהה.
+ */
 const COLORS = [
-  '#0d9488', // teal
-  '#0284c7', // sky
-  '#7c3aed', // violet
-  '#d97706', // amber
-  '#e11d48', // rose
-  '#65a30d', // lime
-  '#c026d3', // fuchsia
-  '#0891b2', // cyan
+  'rgb(var(--chart-1))',
+  'rgb(var(--chart-2))',
+  'rgb(var(--chart-3))',
+  'rgb(var(--chart-4))',
+  'rgb(var(--chart-5))',
+  'rgb(var(--chart-6))',
+  'rgb(var(--chart-7))',
+  'rgb(var(--chart-8))',
 ];
 
 function hashCode(s: string): number {
@@ -61,7 +67,9 @@ export function ContributionChart({ slices, total }: { slices: Slice[]; total: n
           aria-hidden
           focusable="false"
         >
-          <circle cx="70" cy="70" r={R} fill="none" stroke="#f1f2ee" strokeWidth="16" />
+          {/* המסלול שמאחורי הקשתות — היה #f1f2ee קשיח, כלומר טבעת בהירה
+              בוהקת (14:1) על כרטיס כהה במקום הרמז העדין שתוכנן */}
+          <circle cx="70" cy="70" r={R} fill="none" stroke="rgb(var(--chart-track))" strokeWidth="16" />
           {arcs.map((a) => (
             <circle
               key={a.uid}
