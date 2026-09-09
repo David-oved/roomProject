@@ -284,7 +284,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <span
               className={[
-                'text-xs font-bold uppercase tracking-wide',
+                'text-xs font-bold tracking-wide',
                 myBalance === 0
                   ? 'text-ink-500'
                   : myBalance > 0

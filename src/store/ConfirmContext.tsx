@@ -127,6 +127,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         open={!!pending}
         onClose={() => close(pending?.kind === 'prompt' ? null : false)}
         title={pending?.opts.title ?? ''}
+        alert
         footer={
           /*
            * ‼️ ביטול ראשון, אישור שני — כלומר ביטול בקצה המוביל (ימין ב-RTL).
