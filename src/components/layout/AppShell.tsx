@@ -1,27 +1,24 @@
 import type { ReactNode } from 'react';
-import { BottomNav } from './BottomNav';
 import { PageTransition } from './PageTransition';
-import { useLiveNotifications } from '../../hooks/useLiveNotifications';
-import { useChatWatcher } from '../../hooks/useChatWatcher';
 import { OfflineBanner } from './OfflineBanner';
 
 /**
- * מעטפת המסכים שבתוך חדר.
+ * מעטפת התוכן של מסך בתוך חדר — כותרת + גוף העמוד.
+ *
+ * ‼️ לא עוד עוטפת את BottomNav/OfflineBanner בעצמה. כל מסך (Dashboard,
+ * Items, Balances...) הוא Route-נפרד, ולכן קודם, כשהם היו כאן, כל מעבר
+ * טאב הרס ובנה מחדש את הסרגל התחתון לגמרי — כולל את מצב הבועה הגולשת
+ * שלו וכל אנימציה שבאמצע ריצה. ראו RoomLayout ב-router.tsx: הסרגל וה-
+ * banner עברו לשם, מעל ה-<Outlet/> המשותף לכל מסכי החדר, כך שהם נשארים
+ * מורכבים (mounted) ברצף אחד לכל אורך השהייה בחדר, ורק תוכן העמוד
+ * מוחלף בפועל בכל ניווט.
  *
  * הריפוד התחתון מחשב גם את גובה הניווט וגם את האזור הבטוח (פס הבית
  * באייפון) — בלעדיו התוכן האחרון ברשימה מוסתר מאחורי הסרגל.
  */
 export function AppShell({ children, topBar }: { children: ReactNode; topBar?: ReactNode }) {
-  // התראה מיידית כשהאפליקציה ברקע — בלי להמתין לשרת
-  useLiveNotifications();
-
-  // עוקב אחרי כל שיחות הצ'אט: מסמן delivered, סופר לא-נקרא, וטוסט מקומי
-  const { unreadTotal } = useChatWatcher();
-
   return (
-    <div className="relative min-h-[100dvh] overflow-x-clip bg-ink-50">
-      <OfflineBanner />
-
+    <>
       {/* ‼️ ה-TopBar מרונדר כאן — מחוץ ל-<main> ולריפוד ה-px-4 שלו — כדי
           שהוא יהיה צמוד לקצוות המסך. כשהוא היה בתוך children הוא ירש 16px
           ריווח מכל צד ונראה כמו סרגל מרחף במקום כותרת מסך. */}
@@ -33,9 +30,7 @@ export function AppShell({ children, topBar }: { children: ReactNode; topBar?: R
       >
         <PageTransition>{children}</PageTransition>
       </main>
-
-      <BottomNav unreadChat={unreadTotal} />
-    </div>
+    </>
   );
 }
 

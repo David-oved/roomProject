@@ -6,6 +6,10 @@ import { TutorialProvider } from './store/TutorialContext';
 import { TutorialModal } from './components/onboarding/TutorialModal';
 import { FullPageSpinner } from './components/ui/Spinner';
 import { ErrorBoundary } from './components/system/ErrorBoundary';
+import { BottomNav } from './components/layout/BottomNav';
+import { OfflineBanner } from './components/layout/OfflineBanner';
+import { useLiveNotifications } from './hooks/useLiveNotifications';
+import { useChatWatcher } from './hooks/useChatWatcher';
 
 // מסכי הכניסה נטענים מיד — הם הראשונים שהמשתמש רואה
 import LoginPage from './pages/LoginPage';
@@ -63,10 +67,38 @@ function RoomLayout() {
   return (
     <RoomProvider>
       <TutorialProvider>
-        <Outlet />
+        <RoomShell />
         <TutorialModal />
       </TutorialProvider>
     </RoomProvider>
+  );
+}
+
+/**
+ * המסגרת הקבועה של החדר — הרקע, ה-banner, וסרגל הניווט התחתון — מסביב
+ * ל-<Outlet/> המשותף לכל מסכי החדר.
+ *
+ * ‼️ קודם כל אחד מ-15+ מסכי החדר רינדר AppShell נפרד עם BottomNav
+ * משלו. מבחינת React, זה עץ-רכיבים *שונה* בכל Route — כל מעבר טאב
+ * הרס את מופע ה-BottomNav הקודם ובנה אחד חדש מאפס, כולל אובדן כל
+ * מצב הבועה הגולשת שלו (ותוך כך ביטל כל טרנזישן/אנימציה על מיקומה —
+ * זה בדיוק מה שגרם לתחושה ש"אין אנימציה" במעבר טאבים רגיל, לעומת
+ * גרירה שנשארת בתוך מופע אחד ולכן עבדה). הסרגל וההתראות עוברים לכאן,
+ * מעל ה-Outlet, כדי שהם יישארו רכיב אחד יציב לכל אורך השהייה בחדר —
+ * רק תוכן העמוד (ה-Outlet) מוחלף בכל ניווט.
+ */
+function RoomShell() {
+  // התראה מיידית כשהאפליקציה ברקע — בלי להמתין לשרת
+  useLiveNotifications();
+  // עוקב אחרי כל שיחות הצ'אט: מסמן delivered, סופר לא-נקרא, וטוסט מקומי
+  const { unreadTotal } = useChatWatcher();
+
+  return (
+    <div className="relative min-h-[100dvh] overflow-x-clip bg-ink-50">
+      <OfflineBanner />
+      <Outlet />
+      <BottomNav unreadChat={unreadTotal} />
+    </div>
   );
 }
 

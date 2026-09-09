@@ -108,6 +108,7 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
   const bubbleRef = useRef<HTMLDivElement>(null);
   const pillRefs = useRef<Map<string, HTMLSpanElement>>(new Map());
   const isFirstMeasure = useRef(true);
+  const landingTimers = useRef<number[]>([]);
   const dragRef = useRef<{
     pointerId: number;
     startClientX: number;
@@ -155,6 +156,80 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
     }
   };
 
+  const clearLandingTimers = () => {
+    landingTimers.current.forEach(window.clearTimeout);
+    landingTimers.current = [];
+  };
+
+  /**
+   * ‼️ מעבר בין טאבים בזכוכית של אפל (iOS 26) הוא לא דעיכה שטוחה אחת —
+   * זה רצף: קדם-כיווץ, טיסה, מעיכת-נחיתה, ויישור. הקוד ה"נאמן" (FabBar,
+   * שמפעיל את ה-API האמיתי UIGlassEffect/UISegmentedControl) לא כולל
+   * את הרצף הזה בעצמו — הוא רק רוכב על האינדיקטור המובנה של המערכת,
+   * שהמימוש שלו סגור ולא ציבורי. השלבים והטיימינג כאן מבוססים על
+   * github.com/Tilak1028-st/LiquidGlassTabBar — שחזור פתוח (לא רשמי,
+   * "בהשראת") שמפרק את התחושה הזו למספרים קונקרטיים.
+   *
+   * עיבוד לבר שלנו: אצלם הקפיצה היא גם אנכית (הפיל מרחף מעל השורה).
+   * אצלנו הבועה זזה רק אופקית בתוך פס בגובה 62px — קפיצה אנכית מהסוג
+   * הזה הייתה נחתכת/נראית כמו תקלה. במקום זה: מתיחה/מעיכה על ציר
+   * ה-scale, לאורך כיוון התנועה — אותה אישיות "אלסטית", בלי לצאת
+   * מגבולות הפס.
+   */
+  const animateLanding = (rect: Rect | null) => {
+    const bubble = bubbleRef.current;
+    if (!rect || !bubble) return;
+    clearLandingTimers();
+
+    // ‼️ לא מסתמכים על הכלל הגורף ב-index.css (שמקצר כל transition-duration
+    // ל-0.01ms תחת prefers-reduced-motion): הוא היה מקצר את הזמן בין
+    // 4 השלבים, לא מבטל את שינויי ה-scale עצמם — התוצאה 4 קפיצות מצב
+    // כמעט-מיידיות ברצף, שנראות כרפרוף ולא כתנועה מתונה. מי שמבקש
+    // תנועה מופחתת מקבל כאן מיקום ישיר בלי שום עיוות scale, לא גרסה
+    // "מהירה" של אותה קפיצה-מעיכה.
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      placeBubble(rect, true);
+      return;
+    }
+
+    const bounce = 'cubic-bezier(.34,1.56,.64,1)';
+
+    // שלב 1 — קדם-כיווץ (90ms, easeOut): "מתכווצת" רגע לפני שהיא זזה.
+    bubble.style.transition = 'transform 90ms ease-out';
+    bubble.style.transform = 'scale(1.12, 0.92)';
+
+    landingTimers.current.push(
+      window.setTimeout(() => {
+        // שלב 2 — טיסה למיקום החדש (300ms, קשת גומייתית): מתוחה מעט
+        // לכיוון התנועה תוך כדי הגלישה.
+        bubble.style.transition = [
+          `left 300ms ${bounce}`,
+          `width 300ms ${bounce}`,
+          `transform 300ms ${bounce}`,
+        ].join(', ');
+        bubble.style.left = `${rect.left}px`;
+        bubble.style.width = `${rect.width}px`;
+        bubble.style.transform = 'scale(1.15, 0.9)';
+
+        landingTimers.current.push(
+          window.setTimeout(() => {
+            // שלב 3 — מעיכת נחיתה (110ms, easeOut): הכי שטוחה, רגע הנגיעה.
+            bubble.style.transition = 'transform 110ms ease-out';
+            bubble.style.transform = 'scale(1.22, 0.78)';
+
+            landingTimers.current.push(
+              window.setTimeout(() => {
+                // שלב 4 — התייצבות (260ms, קשת גומייתית): חוזרת לצורתה.
+                bubble.style.transition = `transform 260ms ${bounce}`;
+                bubble.style.transform = 'scale(1, 1)';
+              }, 110)
+            );
+          }, 200)
+        );
+      }, 90)
+    );
+  };
+
   // ‼️ allTabs במתכוון לא ברשימת התלויות: התוכן שלו נגזר כולו מ-code,
   // וזה כבר שם. הוספתו הייתה מפעילה את ה-effect בכל רינדור (מערך חדש
   // בכל קריאה לפונקציה), בלי שום שינוי אמיתי במיקום שצריך למדוד.
@@ -164,8 +239,12 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
       allTabs.find((t) => (t.end ? location.pathname === t.to : location.pathname.startsWith(t.to))) ??
       allTabs[0];
     setFocusedTo(active.to);
-    placeBubble(measure(active.to), isFirstMeasure.current);
-    isFirstMeasure.current = false;
+    if (isFirstMeasure.current) {
+      placeBubble(measure(active.to), true);
+      isFirstMeasure.current = false;
+    } else {
+      animateLanding(measure(active.to));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, code]);
 
@@ -180,6 +259,9 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
     return () => window.removeEventListener('resize', onResize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusedTo]);
+
+  // מנקה טיימרים ממתינים של רצף הנחיתה אם הרכיב יורד תוך כדי האנימציה.
+  useEffect(() => clearLandingTimers, []);
 
   if (!code) return null;
 
@@ -203,6 +285,11 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
     const r = bubble.getBoundingClientRect();
     const withinBubble = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
     if (!withinBubble) return;
+
+    // עוצרים כל רצף נחיתה שעדיין רץ — אחרת גרירה חדשה שמתחילה תוך כדי
+    // אנימציית קפיצה/מעיכה קודמת "נלחמת" איתה על ה-transform/transition.
+    clearLandingTimers();
+    bubble.style.transform = '';
 
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -257,9 +344,9 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
       navigate(target);
     } else {
       // כבר באותו טאב שהתחלנו בו — ה-route לא משתנה, אז ה-effect שמזיז
-      // את הבועה לא ירוץ. מציבים אותה בעצמנו בחזרה, עם טרנזישן (לא
-      // instant) כדי שהיא "תיפול למקום" בצורה חלקה.
-      placeBubble(measure(target), false);
+      // את הבועה לא ירוץ. מציגים בעצמנו את רצף הנחיתה כדי שהיא "תיפול
+      // למקום" עם אותה תחושה כמו נחיתה אחרי ניווט אמיתי.
+      animateLanding(measure(target));
     }
   }
 
@@ -271,7 +358,7 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
     dragRef.current = null;
     setDragging(false);
     setFocusedTo(drag.startTo);
-    placeBubble(measure(drag.startTo), false);
+    animateLanding(measure(drag.startTo));
   }
 
   return (
@@ -312,9 +399,13 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
           style={{ left: 0, top: 4, width: 44, height: 32 }}
           className={[
             'pointer-events-none absolute z-0 rounded-full',
+            // ‼️ left/top/width/height/transform *לא* כאן: ברגיעה הם
+            // מנוהלים באופן ישיר על-ידי animateLanding (רצף קפיצה-מעיכה,
+            // ראו שם), שכותב transition משלו בכל שלב. קלאס-transition
+            // כאן היה מתנגש איתו ומייצר טרנזישן כפול על אותם מאפיינים.
             dragging
               ? 'border border-white/50 bg-surface/50 shadow-glass backdrop-blur-xl backdrop-saturate-150'
-              : 'border border-transparent bg-brand-50 transition-[left,top,width,height,background-color,box-shadow,border-color] duration-300 ease-[cubic-bezier(.34,1.56,.64,1)]',
+              : 'border border-transparent bg-brand-50 transition-[background-color,box-shadow,border-color] duration-300',
           ].join(' ')}
         />
 
