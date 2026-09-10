@@ -151,7 +151,10 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
   return (
     <GlassModal open={open} onClose={onClose} labelledBy="report-item-title">
       {step === 'sending' ? (
-        <div className="flex flex-col items-center justify-center gap-3 px-8 py-16 text-center">
+        <div
+          key={step}
+          className="animate-fade-in flex flex-col items-center justify-center gap-3 px-8 py-16 text-center"
+        >
           {/* ‼️ emerald-800 ולא 600: הגוונים 400-600 לא מתהפכים במצב כהה,
               ולכן emerald-600 על bg-emerald-100 (שכן מתהפך) ירד ל-1.68:1 —
               ירוק כהה על ירוק כהה. 800 מתהפך יחד עם הרקע ונשאר קריא בשניהם. */}
@@ -161,7 +164,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
           <p className="font-bold text-ink-900">{name} נוסף לרשימה</p>
         </div>
       ) : step === 'pick' ? (
-        <div className="p-5 pt-4">
+        <div key={step} className="animate-fade-in p-5 pt-4">
           <h2 id="report-item-title" className="pe-12 text-lg font-bold text-ink-900">
             מה חסר בבית?
           </h2>
@@ -176,7 +179,6 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
               placeholder="חיפוש מוצר…"
               type="search"
               enterKeyHint="search"
-              autoFocus
               className="w-full rounded-2xl border border-ink-200 bg-surface/80 px-4 py-3.5
                          text-[16px] shadow-sm backdrop-blur placeholder:text-ink-500
                          transition focus:border-brand-400 focus:outline-none
@@ -288,7 +290,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
           )}
         </div>
       ) : (
-        <div className="p-5 pt-4">
+        <div key={step} className="animate-fade-in p-5 pt-4">
           <button
             ref={changeProductHintRef}
             type="button"

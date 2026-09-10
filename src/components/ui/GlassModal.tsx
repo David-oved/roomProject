@@ -70,7 +70,7 @@ export function GlassModal({
         aria-labelledby={labelledBy}
         tabIndex={-1}
         style={{ maxHeight: viewport.height * 0.88 }}
-        className="glass-panel relative flex w-full max-w-sm animate-glass-in flex-col
+        className="glass-panel relative flex w-full max-w-sm animate-modal-pop flex-col
                    overflow-hidden rounded-[2rem] border border-surface/60
                    shadow-lifted outline-none"
       >
