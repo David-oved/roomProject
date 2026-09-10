@@ -4,11 +4,11 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Avatar } from '../ui/Avatar';
 import { CheckIcon } from '../ui/icons';
-import { createTask } from '../../services/taskService';
+import { createTask, updateTask } from '../../services/taskService';
 import { useAuth } from '../../store/AuthContext';
 import { useRoom } from '../../store/RoomContext';
 import { useToast } from '../../store/ToastContext';
-import { ALL_CATEGORIES, CATEGORY_LABELS, type Category } from '../../types/models';
+import { ALL_CATEGORIES, CATEGORY_LABELS, type Category, type Task, type WithId } from '../../types/models';
 import { CATEGORY_ICON } from '../../lib/categoryIcons';
 import { useHintRef } from '../../store/HintContext';
 
@@ -20,41 +20,58 @@ const INTERVAL_PRESETS: { label: string; days: number }[] = [
 ];
 
 /**
- * הוספת מטלה קבועה — מנהל בלבד (הכפתור שפותח את זה כבר מוצג רק
- * למנהלים; ה-Rules אוכפים את זה גם בצד השרת).
+ * הוספה או עריכה של מטלה קבועה — מנהל בלבד (הכפתור שפותח את זה כבר
+ * מוצג רק למנהלים; ה-Rules אוכפים את זה גם בצד השרת).
  *
  * סדר הבחירה של המשתתפים הוא סדר הסבב עצמו — מי שנבחר ראשון מתחיל.
+ *
+ * `task` נוכח = מצב עריכה. אותו טופס בדיוק בשני המצבים במכוון: מנהל
+ * שלמד להוסיף מטלה כבר יודע לערוך אותה, ושדה שקיים רק במצב אחד היה
+ * הופך את שני המסלולים לשני טפסים שצריך ללמוד בנפרד.
  */
-export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function TaskSheet({
+  open,
+  onClose,
+  task,
+}: {
+  open: boolean;
+  onClose: () => void;
+  task?: WithId<Task> | null;
+}) {
   const { user, profile } = useAuth();
   const { roomCode, activeMembers } = useRoom();
   const toast = useToast();
+  const editing = !!task;
 
   const [name, setName] = useState('');
   const [category, setCategory] = useState<Category>('cleaning');
   const [intervalDays, setIntervalDays] = useState(7);
   const [participants, setParticipants] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  // ‼️ מזהי הרמזים נשארים 'addTask.*' גם במצב עריכה — הם מפתח ה"כבר
+  // ראיתי" ששמור אצל המשתמש, ושינוי שלהם היה מקפיץ מחדש רמזים ישנים
+  // לכל המשתמשים הקיימים. במצב עריכה מעבירים undefined כדי לכבות רמז
+  // שהטקסט שלו מדבר על יצירה.
   const categoryHintRef = useHintRef<HTMLButtonElement>(
-    'addTask.category',
+    editing ? undefined : 'addTask.category',
     'בוחרים קטגוריה למטלה — לתצוגה וסינון בלבד'
   );
   const intervalHintRef = useHintRef<HTMLButtonElement>(
-    'addTask.interval',
+    editing ? undefined : 'addTask.interval',
     'קובע כל כמה זמן המטלה תחזור בסבב'
   );
   const submitHintRef = useHintRef<HTMLButtonElement>(
-    'addTask.submit',
+    editing ? undefined : 'addTask.submit',
     'שומר את המטלה החדשה ומתחיל את הסבב'
   );
 
   useEffect(() => {
     if (!open) return;
-    setName('');
-    setCategory('cleaning');
-    setIntervalDays(7);
-    setParticipants(user?.uid ? [user.uid] : []);
-  }, [open, user?.uid]);
+    setName(task?.name ?? '');
+    setCategory(task?.category ?? 'cleaning');
+    setIntervalDays(task?.intervalDays ?? 7);
+    setParticipants(task?.participants ?? (user?.uid ? [user.uid] : []));
+  }, [open, user?.uid, task]);
 
   function toggle(uid: string) {
     setParticipants((prev) => (prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid]));
@@ -64,15 +81,16 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
 
   async function submit() {
     if (!canSubmit || !user || !profile || !roomCode) return;
+    const draft = { name: name.trim(), category, intervalDays, participants };
     setSaving(true);
-    const res = await toast.run(() =>
-      createTask(roomCode, user.uid, profile.displayName, {
-        name: name.trim(),
-        category,
-        intervalDays,
-        participants,
-      })
-    );
+    // ‼️ void מכוון: createTask מחזיר את מזהה המטלה החדשה ו-updateTask
+    // לא מחזיר כלום. בלי האיחוד לטיפוס אחד ה-ternary מייצר
+    // Promise<string> | Promise<void>, ואיש מהקוראים כאן לא צריך את
+    // המזהה — רק את ההצלחה/כישלון ש-toast.run בודק.
+    const res = await toast.run(async () => {
+      if (task) await updateTask(roomCode, task, user.uid, draft);
+      else await createTask(roomCode, user.uid, profile.displayName, draft);
+    });
     setSaving(false);
     if (res !== null) onClose();
   }
@@ -81,7 +99,7 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
     <GlassModal open={open} onClose={onClose} labelledBy="add-task-title">
       <div className="p-5 pt-4">
         <h2 id="add-task-title" className="pe-12 text-lg font-bold text-ink-900">
-          מטלה קבועה חדשה
+          {editing ? 'עריכת מטלה' : 'מטלה קבועה חדשה'}
         </h2>
 
         <div className="mt-4">
@@ -211,7 +229,7 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
           disabled={!canSubmit}
           onClick={submit}
         >
-          יצירת מטלה
+          {editing ? 'שמירת שינויים' : 'יצירת מטלה'}
         </Button>
       </div>
     </GlassModal>

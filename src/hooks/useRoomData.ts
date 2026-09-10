@@ -3,6 +3,7 @@ import { useRtdbList } from './useRtdb';
 import { useRoom } from '../store/RoomContext';
 import { useAuth } from '../store/AuthContext';
 import { computeBalances, computeContributions, isSettlementSettled, whoIsNext } from '../lib/money';
+import { countFairness } from '../lib/tasks';
 import type {
   Announcement,
   AppNotification,
@@ -236,22 +237,32 @@ export function useTaskTransfers() {
   return { ...state, incoming, outgoing };
 }
 
-/** כמה מטלות כל אחד השלים ב-30 הימים האחרונים — להצגת הוגנות. */
+/**
+ * כמה מטלות כל אחד השלים ב-30 הימים האחרונים — להצגת הוגנות.
+ *
+ * ‼️ קורא גם את רשימת המטלות עצמה, ולא רק את היומן: ביצועים של מטלה
+ * שנמחקה חייבים לרדת מהספירה. ההסבר המלא ב-countFairness.
+ */
 export function useTaskFairness() {
   const { roomCode } = useRoom();
-  const state = useRtdbList<TaskCompletion>(roomCode ? `rooms/${roomCode}/taskCompletions` : null);
+  const completions = useRtdbList<TaskCompletion>(
+    roomCode ? `rooms/${roomCode}/taskCompletions` : null
+  );
+  const tasks = useRtdbList<Task>(roomCode ? `rooms/${roomCode}/tasks` : null);
 
-  const counts = useMemo(() => {
-    const since = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    const map: Record<string, number> = {};
-    for (const c of state.data) {
-      if ((c.completedAt ?? 0) < since) continue;
-      map[c.completedBy] = (map[c.completedBy] ?? 0) + 1;
-    }
-    return map;
-  }, [state.data]);
+  const counts = useMemo(
+    () => countFairness(completions.data, tasks.data.map((t) => t.id)),
+    [completions.data, tasks.data]
+  );
 
-  return { counts, loading: state.loading, error: state.error, fromCache: state.fromCache };
+  return {
+    counts,
+    // ‼️ שתי הרשימות יחד: לפני שרשימת המטלות הגיעה כל הביצועים ייראו
+    // "יתומים" והספירה תהיה 0 — מצב ביניים שאסור להציג כאילו הוא סופי.
+    loading: completions.loading || tasks.loading,
+    error: completions.error ?? tasks.error,
+    fromCache: completions.fromCache || tasks.fromCache,
+  };
 }
 
 /** הודעות שידור מהמנהל, החדשה ביותר ראשונה. */

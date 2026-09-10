@@ -8,7 +8,7 @@ import { Button } from '../components/ui/Button';
 import { EmptyState, ErrorState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import { CheckIcon, CleaningIcon, ExchangeIcon } from '../components/ui/icons';
-import { AddTaskSheet } from '../components/tasks/AddTaskSheet';
+import { TaskSheet } from '../components/tasks/TaskSheet';
 import { TransferRequestSheet } from '../components/tasks/TransferRequestSheet';
 import { useTasks, useTaskTransfers, useTaskFairness } from '../hooks/useRoomData';
 import { useRoom } from '../store/RoomContext';
@@ -34,6 +34,7 @@ export default function TasksPage() {
   const confirm = useConfirm();
 
   const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState<WithId<Task> | null>(null);
   const [transferring, setTransferring] = useState<WithId<Task> | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -69,6 +70,10 @@ export default function TasksPage() {
   const requestTransferHintRef = useHintRef<HTMLButtonElement>(
     'tasks.requestTransfer',
     'פותח בחירת חבר להעברת התור — צריך את אישורו'
+  );
+  const editHintRef = useHintRef<HTMLButtonElement>(
+    'tasks.edit',
+    'עריכת שם, קטגוריה, תדירות והמשתתפים בסבב — בלי לאפס את המטלה'
   );
   const deleteHintRef = useHintRef<HTMLButtonElement>(
     'tasks.delete',
@@ -240,10 +245,22 @@ export default function TasksPage() {
                       )}
                       {isAdmin && (
                         <Button
+                          ref={idx === 0 ? editHintRef : undefined}
+                          size="sm"
+                          variant="ghost"
+                          className="ms-auto"
+                          {...guard}
+                          onClick={() => setEditing(t)}
+                        >
+                          עריכה
+                        </Button>
+                      )}
+                      {isAdmin && (
+                        <Button
                           ref={idx === 0 ? deleteHintRef : undefined}
                           size="sm"
                           variant="ghost"
-                          className="ms-auto text-rose-600"
+                          className="text-rose-600"
                           {...guard}
                           onClick={async () => {
                             const ok = await confirm({
@@ -288,7 +305,8 @@ export default function TasksPage() {
         )}
       </div>
 
-      {addOpen && <AddTaskSheet open onClose={() => setAddOpen(false)} />}
+      {addOpen && <TaskSheet open onClose={() => setAddOpen(false)} />}
+      {editing && <TaskSheet open task={editing} onClose={() => setEditing(null)} />}
       <TransferRequestSheet task={transferring} onClose={() => setTransferring(null)} />
     </AppShell>
   );

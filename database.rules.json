@@ -774,16 +774,23 @@
 
         // ---------- מטלות קבועות ----------
         // סבב אוטומטי: currentAssignee הוא מי שאחראי *בפועל* עכשיו (אין
-        // currentIndex נפרד — ראו הערה על Task ב-types/models.ts). היצירה
-        // והמחיקה רק למנהל; העדכון (השלמה/רוטציה, או קבלת העברה) מותר
-        // גם למי שהיה אחראי (data) וגם למי שהופך לאחראי (newData) — כך
-        // מכסים גם "סימנתי שבוצע, התור עבר הלאה" וגם "קיבלתי העברה".
-        // שאר השדות (שם/קטגוריה/תדירות/participants/createdBy/createdAt)
-        // קפואים לנצח אחרי היצירה — לשנות אותם צריך למחוק וליצור מחדש.
+        // currentIndex נפרד — ראו הערה על Task ב-types/models.ts).
+        //
+        // המנהל: יצירה, עריכה ומחיקה. חבר רגיל: עדכון (השלמה/רוטציה, או
+        // קבלת העברה) מותר גם למי שהיה אחראי (data) וגם למי שהופך לאחראי
+        // (newData) — כך מכסים גם "סימנתי שבוצע, התור עבר הלאה" וגם
+        // "קיבלתי העברה" — ובענף הזה שם/קטגוריה/תדירות נשארים קפואים.
+        //
+        // ‼️ עד כאן שם/קטגוריה/תדירות היו קפואים גם למנהל, וההערה כאן
+        // אמרה "לשנות אותם צריך למחוק וליצור מחדש". בפועל זה אמר שאין
+        // עריכת מטלה בכלל — טעות הקלדה בשם חייבה מחיקה ויצירה מחדש,
+        // שמאפסת את הסבב ומנתקת את היומן (המזהה משתנה). הענף של המנהל
+        // נפתח לעדכון; createdBy/createdAt נשארים קפואים ב-validate
+        // שלהם עצמם, כך שגם המנהל לא יכול לזייף מי יצר את המטלה ומתי.
         "tasks": {
           ".indexOn": ["dueAt"],
           "$taskId": {
-            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && (((!data.exists() || !newData.exists()) && root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid) || (data.exists() && newData.exists() && (data.child('currentAssignee').val() === auth.uid || newData.child('currentAssignee').val() === auth.uid) && newData.child('name').val() === data.child('name').val() && newData.child('category').val() === data.child('category').val() && newData.child('intervalDays').val() === data.child('intervalDays').val() && newData.child('createdBy').val() === data.child('createdBy').val() && newData.child('createdAt').val() === data.child('createdAt').val()))",
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid + '/status').val() === 'active' && ((root.child('rooms/' + $code + '/metadata/adminId').val() === auth.uid) || (data.exists() && newData.exists() && (data.child('currentAssignee').val() === auth.uid || newData.child('currentAssignee').val() === auth.uid) && newData.child('name').val() === data.child('name').val() && newData.child('category').val() === data.child('category').val() && newData.child('intervalDays').val() === data.child('intervalDays').val() && newData.child('createdBy').val() === data.child('createdBy').val() && newData.child('createdAt').val() === data.child('createdAt').val()))",
             ".validate": "newData.hasChildren(['name', 'category', 'intervalDays', 'participants', 'currentAssignee', 'dueAt', 'createdBy', 'createdAt'])",
             "name":            { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 60" },
             "category":        { ".validate": "newData.val().matches(/^(kitchen|bathroom|cleaning|other)$/)" },
