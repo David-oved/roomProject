@@ -376,7 +376,7 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
         aria-disabled={blockedReason ? true : undefined}
         aria-label={blockedReason ? `דיווח על מוצר חסר — ${blockedReason}` : 'דיווח על מוצר חסר'}
         className={[
-          'glass-panel grid h-[62px] w-[62px] shrink-0 place-items-center rounded-full shadow-lifted',
+          'glass-panel glass-edge grid h-[62px] w-[62px] shrink-0 place-items-center rounded-full',
           'transition-transform duration-150 ease-out active:scale-95',
           blockedReason ? 'text-ink-400' : 'text-ink-800',
         ].join(' ')}
@@ -388,7 +388,7 @@ export function BottomNav({ unreadChat = 0 }: { unreadChat?: number }) {
           עצמו לתוכן). זה בדיוק ההבדל מהניסיון הקודם: ב-FabBar המקורי
           של אפל (ראו למעלה) הפיל תפוס כל הרוחב הפנוי — וזה מה שגרם
           לתחושת ה"מצומק", לא הרווח הפנימי בין הטאבים. */}
-      <div ref={wrapRef} className="glass-panel relative flex h-[62px] flex-1 items-center rounded-full px-0.5 shadow-lifted">
+      <div ref={wrapRef} className="glass-panel glass-edge relative flex h-[62px] flex-1 items-center rounded-full px-0.5">
         {/* ‼️ z-index: ה-<ul> מצויר *מעל* הבועה (z-10 מול z-0) כדי
             שהאייקונים לא ייעלמו מתחתיה. הבועה עצמה pointer-events-none —
             היא לא מקבלת אף אירוע ישירות; הגרירה מטופלת ב-<ul> עצמו (ראו
