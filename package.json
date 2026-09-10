@@ -18,6 +18,8 @@
     "admin:preview": "node admin/start.mjs --server-only",
     "emu": "firebase emulators:start --import=./.emulator-data --export-on-exit",
     "emu:seed": "node scripts/seed-emulator.mjs",
+    "demo": "firebase emulators:exec --only auth,database \"npm run demo:seed && vite --mode demo\"",
+    "demo:seed": "node scripts/seed-task-demo.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:rules": "firebase emulators:exec --only database \"vitest run tests/rules\"",
