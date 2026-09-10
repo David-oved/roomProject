@@ -290,6 +290,12 @@
   html {
     direction: rtl;
     -webkit-text-size-adjust: 100%;
+    /* ‼️ גם כאן, לא רק על body: ברוב הדפדפנים תיבת הגלילה האמיתית של
+       העמוד היא html (ה-documentElement), לא body — כלל שיושב רק על
+       body לא בהכרח תופס על הגלילה עצמה. זה בדיוק מה שגרם לכותרת
+       הדביקה (TopBar) "לזוז" קצת בגלילה: הגומייה של iOS מזיזה את כל
+       ה-viewport כולל אלמנטים sticky/fixed, לא רק את התוכן. */
+    overscroll-behavior-y: none;
   }
 
   body {
