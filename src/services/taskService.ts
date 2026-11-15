@@ -66,6 +66,58 @@ export async function createTask(
   return taskId;
 }
 
+/**
+ * עריכת מטלה קיימת — מנהל בלבד, נאכף ב-Rules.
+ *
+ * שומר על זהות המטלה (אותו taskId) ולכן גם על היומן ועל מיקום הסבב.
+ * זה ההבדל המהותי מ"מחק וצור מחדש", שהיה עד כה הדרך היחידה לשנות שם
+ * או תדירות: שם מזהה חדש מנתק את כל רשומות ה-taskCompletions הישנות.
+ *
+ * ‼️ dueAt לא נוגעים בו במכוון. שינוי תדירות אומר "מהסבב הבא והלאה" —
+ * לדחוף את מי שהתור שלו עכשיו לתאריך אחר רק כי המנהל תיקן הקלדה בשם
+ * זו הפתעה, לא תיקון. התדירות החדשה נכנסת לתוקף בסימון ה"בוצע" הבא.
+ */
+export async function updateTask(
+  code: string,
+  task: WithId<Task>,
+  adminId: string,
+  draft: TaskDraft
+): Promise<void> {
+  assertOnline('לערוך מטלה');
+  assertRoomWritable(code, 'לערוך מטלה');
+  if (draft.participants.length === 0) throw new Error('בחרו לפחות משתתף אחד');
+
+  // ‼️ אם האחראי הנוכחי הוצא מרשימת המשתתפים, התור חייב לעבור — אחרת
+  // המטלה תקועה על מי שכבר לא בסבב: participants.indexOf יחזיר 1-,
+  // ו-completeTask יקדם את התור ל-participants[0] רק אחרי שמישהו
+  // ילחץ "בוצע" — וללחוץ יכול רק האחראי עצמו. קיפאון מוחלט.
+  const currentAssignee = draft.participants.includes(task.currentAssignee)
+    ? task.currentAssignee
+    : draft.participants[0];
+
+  await update(ref(db), {
+    [`rooms/${code}/tasks/${task.id}/name`]: draft.name.trim(),
+    [`rooms/${code}/tasks/${task.id}/category`]: draft.category,
+    [`rooms/${code}/tasks/${task.id}/intervalDays`]: draft.intervalDays,
+    [`rooms/${code}/tasks/${task.id}/participants`]: draft.participants,
+    [`rooms/${code}/tasks/${task.id}/currentAssignee`]: currentAssignee,
+  });
+
+  if (currentAssignee !== task.currentAssignee) {
+    void enqueueNotification({
+      roomCode: code,
+      title: 'תורך במטלה',
+      body: `${draft.name.trim()} — התור עבר אליך`,
+      url: `/r/${code}/tasks`,
+      tag: `task-${task.id}`,
+      priority: 'digest',
+      audience: 'user',
+      targetUid: currentAssignee,
+      actorUid: adminId,
+    });
+  }
+}
+
 /** מנהל בלבד — נאכף ב-Rules. */
 export async function deleteTask(code: string, taskId: string): Promise<void> {
   assertOnline('למחוק מטלה');

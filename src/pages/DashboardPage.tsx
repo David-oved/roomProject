@@ -41,7 +41,7 @@ import { InstallPrompt } from '../components/system/InstallPrompt';
 import { AdminMessageBanner } from '../components/system/AdminMessageBanner';
 import { RoomArchivedBanner } from '../components/system/RoomArchivedBanner';
 import { ReportItemSheet } from '../components/items/ReportItemSheet';
-import { AddTaskSheet } from '../components/tasks/AddTaskSheet';
+import { TaskSheet } from '../components/tasks/TaskSheet';
 import { completeTask } from '../services/taskService';
 import { useToast } from '../store/ToastContext';
 import { useConnection } from '../store/ConnectionContext';
@@ -663,7 +663,7 @@ export default function DashboardPage() {
           שההוקים של הגיליון כבר רצו (useCatalog, useItems) — האזנות RTDB
           פתוחות לגיליון שאינו מוצג. אין אנימציית יציאה שנפגעת. */}
       {reportOpen && <ReportItemSheet open onClose={() => setReportOpen(false)} />}
-      {addTaskOpen && <AddTaskSheet open onClose={() => setAddTaskOpen(false)} />}
+      {addTaskOpen && <TaskSheet open onClose={() => setAddTaskOpen(false)} />}
     </AppShell>
   );
 }
