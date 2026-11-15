@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { RequireAuth, RequireDeveloper, RequireGuest, RequireRoomMember } from './components/auth/guards';
 import { RoomProvider } from './store/RoomContext';
 import { TutorialProvider } from './store/TutorialContext';
@@ -10,6 +10,7 @@ import { BottomNav } from './components/layout/BottomNav';
 import { OfflineBanner } from './components/layout/OfflineBanner';
 import { useLiveNotifications } from './hooks/useLiveNotifications';
 import { useChatWatcher } from './hooks/useChatWatcher';
+import { isRoomTabRoot } from './lib/roomNav';
 
 // מסכי הכניסה נטענים מיד — הם הראשונים שהמשתמש רואה
 import LoginPage from './pages/LoginPage';
@@ -86,18 +87,25 @@ function RoomLayout() {
  * גרירה שנשארת בתוך מופע אחד ולכן עבדה). הסרגל וההתראות עוברים לכאן,
  * מעל ה-Outlet, כדי שהם יישארו רכיב אחד יציב לכל אורך השהייה בחדר —
  * רק תוכן העמוד (ה-Outlet) מוחלף בכל ניווט.
+ *
+ * ‼️ הסרגל מוצג רק בשורשי הטאבים עצמם (ראו isRoomTabRoot) — לא בכל מסך
+ * תחת /r/:code. מסכי-צלילה כמו הגדרות, התראות או שיחת צ'אט בודדת מסתירים
+ * אותו, כמו tab bar שנעלם במסך שנדחף מעל טאב.
  */
 function RoomShell() {
+  const { code } = useParams<{ code: string }>();
+  const location = useLocation();
   // התראה מיידית כשהאפליקציה ברקע — בלי להמתין לשרת
   useLiveNotifications();
   // עוקב אחרי כל שיחות הצ'אט: מסמן delivered, סופר לא-נקרא, וטוסט מקומי
   const { unreadTotal } = useChatWatcher();
+  const showNav = isRoomTabRoot(location.pathname, code);
 
   return (
     <div className="relative min-h-[100dvh] overflow-x-clip bg-ink-50">
       <OfflineBanner />
       <Outlet />
-      <BottomNav unreadChat={unreadTotal} />
+      {showNav && <BottomNav unreadChat={unreadTotal} />}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { GlassModal } from '../ui/GlassModal';
 import { Button } from '../ui/Button';
 import { Textarea } from '../ui/Input';
 import { Badge } from '../ui/Badge';
+import { Skeleton } from '../ui/Skeleton';
 import { BasketIcon, BoxIcon, CheckIcon, PlusIcon, WarningIcon } from '../ui/icons';
 import { AddProductForm } from '../catalog/AddProductForm';
 import { reportItem } from '../../services/itemService';
@@ -34,7 +35,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
   const { user, profile } = useAuth();
   const { roomCode, memberName } = useRoom();
   const { items } = useItems('open');
-  const { search, stapleProducts } = useCatalog();
+  const { search, stapleProducts, syncing } = useCatalog();
   const toast = useToast();
 
   const [step, setStep] = useState<Step>('pick');
@@ -84,6 +85,17 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
     const pool = query.trim().length === 0 ? stapleProducts : search(query, undefined, 30);
     return pool.filter((p) => !reportedIds.has(p.id));
   }, [query, search, stapleProducts, reportedIds]);
+
+  /**
+   * ‼️ מוצרי הבסיס של החדר מגיעים מ-Firebase (staples), לא מהקטלוג
+   * המובנה שזמין מיידית — אז ברגע שהמודאל נפתח יש רגע אמיתי שבו עדיין
+   * אין תשובה, ה-grid ריק, ו-"אין עדיין מוצרי בסיס בחדר" מוצג. כשהתשובה
+   * מגיעה רגע אחר כך והרשימה מתמלאת, גובה המודאל (שלא קבוע — הוא נמתח
+   * לפי התוכן) קופץ בפתאומיות. שלד-טעינה באותה צורה בערך של הרשימה
+   * האמיתית שומר את הגובה יציב מרגע הפתיחה, כך שאין עוד קפיצה כשהנתונים
+   * מגיעים — רק תחלופה חלקה של תוכן.
+   */
+  const showStaplesSkeleton = syncing && query.trim().length === 0 && results.length === 0;
 
   const exactFreeMatch = useMemo(
     () => results.some((p) => p.name === query.trim()),
@@ -151,7 +163,10 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
   return (
     <GlassModal open={open} onClose={onClose} labelledBy="report-item-title">
       {step === 'sending' ? (
-        <div className="flex flex-col items-center justify-center gap-3 px-8 py-16 text-center">
+        <div
+          key={step}
+          className="animate-fade-in flex flex-col items-center justify-center gap-3 px-8 py-16 text-center"
+        >
           {/* ‼️ emerald-800 ולא 600: הגוונים 400-600 לא מתהפכים במצב כהה,
               ולכן emerald-600 על bg-emerald-100 (שכן מתהפך) ירד ל-1.68:1 —
               ירוק כהה על ירוק כהה. 800 מתהפך יחד עם הרקע ונשאר קריא בשניהם. */}
@@ -161,7 +176,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
           <p className="font-bold text-ink-900">{name} נוסף לרשימה</p>
         </div>
       ) : step === 'pick' ? (
-        <div className="p-5 pt-4">
+        <div key={step} className="animate-fade-in p-5 pt-4">
           <h2 id="report-item-title" className="pe-12 text-lg font-bold text-ink-900">
             מה חסר בבית?
           </h2>
@@ -176,7 +191,6 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
               placeholder="חיפוש מוצר…"
               type="search"
               enterKeyHint="search"
-              autoFocus
               className="w-full rounded-2xl border border-ink-200 bg-surface/80 px-4 py-3.5
                          text-[16px] shadow-sm backdrop-blur placeholder:text-ink-500
                          transition focus:border-brand-400 focus:outline-none
@@ -226,32 +240,34 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
               </p>
 
               <div className="grid grid-cols-2 gap-2.5">
-                {results.map((p, idx) => {
-                  const ProductIcon = CATEGORY_ICON[p.category];
-                  return (
-                    <button
-                      key={p.id}
-                      ref={idx === 0 ? pickProductHintRef : undefined}
-                      type="button"
-                      onClick={() => choose(p)}
-                      className="flex flex-col items-start gap-1 rounded-2xl border border-ink-100
-                                 bg-surface/70 p-3.5 text-start shadow-sm backdrop-blur transition
-                                 duration-150 hover:-translate-y-0.5 hover:border-brand-300
-                                 hover:shadow-card active:scale-[.96] active:duration-75"
-                    >
-                      <span aria-hidden className="text-ink-500">
-                        <ProductIcon width={22} height={22} />
-                      </span>
-                      <span className="line-clamp-2 text-sm font-semibold leading-tight text-ink-900">
-                        {p.name}
-                      </span>
-                      <span className="num text-xs text-ink-500">{formatILS(p.price)}</span>
-                    </button>
-                  );
-                })}
+                {showStaplesSkeleton
+                  ? Array.from({ length: 4 }).map((_, i) => <ProductTileSkeleton key={i} />)
+                  : results.map((p, idx) => {
+                      const ProductIcon = CATEGORY_ICON[p.category];
+                      return (
+                        <button
+                          key={p.id}
+                          ref={idx === 0 ? pickProductHintRef : undefined}
+                          type="button"
+                          onClick={() => choose(p)}
+                          className="flex flex-col items-start gap-1 rounded-2xl border border-ink-100
+                                     bg-surface/70 p-3.5 text-start shadow-sm backdrop-blur transition
+                                     duration-150 hover:-translate-y-0.5 hover:border-brand-300
+                                     hover:shadow-card active:scale-[.96] active:duration-75"
+                        >
+                          <span aria-hidden className="text-ink-500">
+                            <ProductIcon width={22} height={22} />
+                          </span>
+                          <span className="line-clamp-2 text-sm font-semibold leading-tight text-ink-900">
+                            {p.name}
+                          </span>
+                          <span className="num text-xs text-ink-500">{formatILS(p.price)}</span>
+                        </button>
+                      );
+                    })}
               </div>
 
-              {results.length === 0 && query.trim().length === 0 && (
+              {results.length === 0 && query.trim().length === 0 && !syncing && (
                 <p className="py-8 text-center text-sm text-ink-500">
                   אין עדיין מוצרי בסיס בחדר
                 </p>
@@ -288,7 +304,7 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
           )}
         </div>
       ) : (
-        <div className="p-5 pt-4">
+        <div key={step} className="animate-fade-in p-5 pt-4">
           <button
             ref={changeProductHintRef}
             type="button"
@@ -345,5 +361,16 @@ export function ReportItemSheet({ open, onClose }: { open: boolean; onClose: () 
         </div>
       )}
     </GlassModal>
+  );
+}
+
+/** תופס בערך את אותו שטח כמו כרטיס מוצר אמיתי — ראו showStaplesSkeleton */
+function ProductTileSkeleton() {
+  return (
+    <div aria-hidden className="flex flex-col items-start gap-1.5 rounded-2xl border border-ink-100 bg-surface/70 p-3.5">
+      <Skeleton className="h-[22px] w-[22px]" />
+      <Skeleton className="h-3.5 w-4/5" />
+      <Skeleton className="h-3 w-1/3" />
+    </div>
   );
 }

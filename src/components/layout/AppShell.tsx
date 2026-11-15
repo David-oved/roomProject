@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
 import { PageTransition } from './PageTransition';
 import { OfflineBanner } from './OfflineBanner';
+import { isRoomTabRoot } from '../../lib/roomNav';
 
 /**
  * מעטפת התוכן של מסך בתוך חדר — כותרת + גוף העמוד.
@@ -14,9 +16,15 @@ import { OfflineBanner } from './OfflineBanner';
  * מוחלף בפועל בכל ניווט.
  *
  * הריפוד התחתון מחשב גם את גובה הניווט וגם את האזור הבטוח (פס הבית
- * באייפון) — בלעדיו התוכן האחרון ברשימה מוסתר מאחורי הסרגל.
+ * באייפון) — בלעדיו התוכן האחרון ברשימה מוסתר מאחורי הסרגל. אבל רק
+ * במסכים ששורש-טאב (ראו isRoomNav/RoomShell ב-router.tsx) — במסכי-צלילה
+ * כמו הגדרות או התראות הסרגל לא מוצג, אז אין למה לרפד בשבילו.
  */
 export function AppShell({ children, topBar }: { children: ReactNode; topBar?: ReactNode }) {
+  const { code } = useParams<{ code: string }>();
+  const location = useLocation();
+  const showNav = isRoomTabRoot(location.pathname, code);
+
   return (
     <>
       {/* ‼️ ה-TopBar מרונדר כאן — מחוץ ל-<main> ולריפוד ה-px-4 שלו — כדי
@@ -26,7 +34,11 @@ export function AppShell({ children, topBar }: { children: ReactNode; topBar?: R
 
       <main
         className="mx-auto max-w-lg px-4 safe-x"
-        style={{ paddingBottom: 'calc(var(--nav-height) + var(--nav-gap) + var(--safe-bottom) + 1.5rem)' }}
+        style={{
+          paddingBottom: showNav
+            ? 'calc(var(--nav-height) + var(--nav-gap) + var(--safe-bottom) + 1.5rem)'
+            : 'calc(var(--safe-bottom) + 1.5rem)',
+        }}
       >
         <PageTransition>{children}</PageTransition>
       </main>

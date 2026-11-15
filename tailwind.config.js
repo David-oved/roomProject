@@ -109,9 +109,17 @@ export default {
           from: { transform: 'translateY(100%)' },
           to: { transform: 'translateY(0)' },
         },
-        'glass-in': {
-          from: { transform: 'scale(.94) translateY(8px)', opacity: '0' },
-          to: { transform: 'scale(1) translateY(0)', opacity: '1' },
+        /*
+         * כניסת GlassModal — פתיחת מודאל צריכה להרגיש כמו "רגע נפרד",
+         * לא כמו טופס שדוהה פנימה. הבועה עולה מלמטה, עם התנפחות קלה
+         * (scale 1.015) שמתיישבת בחזרה — לא ניתור אמיתי, רק המשקל
+         * שמבדיל bounce מ-ease-out שטוח. transform+opacity בלבד (בלי
+         * טשטוש שמונפש) כדי שזה יישאר חלק גם במכשירים חלשים.
+         */
+        'modal-pop': {
+          '0%': { transform: 'scale(.86) translateY(28px)', opacity: '0' },
+          '60%': { transform: 'scale(1.015) translateY(-2px)', opacity: '1' },
+          '100%': { transform: 'scale(1) translateY(0)', opacity: '1' },
         },
         'check-pop': {
           '0%': { transform: 'scale(0)', opacity: '0' },
@@ -130,7 +138,7 @@ export default {
         'slide-up': 'slide-up .28s cubic-bezier(.22,1,.36,1)',
         'fade-in': 'fade-in .18s ease-out',
         'sheet-in': 'sheet-in .3s cubic-bezier(.22,1,.36,1)',
-        'glass-in': 'glass-in .32s cubic-bezier(.22,1,.36,1)',
+        'modal-pop': 'modal-pop .42s cubic-bezier(.22,1,.36,1)',
         'check-pop': 'check-pop .45s cubic-bezier(.34,1.56,.64,1)',
         'page-in': 'page-in .32s cubic-bezier(.22,1,.36,1)',
       },
